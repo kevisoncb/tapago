@@ -82,10 +82,11 @@ Estado: `provider`. Persistência local: `shared_preferences`. WhatsApp: `url_la
 
 ## Último commit
 
-- Hash: `9a7395c`
-- Mensagem: `Add the initial TáPago Flutter app for debt tracking.`
-- Conteúdo: app Flutter inicial (telas, Firestore layer, assets). 153 arquivos. Sem secrets, sem `.dart_tool`, sem `local.properties`.
-- Remote: já enviado para `origin/main`.
+- Hash: `41f0803`
+- Mensagem: `Add a living SISTEMA.md so both PCs share the same project context.`
+- Conteúdo: criou `SISTEMA.md` e a regra `.cursor/rules/contexto-sistema.mdc`.
+- Anterior: `9a7395c` — app Flutter inicial (telas, Firestore, assets).
+- Remote: `origin/main` atualizado.
 
 ## Pendências
 

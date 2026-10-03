@@ -1,0 +1,19 @@
+---
+description: Sempre ler e reescrever SISTEMA.md ao trabalhar no TáPago
+alwaysApply: true
+---
+
+# Contexto vivo do TáPago
+
+Antes de qualquer implementação, leitura de código ou resposta sobre o sistema:
+
+1. Abrir e ler `SISTEMA.md` na raiz do repositório.
+2. Usar só o estado descrito lá (telas, Firebase, commits, pendências).
+3. Não inventar histórico antigo que o arquivo já substituiu.
+
+Depois de criar, alterar ou remover código:
+
+1. **Apagar o conteúdo de `SISTEMA.md` e reescrever** com o estado atual.
+2. Manter: o que o app faz agora, mapa de pastas/telas, dados, último commit, pendências, última sessão.
+3. Não acumular changelog. O arquivo é um retrato atual, não um diário infinito.
+4. Se o trabalho for para outro PC, o contexto válido é o `SISTEMA.md` commitado em `origin/main`.

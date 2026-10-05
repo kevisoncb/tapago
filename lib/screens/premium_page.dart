@@ -48,7 +48,7 @@ class PremiumPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Apenas ${AppConstants.premiumPriceLabel}/mês para transformar sua gestão financeira',
+                          'Apenas ${AppConstants.premiumPriceLabel}/mês para cadastro por voz e leitura de recibos',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
@@ -58,28 +58,16 @@ class PremiumPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 28),
                         const _Benefit(
-                          icon: Icons.groups_outlined,
-                          title: 'Clientes Ilimitados',
+                          icon: Icons.mic_none_rounded,
+                          title: 'Cadastro por voz',
                           subtitle:
-                              'Gerencie quantos débitos quiser sem restrições de cadastro.',
-                        ),
-                        const _Benefit(
-                          icon: Icons.chat_bubble_outline_rounded,
-                          title: 'Automação de WhatsApp',
-                          subtitle:
-                              'Envie lembretes e cobranças automáticas direto para seus clientes.',
+                              'Segura o microfone e dita nome, valor e vencimento. A IA monta o lançamento.',
                         ),
                         const _Benefit(
                           icon: Icons.document_scanner_outlined,
-                          title: 'Leitura de Recibos OCR',
+                          title: 'Leitura de recibos',
                           subtitle:
-                              'Anexe fotos de recibos e deixe a IA extrair os dados para você.',
-                        ),
-                        const _Benefit(
-                          icon: Icons.trending_up_rounded,
-                          title: 'Relatórios de Lucro',
-                          subtitle:
-                              'Visualize projeções reais de quanto você deve receber no futuro.',
+                              'Na caderneta do cliente, anexe o comprovante. A IA lê o valor e abate o saldo.',
                         ),
                         const SizedBox(height: 8),
                         const _PriceCard(),

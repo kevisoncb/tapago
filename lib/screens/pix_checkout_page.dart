@@ -10,7 +10,10 @@ import '../services/asaas_client.dart';
 import '../services/pix_status.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
+import '../utils/constants.dart';
 import '../utils/formatters.dart';
+import '../utils/input_masks.dart';
+import '../utils/masks.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
 
@@ -40,7 +43,7 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
 
   Future<void> _create() async {
     final cpf = digitsOnly(_cpf.text);
-    if (cpf.length != 11 && cpf.length != 14) {
+    if (!isValidCpfOrCnpj(cpf)) {
       setState(() => _error = 'Informe um CPF ou CNPJ válido.');
       return;
     }
@@ -119,17 +122,20 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'R\$ 59,90 pelo Asaas. O Premium entra quando o PIX compensar.',
+            '${AppConstants.premiumPriceLabel} pelo Asaas. O Premium entra quando o PIX compensar.',
             style: GoogleFonts.plusJakartaSans(color: AppColors.mutedDark),
           ),
           const SizedBox(height: 22),
           if (charge == null) ...[
             AppTextField(
               label: 'CPF ou CNPJ',
-              hint: 'Somente números',
+              hint: '000.000.000-00',
               icon: Icons.badge_outlined,
               controller: _cpf,
               keyboardType: TextInputType.number,
+              autocorrect: false,
+              enableSuggestions: false,
+              inputFormatters: [CpfCnpjMaskFormatter()],
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

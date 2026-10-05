@@ -42,6 +42,12 @@ class Dates {
   static String full(DateTime date) => _full.format(date);
 }
 
+String firstNameOf(String name) {
+  final parts = name.trim().split(RegExp(r'\s+'));
+  if (parts.isEmpty || parts.first.isEmpty) return name;
+  return parts.first;
+}
+
 String initialsOf(String name) {
   final parts = name.trim().split(RegExp(r'\s+'));
   if (parts.isEmpty || parts.first.isEmpty) return '?';
@@ -52,3 +58,29 @@ String initialsOf(String name) {
 }
 
 String digitsOnly(String value) => value.replaceAll(RegExp(r'\D'), '');
+
+String paymentKindLabel(String descricao) {
+  switch (descricao) {
+    case 'Juros':
+      return 'Somente juros do mês';
+    case 'Abatimento':
+      return 'Parte do valor';
+    case 'Quitação':
+      return 'Valor total';
+    default:
+      return descricao;
+  }
+}
+
+String paymentKindHint(String descricao) {
+  switch (descricao) {
+    case 'Juros':
+      return 'Não baixa o principal';
+    case 'Abatimento':
+      return 'Baixa juros e depois o principal';
+    case 'Quitação':
+      return 'Caderneta quitada';
+    default:
+      return '';
+  }
+}

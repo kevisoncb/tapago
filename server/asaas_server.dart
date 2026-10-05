@@ -111,7 +111,7 @@ Future<void> _route(
       {
         'customer': customerId,
         'billingType': 'PIX',
-        'value': 59.90,
+        'value': 39.90,
         'dueDate': dueDate,
         'description': 'TáPago Premium',
         'externalReference': userId,

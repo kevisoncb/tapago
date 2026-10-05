@@ -71,6 +71,8 @@ double? _amount(String normalized) {
     'valor(?: de)?\\s+(?:r\\\$\\s*)?$pattern',
   ).firstMatch(normalized);
   if (labeled != null) return _number(labeled.group(1)!);
+  final withSymbol = RegExp('r\\\$\\s*$pattern').firstMatch(normalized);
+  if (withSymbol != null) return _number(withSymbol.group(1)!);
   return null;
 }
 

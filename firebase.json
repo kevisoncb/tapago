@@ -1,1 +1,57 @@
-{"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"]}],"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"tapago-ae948","appId":"1:1077428127080:android:04ca9e29d571127c0042dd","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"tapago-ae948","configurations":{"android":"1:1077428127080:android:04ca9e29d571127c0042dd","ios":"1:1077428127080:ios:cfb8bcee870273c20042dd","macos":"1:1077428127080:ios:cfb8bcee870273c20042dd"}}}}}}
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tapago-ae948",
+          "appId": "1:1077428127080:android:04ca9e29d571127c0042dd",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tapago-ae948",
+          "configurations": {
+            "android": "1:1077428127080:android:04ca9e29d571127c0042dd",
+            "ios": "1:1077428127080:ios:cfb8bcee870273c20042dd",
+            "macos": "1:1077428127080:ios:cfb8bcee870273c20042dd"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "site",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|css|js)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800" }
+        ]
+      }
+    ]
+  }
+}

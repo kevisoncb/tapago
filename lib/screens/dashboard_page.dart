@@ -6,7 +6,10 @@ import '../models/models.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
+import '../widgets/tapago_logo.dart';
+import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
+import 'caderneta_page.dart';
 import 'client_profile_page.dart';
 import 'premium_page.dart';
 import 'settings_page.dart';
@@ -24,12 +27,6 @@ class DashboardPage extends StatelessWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _NewDebtFab(
         onTap: () {
-          if (state.reachedFreeLimit) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PremiumPage()),
-            );
-            return;
-          }
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const AddDebtPage()),
           );
@@ -53,8 +50,8 @@ class DashboardPage extends StatelessWidget {
                               Expanded(
                                 child: _MetricCard(
                                   icon: Icons.trending_up_rounded,
-                                  label: 'Lucro Projetado',
-                                  value: Money.compact(state.lucroProjetado),
+                                  label: 'Saldo aberto',
+                                  value: Money.compact(state.saldoAberto),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -70,11 +67,11 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(height: 12),
                           _MetricCard(
                             icon: Icons.payments_outlined,
-                            label: 'Dinheiro na Rua',
+                            label: 'Na rua',
                             value: Money.compact(state.dinheiroNaRua),
                             compact: true,
                           ),
-                          if (!state.user.premiumAtivo) ...[
+                          if (!state.user.isPremium) ...[
                             const SizedBox(height: 16),
                             const _PremiumBanner(),
                           ],
@@ -82,7 +79,7 @@ class DashboardPage extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                'Débitos Pendentes',
+                                'Na caderneta',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -90,7 +87,7 @@ class DashboardPage extends StatelessWidget {
                               ),
                               const Spacer(),
                               GestureDetector(
-                                onTap: () => _openAll(context, pending),
+                                onTap: () => _openAll(context),
                                 child: Text(
                                   'Ver todos',
                                   style: GoogleFonts.plusJakartaSans(
@@ -112,7 +109,7 @@ class DashboardPage extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          'Nenhum débito pendente. Toque em Novo Débito para começar.',
+                          'Nada na caderneta. Toque em Novo lançamento para começar.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             color: AppColors.mutedDark,
@@ -147,41 +144,9 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  void _openAll(BuildContext context, List<Debt> pending) {
+  void _openAll(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const _AllDebtsPage(),
-      ),
-    );
-  }
-}
-
-class _AllDebtsPage extends StatelessWidget {
-  const _AllDebtsPage();
-
-  @override
-  Widget build(BuildContext context) {
-    final pending = context.watch<AppController>().pendingDebts;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Débitos Pendentes')),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        itemCount: pending.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final debt = pending[index];
-          return DebtTile(
-            debt: debt,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ClientProfilePage(debt: debt),
-                ),
-              );
-            },
-          );
-        },
-      ),
+      MaterialPageRoute(builder: (_) => const CadernetaPage()),
     );
   }
 }
@@ -200,22 +165,15 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                user.nome.trim().isEmpty
-                    ? 'Olá'
-                    : 'Olá, ${user.nome.trim().split(RegExp(r'\s+')).first}',
+                'Olá, ${user.nome.split(' ').first}',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   color: AppColors.mutedDark,
                 ),
               ),
-              Text(
-                'TáPago',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              const SizedBox(height: 4),
+              const TapagoWordmark(markSize: 28, fontSize: 24),
             ],
           ),
         ),
@@ -350,7 +308,7 @@ class _PremiumBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Automação de WhatsApp e OCR',
+                  'Voz e leitura de recibos na caderneta',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     color: AppColors.mutedDark,
@@ -414,7 +372,7 @@ class _NewDebtFab extends StatelessWidget {
             const Icon(Icons.add, color: Colors.white, size: 22),
             const SizedBox(width: 6),
             Text(
-              'Novo Débito',
+              'Novo lançamento',
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
@@ -436,6 +394,7 @@ class DebtTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final saldo = context.watch<AppController>().saldoOf(debt);
     final overdue = debt.isOverdue;
     final accent = overdue ? AppColors.danger : AppColors.primary;
     final bg = overdue ? AppColors.dangerSoft : Colors.white;
@@ -490,13 +449,15 @@ class DebtTile extends StatelessWidget {
                 ),
               ),
               Text(
-                Money.full(context.watch<AppController>().balanceFor(debt).saldo),
+                Money.full(saldo),
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
                   color: overdue ? AppColors.danger : AppColors.text,
                 ),
               ),
+              const SizedBox(width: 10),
+              const WhatsAppMark(size: 28),
             ],
           ),
         ),

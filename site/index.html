@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TáPago — Cobre sem perseguir</title>
+    <meta
+      name="description"
+      content="O TáPago organiza fiado, venda a prazo e empréstimos. Clientes ilimitados no grátis. A caderneta fica na sua conta. Premium: voz, OCR e cobrança no seu texto. R$ 39,90/mês."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="./assets/tapago-icon.jpg" type="image/jpeg" />
+    <link rel="apple-touch-icon" href="./assets/tapago-icon.jpg" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="#topo">
+        <img src="./assets/tapago-icon.jpg" width="36" height="36" alt="" />
+        TáPago
+      </a>
+      <nav>
+        <a href="#uso">Na prática</a>
+        <a href="#voz">Voz</a>
+        <a href="#recibos">Recibos</a>
+        <a href="#avisos">Avisos</a>
+        <a href="#preco">Premium</a>
+      </nav>
+      <a class="btn btn-small" href="#preco">Baixar grátis</a>
+    </header>
+
+    <main id="topo">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Fiado, a prazo ou empréstimo</p>
+          <h1>Cobra sem perseguir.<br />O TáPago lembra por você.</h1>
+          <p class="lead">
+            Serve para quem empresta, para o comércio que vende a prazo e para
+            o fiado da mercearia. Caderneta digital: lança, abate o que entrou e
+            cobra no seu WhatsApp, no tom que quiser. Juros só se você quiser.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href="#preco">Baixar grátis</a>
+            <a class="btn btn-ghost" href="#uso">Ver alguém usando</a>
+          </div>
+          <p class="fine">O app é gratuito. Premium é extra, quando a caderneta crescer.</p>
+        </div>
+        <div class="hero-phone">
+          <button class="demo-hint" type="button" id="demo-hint">
+            Toca em <strong>+ Novo lançamento</strong> e testa agora
+          </button>
+          <div class="iphone">
+            <div class="iphone-screen demo-phone" id="demo-phone">
+              <div class="island"></div>
+              <div class="sb"><span>03:05</span><span>⬤⬤⬤ 🔋</span></div>
+              <div class="phone-deck" id="phone-deck">
+                <div class="phone-pane" id="tela-1">
+                  <div class="dash-head">
+                    <div class="dash-brand">
+                      <img src="./assets/tapago-icon.jpg" width="28" height="28" alt="" />
+                      <div>
+                        <p>Olá, João</p>
+                        <strong>TáPago</strong>
+                      </div>
+                    </div>
+                    <span class="avatar">JD</span>
+                  </div>
+                  <div class="metrics">
+                    <article>
+                      <span>Saldo aberto</span>
+                      <b data-count="4451">R$ 0</b>
+                    </article>
+                    <article>
+                      <span>A Receber</span>
+                      <b data-count="1936">R$ 0</b>
+                    </article>
+                  </div>
+                  <div class="money-row">
+                    <span>Na rua</span>
+                    <b id="saldo-rua" data-count="4221">R$ 0</b>
+                  </div>
+                  <div id="demo-lista">
+                    <div class="debt overdue">
+                      <span>Carlos Oliveira</span>
+                      <strong>R$ 450,00</strong>
+                    </div>
+                    <div class="debt">
+                      <span>Mariana Souza</span>
+                      <strong>R$ 1.200,00</strong>
+                    </div>
+                  </div>
+                  <button class="fab" type="button" id="demo-novo">
+                    + Novo lançamento
+                  </button>
+                </div>
+                <div class="phone-pane phone-pane-form" id="tela-2">
+                  <div class="form-bar">
+                    <button class="form-back" type="button" id="demo-voltar" aria-label="Voltar">
+                      ‹
+                    </button>
+                    <strong>Novo lançamento</strong>
+                  </div>
+                  <label class="app-field">
+                    Nome do Cliente
+                    <span class="app-input">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z"
+                        />
+                      </svg>
+                      <input
+                        id="demo-nome"
+                        type="text"
+                        placeholder="Ex: João Silva"
+                        autocomplete="off"
+                      />
+                    </span>
+                  </label>
+                  <div class="app-field-row">
+                    <label class="app-field">
+                      Valor (R$)
+                      <span class="app-input">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path
+                            d="M11.8 10.9c-2.3-.6-3-1.2-3-2.1 0-1.1 1-1.9 2.7-1.9 1.5 0 2.3.6 2.6 1.5h2.3c-.3-1.7-1.7-2.9-3.6-3.3V3h-2.2v1.9c-2 .4-3.6 1.8-3.6 3.8 0 2.4 2 3.6 4.9 4.2 2.6.6 3.1 1.5 3.1 2.4 0 .7-.6 1.9-2.9 1.9-1.8 0-2.8-.7-3.1-1.8H8.2c.4 2 2 3.2 4.1 3.6V21h2.2v-1.9c2.1-.4 3.7-1.8 3.7-3.9 0-3-2.6-4-5.4-4.7Z"
+                          />
+                        </svg>
+                        <input
+                          id="demo-valor"
+                          type="text"
+                          inputmode="decimal"
+                          placeholder="R$ 0,00"
+                          autocomplete="off"
+                        />
+                      </span>
+                    </label>
+                    <label class="app-field">
+                      Juros ao mês (%)
+                      <span class="app-input">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="7" cy="8" r="2.2" />
+                          <circle cx="17" cy="16" r="2.2" />
+                          <path d="M8 17 16 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        </svg>
+                        <input
+                          id="demo-juros"
+                          type="text"
+                          inputmode="decimal"
+                          placeholder="Opcional"
+                          autocomplete="off"
+                        />
+                      </span>
+                    </label>
+                  </div>
+                  <p class="app-field-hint">
+                    Juros só se você quiser. Fiado e venda a prazo ficam em branco.
+                  </p>
+                  <button class="form-save" type="button" id="demo-salvar">
+                    Salvar
+                  </button>
+                </div>
+              </div>
+              <div class="home-bar"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" aria-label="O que você ganha no grátis">
+        <article class="stat" tabindex="0">
+          <div class="stat-preview">
+            <strong class="price-zero">R$ 0</strong>
+            <small>sem cartão pra baixar</small>
+          </div>
+          <b>Grátis</b>
+          <p class="stat-copy">Cadastra, vê o que está na rua e cobra. Premium é depois.</p>
+        </article>
+        <article class="stat" tabindex="0">
+          <div class="stat-preview">
+            <div class="faces" aria-hidden="true">
+              <i>CO</i><i>MS</i><i>RC</i><i>JS</i><i>+1</i>
+            </div>
+            <small>caderneta livre</small>
+          </div>
+          <b>Clientes Ilimitados</b>
+          <p class="stat-copy">Cadastre clientes, vendas a prazo e fiados sem limites.</p>
+        </article>
+        <article class="stat" tabindex="0">
+          <div class="stat-preview">
+            <div class="taps" aria-hidden="true">
+              <em>Antes</em>
+              <em class="on">Hoje</em>
+              <em>Atraso</em>
+            </div>
+          </div>
+          <b>1 toque</b>
+          <p class="stat-copy">Tom amigável ou formal, no seu WhatsApp.</p>
+        </article>
+        <article class="stat" tabindex="0">
+          <div class="stat-preview">
+            <div class="pix-chip">chave PIX salva</div>
+            <small>vai junto na cobrança</small>
+          </div>
+          <b>PIX</b>
+          <p class="stat-copy">O cliente já recebe pra onde pagar.</p>
+        </article>
+      </section>
+
+      <section id="uso" class="use">
+        <div class="section-head">
+          <p class="eyebrow">Na prática</p>
+          <h2>A conversa acontece sozinha</h2>
+          <p>Você toca em Cobrar Hoje, o PIX chega, e no app só você marca se foi o total, uma parte ou o juro do mês.</p>
+        </div>
+        <div class="use-grid">
+          <div class="iphone iphone-sm">
+            <div class="iphone-screen" id="demo-uso-screen">
+              <div class="island"></div>
+              <div class="sb"><span>03:05</span><span>⬤⬤⬤ 🔋</span></div>
+              <p class="center-name">Ricardo Carvalho</p>
+              <p class="score">Score de Confiança: 92/100</p>
+              <div class="value-card">
+                <span>Saldo da caderneta</span>
+                <b id="demo-uso-saldo">R$ 1.450,00</b>
+              </div>
+              <div class="abater" id="demo-uso-abater">Abater valor</div>
+              <div class="wa-row">
+                <div>Lembrete</div>
+                <div class="active">Cobrar Hoje</div>
+                <div>Atraso</div>
+              </div>
+              <div class="ocr-chip">Anexar comprovante</div>
+              <div class="home-bar"></div>
+            </div>
+          </div>
+          <div class="chat-wrap">
+            <div class="chat-head">
+              <span class="dot"></span>
+              WhatsApp · Ricardo Carvalho
+            </div>
+            <div id="chat" class="chat" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="voz" class="voice">
+        <div class="voice-copy">
+          <p class="eyebrow">Premium</p>
+          <h2>Cadastro por voz. Fala, o app preenche.</h2>
+          <p>
+            Segura o microfone e dita: nome, valor e vencimento. A IA monta o
+            lançamento. Recurso exclusivo do plano Premium — no grátis o cadastro
+            é pelo formulário.
+          </p>
+        </div>
+        <div class="voice-card">
+          <button class="mic" type="button" aria-label="Gravar cadastro por voz">
+            <span class="mic-wave"></span>
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none">
+              <rect x="9" y="3" width="6" height="11" rx="3" fill="white" />
+              <path
+                d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <p class="mic-label">Segure e fale o lançamento</p>
+          <p id="transcript" class="transcript">
+            “João Silva, setecentos e cinquenta reais, vence daqui a trinta dias.”
+          </p>
+          <span class="pill">Somente no Premium</span>
+        </div>
+      </section>
+
+      <section id="recibos" class="ocr">
+        <div class="ocr-copy">
+          <p class="eyebrow">Premium</p>
+          <h2>O cliente pagou. Tira foto do recibo. O app abate.</h2>
+          <p>
+            A leitura de recibos mora na caderneta do cliente, embaixo do Abater
+            valor. Você anexa o comprovante, a IA lê o valor e baixa o saldo.
+            No grátis o abatimento é na mão, no teclado.
+          </p>
+        </div>
+        <div class="ocr-card">
+          <div class="receipt" aria-hidden="true">
+            <span>Comprovante PIX</span>
+            <strong>R$ 150,00</strong>
+            <small>Ana Costa · hoje</small>
+          </div>
+          <p class="ocr-result">Lido e abatido na caderneta.</p>
+          <span class="pill pill-light">Somente no Premium</span>
+        </div>
+      </section>
+
+      <section id="avisos" class="notifs">
+        <div class="section-head">
+          <p class="eyebrow">Lembretes no celular</p>
+          <h2>O prazo chega até você. Antes e no dia.</h2>
+        </div>
+        <div class="lock">
+          <p class="lock-time">03:05</p>
+          <p class="lock-date">segunda-feira, 6 de outubro</p>
+          <article class="push">
+            <header>
+              <span class="push-app">
+                <img src="./assets/tapago-icon.jpg" width="18" height="18" alt="" />
+                TáPago
+              </span>
+              <time>ontem</time>
+            </header>
+            <p>O prazo de Carlos Oliveira se encerra amanhã.</p>
+          </article>
+          <article class="push push-today">
+            <header>
+              <span class="push-app">
+                <img src="./assets/tapago-icon.jpg" width="18" height="18" alt="" />
+                TáPago
+              </span>
+              <time>agora</time>
+            </header>
+            <p>
+              O prazo de Carlos Oliveira vence hoje. Gostaria de mandar uma
+              mensagem?
+            </p>
+            <div class="push-actions">
+              <span>Agora não</span>
+              <span class="yes">Enviar cobrança</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="preco" class="price">
+        <div class="section-head">
+          <p class="eyebrow">Baixe grátis</p>
+          <h2>Venha ser Premium e abusar de suas vantagens.</h2>
+          <p>
+            O TáPago é gratuito para baixar, com clientes e lançamentos
+            ilimitados. A caderneta já fica na sua conta. O Premium é voz,
+            leitura de recibo e cobrança no seu texto.
+          </p>
+        </div>
+        <div class="plans">
+          <article class="plan">
+            <h3>Grátis</h3>
+            <p class="plan-kicker">Baixa e usa</p>
+            <ul>
+              <li>Download livre</li>
+              <li>Clientes e lançamentos ilimitados</li>
+              <li>Caderneta na sua conta</li>
+              <li>Dashboard e quem está atrasado</li>
+              <li>Abater valor, com ou sem juros</li>
+              <li>Cobrar no WhatsApp (tom amigável ou formal)</li>
+              <li>Chave PIX e notificações</li>
+            </ul>
+            <a class="btn btn-ghost" href="mailto:ola@tapago.app?subject=Quero%20baixar%20o%20TáPago"
+              >Baixar o app</a
+            >
+          </article>
+          <article class="plan featured">
+            <p class="badge">Voz e recibos, quando a mão cansar</p>
+            <h3>Premium</h3>
+            <p class="plan-kicker">R$ 39,90/mês · cancela quando quiser</p>
+            <ul>
+              <li>Tudo o que tem no plano livre</li>
+              <li>Cadastro por voz</li>
+              <li>OCR de recibos e comprovantes</li>
+              <li>Cobrança no seu texto</li>
+            </ul>
+            <a class="btn" href="mailto:ola@tapago.app?subject=Quero%20ser%20Premium"
+              >Quero ser Premium</a
+            >
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div>
+        <a class="brand brand-foot" href="#topo">
+          <img src="./assets/tapago-icon.jpg" width="36" height="36" alt="" />
+          TáPago
+        </a>
+        <p>Fiado, venda a prazo ou empréstimo — juros só se você quiser.</p>
+      </div>
+      <nav>
+        <a href="./termos.html">Termos de Uso</a>
+        <a href="./privacidade.html">Política de Privacidade</a>
+        <a href="./lgpd.html">LGPD</a>
+      </nav>
+      <p class="copy">
+        © 2026 TáPago. Todos os direitos reservados. Tratamento de dados
+        pessoais conforme a Lei nº 13.709/2018 (LGPD).
+      </p>
+    </footer>
+    <script src="./main.js"></script>
+  </body>
+</html>

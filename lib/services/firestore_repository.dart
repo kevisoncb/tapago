@@ -1,21 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../data/firestore_schema.dart';
+import '../data/seed_data.dart';
 import '../models/models.dart';
+import '../utils/constants.dart';
 import 'app_repository.dart';
 
 class FirestoreRepository implements AppRepository {
-  factory FirestoreRepository({
-    FirebaseFirestore? firestore,
-    required String userId,
-  }) {
-    return FirestoreRepository._(
-      firestore ?? FirebaseFirestore.instance,
-      userId,
-    );
-  }
-
-  FirestoreRepository._(this._db, this._userId);
+  FirestoreRepository({FirebaseFirestore? firestore, String? userId})
+      : _db = firestore ?? FirebaseFirestore.instance,
+        _userId = userId ?? AppConstants.demoUserId;
 
   final FirebaseFirestore _db;
   final String _userId;
@@ -33,12 +27,31 @@ class FirestoreRepository implements AppRepository {
   bool get usesFirestore => true;
 
   @override
-  Future<void> init() async {}
+  Future<void> init() async {
+    await ensureProfile(SeedData.user().copyWith(id: _userId));
+  }
 
   Future<void> ensureProfile(AppUser profile) async {
-    final snap = await _users.doc(_userId).get();
+    final snap = await _users.doc(profile.id).get();
     if (snap.exists) return;
-    await saveUser(profile);
+    await _users.doc(profile.id).set({
+      'email': profile.email,
+      'is_premium': profile.isPremium,
+      'chave_pix': profile.chavePix,
+      'nome': profile.nome,
+      'telefone': profile.telefone,
+      'whatsapp_conectado': profile.whatsappConectado,
+      'notificacoes_diarias': profile.notificacoesDiarias,
+      'acesso_biometrico': profile.acessoBiometrico,
+      'banco': profile.banco,
+      'agencia': profile.agencia,
+      'conta': profile.conta,
+      'mensagem_cobranca': profile.mensagemCobranca,
+      'premium_vence_em': profile.premiumVenceEm,
+      'premium_transaction_id': profile.premiumTransactionId,
+      'aceite_termos_em': profile.aceiteTermosEm,
+      'aceite_privacidade_em': profile.aceitePrivacidadeEm,
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -55,13 +68,18 @@ class FirestoreRepository implements AppRepository {
       'is_premium': user.isPremium,
       'chave_pix': user.chavePix,
       'nome': user.nome,
+      'telefone': user.telefone,
+      'whatsapp_conectado': user.whatsappConectado,
       'notificacoes_diarias': user.notificacoesDiarias,
       'acesso_biometrico': user.acessoBiometrico,
       'banco': user.banco,
       'agencia': user.agencia,
       'conta': user.conta,
+      'mensagem_cobranca': user.mensagemCobranca,
       'premium_vence_em': user.premiumVenceEm,
       'premium_transaction_id': user.premiumTransactionId,
+      'aceite_termos_em': user.aceiteTermosEm,
+      'aceite_privacidade_em': user.aceitePrivacidadeEm,
     }, SetOptions(merge: true));
   }
 
@@ -80,16 +98,7 @@ class FirestoreRepository implements AppRepository {
 
   @override
   Future<void> deleteDebt(String id) async {
-    final payments = await _payments
-        .where('user_id', isEqualTo: _userId)
-        .where('debt_id', isEqualTo: id)
-        .get();
-    final batch = _db.batch();
-    for (final doc in payments.docs) {
-      batch.delete(doc.reference);
-    }
-    batch.delete(_debts.doc(id));
-    await batch.commit();
+    await _debts.doc(id).delete();
   }
 
   @override

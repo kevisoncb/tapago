@@ -18,6 +18,8 @@ class SessionGate extends ChangeNotifier {
   StreamSubscription<User?>? _authSub;
   var _firebaseReady = false;
   String? _pendingName;
+  String? _pendingPhone;
+  DateTime? _pendingAceite;
 
   bool booting = true;
   String? bootError;
@@ -89,18 +91,28 @@ class SessionGate extends ChangeNotifier {
     required String nome,
     required String email,
     required String password,
+    String? passwordConfirm,
+    String? telefone,
+    bool acceptedTerms = false,
   }) async {
     final invalid = validateAccount(
       nome: nome,
       email: email,
       password: password,
       creating: true,
+      passwordConfirm: passwordConfirm,
+      telefone: telefone,
+      acceptedTerms: acceptedTerms,
     );
     if (invalid != null) return invalid;
+    final aceite = DateTime.now();
+    final phone = (telefone ?? '').replaceAll(RegExp(r'\D'), '');
 
     if (_firebaseReady) {
       try {
         _pendingName = nome.trim();
+        _pendingPhone = phone.isEmpty ? null : phone;
+        _pendingAceite = aceite;
         final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email.trim(),
           password: password,
@@ -110,6 +122,8 @@ class SessionGate extends ChangeNotifier {
         return null;
       } on FirebaseAuthException catch (error) {
         _pendingName = null;
+        _pendingPhone = null;
+        _pendingAceite = null;
         return authErrorMessage(error.code);
       }
     }
@@ -122,7 +136,11 @@ class SessionGate extends ChangeNotifier {
     if (error != null) return error;
     final session = await _accounts.current();
     if (session == null) return 'Não foi possível criar a conta.';
-    await _openLocal(session);
+    await _openLocal(
+      session,
+      telefone: phone.isEmpty ? null : phone,
+      aceite: aceite,
+    );
     notifyListeners();
     return null;
   }
@@ -149,13 +167,20 @@ class SessionGate extends ChangeNotifier {
 
     final email = user.email ?? '';
     final nome = (user.displayName ?? _pendingName ?? email.split('@').first).trim();
+    final telefone = _pendingPhone;
+    final aceite = _pendingAceite;
     _pendingName = null;
+    _pendingPhone = null;
+    _pendingAceite = null;
     final profile = AppUser(
       id: user.uid,
       nome: nome.isEmpty ? 'Usuário' : nome,
       email: email,
       isPremium: false,
       chavePix: '',
+      telefone: telefone,
+      aceiteTermosEm: aceite,
+      aceitePrivacidadeEm: aceite,
     );
     try {
       repository = await RepositoryFactory.open(
@@ -176,13 +201,20 @@ class SessionGate extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _openLocal(LocalSession session) async {
+  Future<void> _openLocal(
+    LocalSession session, {
+    String? telefone,
+    DateTime? aceite,
+  }) async {
     final profile = AppUser(
       id: session.id,
       nome: session.nome,
       email: session.email,
       isPremium: false,
       chavePix: '',
+      telefone: telefone,
+      aceiteTermosEm: aceite,
+      aceitePrivacidadeEm: aceite,
     );
     repository = await RepositoryFactory.open(
       userId: session.id,

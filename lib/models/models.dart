@@ -7,13 +7,18 @@ class AppUser {
     required this.email,
     required this.isPremium,
     required this.chavePix,
+    this.telefone,
+    this.whatsappConectado = false,
     this.notificacoesDiarias = true,
     this.acessoBiometrico = false,
     this.banco = '',
     this.agencia = '',
     this.conta = '',
+    this.mensagemCobranca = '',
     this.premiumVenceEm,
     this.premiumTransactionId,
+    this.aceiteTermosEm,
+    this.aceitePrivacidadeEm,
   });
 
   final String id;
@@ -21,13 +26,18 @@ class AppUser {
   final String email;
   final bool isPremium;
   final String chavePix;
+  final String? telefone;
+  final bool whatsappConectado;
   final bool notificacoesDiarias;
   final bool acessoBiometrico;
   final String banco;
   final String agencia;
   final String conta;
+  final String mensagemCobranca;
   final DateTime? premiumVenceEm;
   final String? premiumTransactionId;
+  final DateTime? aceiteTermosEm;
+  final DateTime? aceitePrivacidadeEm;
 
   bool get premiumAtivo => premiumIsActive(
         isPremium: isPremium,
@@ -41,13 +51,18 @@ class AppUser {
     String? email,
     bool? isPremium,
     String? chavePix,
+    String? telefone,
+    bool? whatsappConectado,
     bool? notificacoesDiarias,
     bool? acessoBiometrico,
     String? banco,
     String? agencia,
     String? conta,
+    String? mensagemCobranca,
     DateTime? premiumVenceEm,
     String? premiumTransactionId,
+    DateTime? aceiteTermosEm,
+    DateTime? aceitePrivacidadeEm,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -55,13 +70,18 @@ class AppUser {
       email: email ?? this.email,
       isPremium: isPremium ?? this.isPremium,
       chavePix: chavePix ?? this.chavePix,
+      telefone: telefone ?? this.telefone,
+      whatsappConectado: whatsappConectado ?? this.whatsappConectado,
       notificacoesDiarias: notificacoesDiarias ?? this.notificacoesDiarias,
       acessoBiometrico: acessoBiometrico ?? this.acessoBiometrico,
       banco: banco ?? this.banco,
       agencia: agencia ?? this.agencia,
       conta: conta ?? this.conta,
+      mensagemCobranca: mensagemCobranca ?? this.mensagemCobranca,
       premiumVenceEm: premiumVenceEm ?? this.premiumVenceEm,
       premiumTransactionId: premiumTransactionId ?? this.premiumTransactionId,
+      aceiteTermosEm: aceiteTermosEm ?? this.aceiteTermosEm,
+      aceitePrivacidadeEm: aceitePrivacidadeEm ?? this.aceitePrivacidadeEm,
     );
   }
 
@@ -72,13 +92,18 @@ class AppUser {
       'email': email,
       'is_premium': isPremium,
       'chave_pix': chavePix,
+      'telefone': telefone,
+      'whatsapp_conectado': whatsappConectado,
       'notificacoes_diarias': notificacoesDiarias,
       'acesso_biometrico': acessoBiometrico,
       'banco': banco,
       'agencia': agencia,
       'conta': conta,
+      'mensagem_cobranca': mensagemCobranca,
       'premium_vence_em': premiumVenceEm?.toIso8601String(),
       'premium_transaction_id': premiumTransactionId,
+      'aceite_termos_em': aceiteTermosEm?.toIso8601String(),
+      'aceite_privacidade_em': aceitePrivacidadeEm?.toIso8601String(),
     };
   }
 
@@ -89,13 +114,18 @@ class AppUser {
       email: map['email'] as String? ?? '',
       isPremium: map['is_premium'] as bool? ?? false,
       chavePix: map['chave_pix'] as String? ?? '',
+      telefone: map['telefone'] as String?,
+      whatsappConectado: map['whatsapp_conectado'] as bool? ?? false,
       notificacoesDiarias: map['notificacoes_diarias'] as bool? ?? true,
       acessoBiometrico: map['acesso_biometrico'] as bool? ?? false,
       banco: map['banco'] as String? ?? '',
       agencia: map['agencia'] as String? ?? '',
       conta: map['conta'] as String? ?? '',
+      mensagemCobranca: map['mensagem_cobranca'] as String? ?? '',
       premiumVenceEm: _parseDate(map['premium_vence_em']),
       premiumTransactionId: map['premium_transaction_id'] as String?,
+      aceiteTermosEm: _parseDate(map['aceite_termos_em']),
+      aceitePrivacidadeEm: _parseDate(map['aceite_privacidade_em']),
     );
   }
 

@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "TáPago — gestão de débitos e cobranças.",
+    "description": "TáPago — caderneta de fiado, a prazo e empréstimo.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -13,6 +13,8 @@ class AppColors {
   static const dangerSoft = Color(0xFFFFF1F1);
   static const dangerBorder = Color(0xFFFECACA);
   static const success = Color(0xFF22C55E);
+  static const whatsapp = Color(0xFF25D366);
+  static const whatsappSoft = Color(0xFFE8F8EF);
   static const successSoft = Color(0xFFE9F9EF);
   static const teal = Color(0xFF2EE0C5);
   static const card = Colors.white;

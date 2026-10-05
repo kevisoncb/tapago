@@ -86,21 +86,8 @@ class SeedData {
         debtId: 'debt_ricardo',
         userId: uid,
         valor: 500,
-        data: DateTime(2023, 10, 15),
-      ),
-      Payment(
-        id: 'pay_ricardo_2',
-        debtId: 'debt_ricardo',
-        userId: uid,
-        valor: 480,
-        data: DateTime(2023, 9, 12),
-      ),
-      Payment(
-        id: 'pay_ricardo_3',
-        debtId: 'debt_ricardo',
-        userId: uid,
-        valor: 450,
-        data: DateTime(2023, 8, 10),
+        data: DateTime(2026, 9, 15),
+        descricao: 'Abatimento',
       ),
       Payment(
         id: 'pay_carlos_1',
@@ -108,6 +95,7 @@ class SeedData {
         userId: uid,
         valor: 150,
         data: DateTime(2026, 8, 2),
+        descricao: 'Abatimento',
       ),
     ];
   }

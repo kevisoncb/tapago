@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,7 +12,10 @@ import '../services/whatsapp_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
+import '../utils/masks.dart';
+import '../widgets/amount_keypad.dart';
 import '../widgets/common.dart';
+import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
 import 'premium_page.dart';
 
@@ -26,7 +30,7 @@ class ClientProfilePage extends StatelessWidget {
     final current =
         state.debts.where((item) => item.id == debt.id).firstOrNull ?? debt;
     final history = state.paymentsFor(current.id);
-    final balance = state.balanceFor(current);
+    final saldo = state.saldoOf(current);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -44,10 +48,6 @@ class ClientProfilePage extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.edit_outlined),
-          ),
-          IconButton(
-            onPressed: () => _delete(context, current),
-            icon: const Icon(Icons.delete_outline_rounded),
           ),
         ],
       ),
@@ -78,6 +78,18 @@ class ClientProfilePage extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          if (current.telefone.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              formatPhoneBr(current.telefone),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.mutedDark,
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -107,22 +119,70 @@ class ClientProfilePage extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 20),
-          _ValueCard(debt: current, balance: balance),
-          const SizedBox(height: 26),
-          Text(
-            'Ações Rápidas WhatsApp',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+          _ValueCard(debt: current, saldo: saldo, balance: state.balanceOf(current)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: current.statusPago || saldo <= 0
+                  ? null
+                  : () => _abater(context, current, saldo),
+              icon: const Icon(Icons.remove_circle_outline_rounded),
+              label: const Text('Abater valor'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: const Color(0xFFE8EEF6),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                textStyle: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
             ),
+          ),
+          const SizedBox(height: 12),
+          _OcrButton(
+            debt: current,
+            isPremium: state.user.isPremium,
+          ),
+          const SizedBox(height: 26),
+          Row(
+            children: [
+              const WhatsAppMark(size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Enviar no WhatsApp',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Toca num botão. Abre o seu WhatsApp com a mensagem.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.mutedDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: _WhatsAppAction(
-                  icon: Icons.alarm_rounded,
-                  label: 'Lembrete\nPreventivo',
+                  label: 'Lembrete',
                   onTap: () => _openWhatsApp(
                     context,
                     current,
@@ -133,8 +193,7 @@ class ClientProfilePage extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _WhatsAppAction(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: 'Cobrar Hoje',
+                  label: 'Cobrar hoje',
                   onTap: () => _openWhatsApp(
                     context,
                     current,
@@ -145,10 +204,7 @@ class ClientProfilePage extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _WhatsAppAction(
-                  icon: Icons.error_outline_rounded,
-                  label: 'Cobrança de\nAtraso',
-                  tint: const Color(0xFFFFF1F2),
-                  iconColor: AppColors.danger,
+                  label: 'Atraso',
                   onTap: () => _openWhatsApp(
                     context,
                     current,
@@ -158,62 +214,30 @@ class ClientProfilePage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _OcrButton(debt: current),
-          if (!current.statusPago) ...[
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: () => context.read<AppController>().markPaid(current),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.success,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Color(0xFFBBF7D0)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Text(
-                'Marcar como pago',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
           const SizedBox(height: 26),
           Row(
             children: [
               Text(
-                'Histórico de Pagamentos',
+                'Histórico da caderneta',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => _PaymentHistoryPage(
-                        nome: current.nome,
-                        items: history,
-                      ),
-                    ),
-                  );
-                },
-                child: Text(
-                  'Ver Tudo',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
+              Text(
+                'Ver Tudo',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _PaymentHistory(items: history.take(3).toList()),
-          if (!state.user.premiumAtivo) ...[
+          _PaymentHistory(items: history),
+          if (!state.user.isPremium) ...[
             const SizedBox(height: 18),
             const _MiniPremiumBanner(),
           ],
@@ -222,55 +246,180 @@ class ClientProfilePage extends StatelessWidget {
     );
   }
 
+  Future<void> _abater(BuildContext context, Debt current, double saldo) async {
+    final state = context.read<AppController>();
+    final balance = state.balanceOf(current);
+    if (balance.saldo <= 0.009) return;
+
+    var kind = AbateKind.parcial;
+    if (current.taxaJuros > 0) {
+      final chosen = await showAbateKindSheet(
+        context: context,
+        jurosEmAberto: balance.jurosRestantes,
+        saldo: balance.saldo,
+      );
+      if (chosen == null || !context.mounted) return;
+      kind = chosen;
+    }
+
+    final somenteJuros = kind == AbateKind.juros;
+    final valor = kind == AbateKind.total
+        ? balance.saldo
+        : await showAmountKeypad(
+            context: context,
+            title: somenteJuros
+                ? 'Quanto entrou de juros do mês?'
+                : 'Quanto entrou agora?',
+            confirmLabel: 'Abater',
+            max: somenteJuros ? balance.jurosRestantes : balance.saldo,
+            maxLabel: somenteJuros
+                ? 'Juros do mês ${Money.full(balance.jurosRestantes)}'
+                : 'Saldo ${Money.full(balance.saldo)}',
+          );
+    if (valor == null || !context.mounted) return;
+    final error = await context.read<AppController>().abate(
+          debt: current,
+          valor: valor,
+          somenteJuros: somenteJuros,
+        );
+    if (!context.mounted) return;
+    final next = context.read<AppController>().balanceOf(current);
+    showTapagoSnack(
+      context,
+      error ?? _abateSnack(kind: kind, valor: valor, next: next),
+    );
+  }
+
+  String _abateSnack({
+    required AbateKind kind,
+    required double valor,
+    required DebtBalance next,
+  }) {
+    if (next.quitado) {
+      return kind == AbateKind.juros
+          ? 'Quitada com o juros do mês.'
+          : 'Quitada no valor total.';
+    }
+    if (kind == AbateKind.juros) {
+      return '${Money.full(valor)} de juros do mês. Principal ${Money.full(next.principalRestante)}.';
+    }
+    if (kind == AbateKind.parcial) {
+      return '${Money.full(valor)} na parte do valor. Saldo ${Money.full(next.saldo)}.';
+    }
+    return '${Money.full(valor)} no valor total. Saldo ${Money.full(next.saldo)}.';
+  }
+
   Future<void> _openWhatsApp(
     BuildContext context,
     Debt current,
     WhatsAppAction action,
   ) async {
-    final controller = context.read<AppController>();
-    final pix = controller.user.chavePix;
+    final state = context.read<AppController>();
+    final custom = state.user.mensagemCobranca.trim();
+    final useCustom = state.user.isPremium && custom.isNotEmpty;
+
+    var tone = WhatsAppTone.amigavel;
+    if (!useCustom) {
+      final chosen = await showModalBottomSheet<WhatsAppTone>(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Como quer soar?',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'A mensagem sai no seu WhatsApp. Escolha o tom.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.mutedDark,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: Color(0xFFEEF2F7)),
+                    ),
+                    title: Text(
+                      'Amigável',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Oi, passando só para atualizar a caderneta...',
+                    ),
+                    onTap: () =>
+                        Navigator.pop(sheetContext, WhatsAppTone.amigavel),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: Color(0xFFEEF2F7)),
+                    ),
+                    title: Text(
+                      'Formal',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Olá, o saldo da caderneta vence hoje...',
+                    ),
+                    onTap: () =>
+                        Navigator.pop(sheetContext, WhatsAppTone.formal),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      if (chosen == null || !context.mounted) return;
+      tone = chosen;
+    }
+
     final ok = await WhatsAppService.open(
       action: action,
+      tone: tone,
       debt: current,
-      chavePix: pix,
-      valorAberto: controller.balanceFor(current).saldo,
+      saldo: state.saldoOf(current),
+      chavePix: state.user.chavePix,
+      customTemplate: custom,
+      isPremium: state.user.isPremium,
     );
     if (!context.mounted) return;
     if (!ok) {
       showTapagoSnack(context, 'Não foi possível abrir o WhatsApp.');
     }
   }
-
-  Future<void> _delete(BuildContext context, Debt current) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir débito'),
-        content: Text(
-          'Excluir ${current.nome} e o histórico de pagamentos desta cobrança?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-    await context.read<AppController>().deleteDebt(current.id);
-    if (context.mounted) Navigator.pop(context);
-  }
 }
 
 class _ValueCard extends StatelessWidget {
-  const _ValueCard({required this.debt, required this.balance});
+  const _ValueCard({
+    required this.debt,
+    required this.saldo,
+    required this.balance,
+  });
 
   final Debt debt;
+  final double saldo;
   final DebtBalance balance;
 
   @override
@@ -289,7 +438,7 @@ class _ValueCard extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Valor Atualizado',
+            'Saldo da caderneta',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white.withValues(alpha: 0.9),
               fontWeight: FontWeight.w600,
@@ -297,7 +446,7 @@ class _ValueCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            Money.full(balance.saldo),
+            Money.full(saldo),
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontSize: 36,
@@ -305,25 +454,33 @@ class _ValueCard extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              balance.pago > 0
-                  ? 'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% sobre o restante · pago ${Money.full(balance.pago)}'
-                  : 'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% sobre o restante',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+          if (debt.taxaJuros > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.trending_up_rounded, size: 14, color: Colors.white),
+                  const SizedBox(width: 6),
+                  Text(
+                    balance.jurosRestantes > 0.009
+                        ? 'Juros em aberto ${Money.full(balance.jurosRestantes)} · ${debt.taxaJuros.toStringAsFixed(0)}%'
+                        : 'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% aplicados',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -332,18 +489,12 @@ class _ValueCard extends StatelessWidget {
 
 class _WhatsAppAction extends StatelessWidget {
   const _WhatsAppAction({
-    required this.icon,
     required this.label,
     required this.onTap,
-    this.tint = AppColors.primarySoft,
-    this.iconColor = AppColors.primary,
   });
 
-  final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color tint;
-  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -357,16 +508,11 @@ class _WhatsAppAction extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFF0F3F8)),
+            border: Border.all(color: const Color(0xFFE6F6EA)),
           ),
           child: Column(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
-                child: Icon(icon, color: iconColor),
-              ),
+              const WhatsAppMark(size: 48),
               const SizedBox(height: 10),
               Text(
                 label,
@@ -386,14 +532,23 @@ class _WhatsAppAction extends StatelessWidget {
 }
 
 class _OcrButton extends StatelessWidget {
-  const _OcrButton({required this.debt});
+  const _OcrButton({required this.debt, required this.isPremium});
 
   final Debt debt;
+  final bool isPremium;
 
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
-      onPressed: () => _pick(context),
+      onPressed: () {
+        if (!isPremium) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PremiumPage()),
+          );
+          return;
+        }
+        _pick(context);
+      },
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -406,7 +561,7 @@ class _OcrButton extends StatelessWidget {
           const Icon(Icons.document_scanner_outlined, size: 20),
           const SizedBox(width: 8),
           Text(
-            'Anexar Comprovante (OCR)',
+            isPremium ? 'Anexar comprovante' : 'Anexar comprovante · Premium',
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
           ),
         ],
@@ -415,31 +570,66 @@ class _OcrButton extends StatelessWidget {
   }
 
   Future<void> _pick(BuildContext context) async {
+    if (kIsWeb) {
+      showTapagoSnack(
+        context,
+        'A leitura do comprovante funciona no celular. Abra o TáPago no Android.',
+      );
+      return;
+    }
+
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Tirar foto'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Escolher da galeria'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-          ],
-        ),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Comprovante',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'O app lê o valor na foto e pergunta se abate.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppColors.mutedDark,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: const Text('Tirar foto'),
+                  onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_outlined),
+                  title: const Text('Escolher da galeria'),
+                  onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
     if (source == null || !context.mounted) return;
 
     final file = await ImagePicker().pickImage(
       source: source,
-      imageQuality: 85,
+      imageQuality: 92,
+      maxWidth: 2000,
     );
     if (file == null || !context.mounted) return;
 
@@ -448,90 +638,86 @@ class _OcrButton extends StatelessWidget {
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
     String? text;
     try {
-      text = await readReceiptText(file.path);
-    } catch (_) {
-      text = null;
+      if (file.path.isNotEmpty) {
+        text = await readReceiptText(file.path);
+      }
+      text ??= await readReceiptBytes(await file.readAsBytes());
+    } catch (error) {
+      debugPrint('OCR: $error');
     }
     if (!context.mounted) return;
     Navigator.of(context).pop();
 
-    if (text == null || text.isEmpty) {
+    final lido = text == null ? null : extractReceiptAmount(text);
+    if (lido == null || lido <= 0) {
       showTapagoSnack(
         context,
-        'Não consegui ler o comprovante. Tente uma foto mais nítida.',
+        'Não achei o valor nesse comprovante. Tente outra foto, mais nítida.',
       );
       return;
     }
-    final amount = extractReceiptAmount(text);
-    if (amount == null) {
-      showTapagoSnack(context, 'Não encontrei um valor no comprovante.');
+
+    final state = context.read<AppController>();
+    final current =
+        state.debts.where((item) => item.id == debt.id).firstOrNull ?? debt;
+    final balance = state.balanceOf(current);
+    if (balance.saldo <= 0.009) {
+      showTapagoSnack(context, 'Essa caderneta já está quitada.');
       return;
     }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Valor encontrado'),
-        content: Text(
-          'Registrar pagamento de ${Money.full(amount)} neste débito?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Registrar'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
+    var kind = AbateKind.parcial;
+    if (current.taxaJuros > 0) {
+      final chosen = await showAbateKindSheet(
+        context: context,
+        jurosEmAberto: balance.jurosRestantes,
+        saldo: balance.saldo,
+      );
+      if (chosen == null || !context.mounted) return;
+      kind = chosen;
+    }
 
-    final state = context.read<AppController>();
-    await state.addPayment(
-      Payment(
-        id: state.newId(),
-        debtId: debt.id,
-        userId: state.user.id,
-        valor: amount,
-        data: DateTime.now(),
-        descricao: 'Comprovante lido',
-      ),
+    final somenteJuros = kind == AbateKind.juros;
+    final teto = somenteJuros ? balance.jurosRestantes : balance.saldo;
+    if (teto <= 0.009) {
+      showTapagoSnack(
+        context,
+        'Não há valor em aberto para esse tipo de abate.',
+      );
+      return;
+    }
+
+    final sugerido =
+        kind == AbateKind.total ? balance.saldo : (lido > teto ? teto : lido);
+    final valor = await showAmountKeypad(
+      context: context,
+      title: 'Valor lido no comprovante',
+      confirmLabel: 'Abater',
+      max: teto,
+      maxLabel: somenteJuros
+          ? 'Juros do mês ${Money.full(teto)}'
+          : 'Saldo ${Money.full(teto)}',
+      initial: sugerido,
+    );
+    if (valor == null || !context.mounted) return;
+
+    final error = await state.abate(
+      debt: current,
+      valor: valor,
+      somenteJuros: somenteJuros,
     );
     if (!context.mounted) return;
-    showTapagoSnack(context, 'Pagamento de ${Money.full(amount)} registrado.');
-  }
-}
-
-class _PaymentHistoryPage extends StatelessWidget {
-  const _PaymentHistoryPage({required this.nome, required this.items});
-
-  final String nome;
-  final List<Payment> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: Text(nome)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
-          Text(
-            'Histórico de Pagamentos',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _PaymentHistory(items: items),
-        ],
-      ),
+    showTapagoSnack(
+      context,
+      error ??
+          (somenteJuros
+              ? 'Comprovante: ${Money.full(valor)} de juros do mês.'
+              : kind == AbateKind.total
+                  ? 'Comprovante: valor total abatido.'
+                  : 'Comprovante: ${Money.full(valor)} na parte do valor.'),
     );
   }
 }
@@ -551,7 +737,7 @@ class _PaymentHistory extends StatelessWidget {
           border: Border.all(color: const Color(0xFFF0F3F8)),
         ),
         child: Text(
-          'Nenhum pagamento registrado ainda.',
+          'Nenhum abatimento ainda. Use Abater valor quando o cliente deixar alguma quantia. Com juros, o app pergunta se foi o total, uma parte ou só o juro do mês.',
           style: GoogleFonts.plusJakartaSans(color: AppColors.mutedDark),
         ),
       );
@@ -588,13 +774,17 @@ class _PaymentHistory extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          items[i].descricao,
+                          paymentKindLabel(items[i].descricao),
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         Text(
-                          Dates.history(items[i].data),
+                          [
+                            if (paymentKindHint(items[i].descricao).isNotEmpty)
+                              paymentKindHint(items[i].descricao),
+                            Dates.history(items[i].data),
+                          ].join(' · '),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             color: AppColors.mutedDark,
@@ -646,7 +836,7 @@ class _MiniPremiumBanner extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
                 ),
                 Text(
-                  'Automatize essas cobranças com IA',
+                  'Voz e leitura de recibos, quando a mão cansar',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     color: AppColors.mutedDark,

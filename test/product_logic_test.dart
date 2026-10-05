@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tapago_app/models/models.dart';
+import 'package:tapago_app/services/client_match.dart';
 import 'package:tapago_app/services/debt_balance.dart';
 import 'package:tapago_app/services/auth_messages.dart';
 import 'package:tapago_app/services/pix_status.dart';
@@ -6,18 +8,21 @@ import 'package:tapago_app/services/password_hash.dart';
 import 'package:tapago_app/services/receipt_amount.dart';
 import 'package:tapago_app/services/trust_score.dart';
 import 'package:tapago_app/services/voice_debt_parser.dart';
+import 'package:tapago_app/services/whatsapp_service.dart';
+import 'package:tapago_app/utils/formatters.dart';
+import 'package:tapago_app/utils/masks.dart';
 import 'package:tapago_app/utils/premium_access.dart';
 
 void main() {
-  test('pagamento parcial abate e o juro fica no restante', () {
-    final aberto = debtBalance(principal: 100, taxaPercent: 10, paid: 0);
+  test('pagamento do total baixa juros e depois o principal', () {
+    final aberto = debtBalance(principal: 100, taxaPercent: 10);
     expect(aberto.saldo, 110);
     expect(aberto.jurosRestantes, 10);
 
     final parcial = debtBalance(principal: 100, taxaPercent: 10, paid: 40);
     expect(parcial.saldo, 70);
-    expect(parcial.principalRestante, closeTo(63.64, 0.01));
-    expect(parcial.jurosRestantes, closeTo(6.36, 0.01));
+    expect(parcial.principalRestante, 70);
+    expect(parcial.jurosRestantes, 0);
 
     final outro = debtBalance(principal: 100, taxaPercent: 10, paid: 70);
     expect(outro.saldo, 40);
@@ -25,6 +30,30 @@ void main() {
     final pago = debtBalance(principal: 100, taxaPercent: 10, paid: 110);
     expect(pago.quitado, isTrue);
     expect(pago.saldo, 0);
+  });
+
+  test('pagar só juros não come o principal', () {
+    final depois = debtBalance(
+      principal: 1000,
+      taxaPercent: 20,
+      lancamentos: const [LedgerPay(valor: 200, somenteJuros: true)],
+    );
+    expect(depois.jurosRestantes, 0);
+    expect(depois.principalRestante, 1000);
+    expect(depois.saldo, 1000);
+  });
+
+  test('depois dos juros o total baixa o principal', () {
+    final depois = debtBalance(
+      principal: 1000,
+      taxaPercent: 20,
+      lancamentos: const [
+        LedgerPay(valor: 200, somenteJuros: true),
+        LedgerPay(valor: 1000),
+      ],
+    );
+    expect(depois.quitado, isTrue);
+    expect(depois.saldo, 0);
   });
 
   test('premium só vale com data futura', () {
@@ -86,6 +115,10 @@ Valor: R\$ 1.250,00
 Troco: R\$ 0,00
 ''';
     expect(extractReceiptAmount(receipt), 1250);
+    expect(
+      extractReceiptAmount('Comprovante PIX\nValor pago: R\$ 200,00'),
+      200,
+    );
   });
 
   test('voz preenche nome, telefone, valor, juros e prazo', () {
@@ -98,6 +131,14 @@ Troco: R\$ 0,00
     expect(draft.valor, 750);
     expect(draft.juros, 5);
     expect(draft.vencimento, DateTime(2026, 11, 1));
+
+    final solto = parseVoiceDebt(
+      'Carlos 450 reais vence amanhã',
+      now: DateTime(2026, 10, 5),
+    );
+    expect(solto.nome, 'Carlos');
+    expect(solto.valor, 450);
+    expect(solto.vencimento, DateTime(2026, 10, 6));
   });
 
   test('senha errada não gera o mesmo hash', () {
@@ -112,13 +153,22 @@ Troco: R\$ 0,00
     expect(pixStatusGrantsPremium('CONFIRMED'), isTrue);
   });
 
-  test('cadastro exige nome, e-mail e senha', () {
+  test('mensagem pronta preenche nome e valor', () {
+    expect(WhatsAppService.preview(''), contains('Carlos'));
+    expect(
+      WhatsAppService.preview('Oi {primeiro}, paga {valor}{pix}'),
+      'Oi Carlos, paga R\$ 450,00 PIX: sua-chave',
+    );
+  });
+
+  test('cadastro exige nome, e-mail, senha e aceite dos termos', () {
     expect(
       validateAccount(
         nome: 'A',
         email: 'a@b.com',
         password: '123456',
         creating: true,
+        acceptedTerms: true,
       ),
       isNotNull,
     );
@@ -128,8 +178,165 @@ Troco: R\$ 0,00
         email: 'ana@email.com',
         password: '123456',
         creating: true,
+        acceptedTerms: false,
+      ),
+      'Aceite os Termos de Uso e a Política de Privacidade para criar a conta.',
+    );
+    expect(
+      validateAccount(
+        nome: 'Ana',
+        email: 'ana@email.com',
+        password: '123456',
+        creating: true,
+        passwordConfirm: '123457',
+        acceptedTerms: true,
+      ),
+      'As senhas não coincidem.',
+    );
+    expect(
+      validateAccount(
+        nome: 'Ana',
+        email: 'ana@email.com',
+        password: '123456',
+        creating: true,
+        passwordConfirm: '123456',
+        acceptedTerms: true,
       ),
       isNull,
     );
+  });
+
+  test('máscaras de telefone, CPF, PIX e dinheiro', () {
+    expect(formatPhoneBr('11988881234'), '(11) 98888-1234');
+    expect(formatCpf('12345678909'), '123.456.789-09');
+    expect(isValidCpf('123.456.789-09'), isTrue);
+    expect(isValidCpf('11111111111'), isFalse);
+    expect(formatPixKey('ana@email.com'), 'ana@email.com');
+    expect(formatPixKey('11988881234'), '(11) 98888-1234');
+    expect(parseMoneyInput(r'R$ 1.250,50'), 1250.50);
+    expect(formatPercentInput('20,00'), '20,00');
+    expect(parsePercentInput('20,00'), 20);
+  });
+
+  test('histórico diz se foi juros ou valor total', () {
+    expect(paymentKindLabel('Juros'), 'Somente juros do mês');
+    expect(paymentKindLabel('Abatimento'), 'Parte do valor');
+    expect(paymentKindLabel('Quitação'), 'Valor total');
+  });
+
+  test('cliente duplicado bate nome e telefone', () {
+    final carlos = Debt(
+      id: '1',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '11987654321',
+      valorPrincipal: 100,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 10, 5),
+      statusPago: false,
+      clientScore: 80,
+    );
+    final same = findClientHits(
+      debts: [carlos],
+      nome: 'Carlos Oliveira',
+      telefone: '(11) 98765-4321',
+    );
+    expect(same.single.confirmed, isTrue);
+
+    final onlyName = findClientHits(
+      debts: [carlos],
+      nome: 'Carlos Oliveira',
+      telefone: '21999998888',
+    );
+    expect(onlyName.single.nameTaken, isTrue);
+
+    final onlyPhone = findClientHits(
+      debts: [carlos],
+      nome: 'Outro Nome',
+      telefone: '11987654321',
+    );
+    expect(onlyPhone.single.phoneTaken, isTrue);
+
+    expect(
+      firstBlockingHit(
+        debts: [carlos],
+        nome: 'Outro Nome',
+        telefone: '11987654321',
+      )?.phoneTaken,
+      isTrue,
+    );
+    expect(
+      firstBlockingHit(
+        debts: [carlos],
+        nome: 'Carlos Oliveira',
+        telefone: '11987654321',
+      ),
+      isNotNull,
+    );
+    expect(
+      firstBlockingHit(
+        debts: [carlos],
+        nome: 'Carlos Oliveira',
+        telefone: '11987654321',
+        allowPhone: '11987654321',
+        allowNome: 'Carlos Oliveira',
+      ),
+      isNull,
+    );
+    expect(
+      firstBlockingHit(
+        debts: [carlos],
+        nome: 'Carlos Oliveira',
+        telefone: '21999998888',
+      ),
+      isNull,
+    );
+
+    expect(cadernetaMatchesQuery(carlos, 'oliveira'), isTrue);
+    expect(cadernetaMatchesQuery(carlos, '98765'), isTrue);
+    expect(cadernetaMatchesQuery(carlos, 'mariana'), isFalse);
+  });
+
+  test('caderneta agrupa a mesma pessoa e mostra quitado junto', () {
+    final aberto = Debt(
+      id: '1',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '11987654321',
+      valorPrincipal: 450,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 10, 5),
+      statusPago: false,
+      clientScore: 80,
+    );
+    final quitado = Debt(
+      id: '2',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '(11) 98765-4321',
+      valorPrincipal: 200,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 8, 1),
+      statusPago: true,
+      clientScore: 80,
+    );
+    final outra = Debt(
+      id: '3',
+      userId: 'u',
+      nome: 'Mariana',
+      telefone: '21999998888',
+      valorPrincipal: 80,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 9, 1),
+      statusPago: true,
+      clientScore: 80,
+    );
+    final grouped = groupContacts([aberto, quitado, outra]);
+    expect(grouped, hasLength(2));
+    expect(grouped.first.nome, 'Carlos Oliveira');
+    expect(grouped.first.debts, hasLength(2));
+    expect(grouped.last.nome, 'Mariana');
+    expect(contactMatchesQuery(grouped.first, 'carlos'), isTrue);
+    expect(contactMatchesQuery(grouped.first, 'mariana'), isFalse);
   });
 }

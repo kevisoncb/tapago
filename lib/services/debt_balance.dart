@@ -1,7 +1,7 @@
 /// Saldo de um débito depois dos pagamentos.
 ///
-/// O combinado é o principal mais a taxa. Cada pagamento abate esse total.
-/// O que sobra ainda carrega a mesma taxa, então o juro fica só sobre o restante.
+/// Juros do ciclo = principal × taxa. Pagamento marcado como juros só baixa
+/// essa fatia. Pagamento do total baixa juros em aberto e depois o principal.
 class DebtBalance {
   const DebtBalance({
     required this.contratado,
@@ -20,36 +20,71 @@ class DebtBalance {
   bool get quitado => saldo <= 0.009;
 }
 
+enum AbateKind { juros, parcial, total }
+
+class LedgerPay {
+  const LedgerPay({required this.valor, this.somenteJuros = false});
+
+  final double valor;
+  final bool somenteJuros;
+}
+
 DebtBalance debtBalance({
   required double principal,
   required double taxaPercent,
-  required double paid,
+  double paid = 0,
+  List<LedgerPay> lancamentos = const [],
   bool quitado = false,
 }) {
   final rate = taxaPercent / 100;
-  final contracted = _money(principal * (1 + rate));
-  final paidSafe = paid < 0 ? 0.0 : paid;
+  final jurosCiclo = _money(principal * rate);
+  final contracted = _money(principal + jurosCiclo);
+  final entries = [
+    ...lancamentos,
+    if (paid > 0 && lancamentos.isEmpty) LedgerPay(valor: paid),
+  ];
+
   if (quitado) {
+    final pago = entries.fold<double>(0, (sum, item) => sum + item.valor);
     return DebtBalance(
       contratado: contracted,
-      pago: paidSafe,
+      pago: pago,
       saldo: 0,
       principalRestante: 0,
       jurosRestantes: 0,
     );
   }
 
-  final raw = contracted - paidSafe;
-  final saldo = raw <= 0.009 ? 0.0 : _money(raw);
-  final divisor = 1 + rate;
-  final principalRestante = divisor == 0 ? saldo : _money(saldo / divisor);
-  final juros = _money(saldo - principalRestante);
+  var restoPrincipal = principal;
+  var restoJuros = jurosCiclo;
+  var pago = 0.0;
+
+  for (final item in entries) {
+    var left = item.valor < 0 ? 0.0 : item.valor;
+    if (left <= 0) continue;
+    pago += left;
+
+    if (item.somenteJuros) {
+      final take = left < restoJuros ? left : restoJuros;
+      restoJuros = _money(restoJuros - take);
+      continue;
+    }
+
+    final takeJuros = left < restoJuros ? left : restoJuros;
+    restoJuros = _money(restoJuros - takeJuros);
+    left = _money(left - takeJuros);
+    if (left <= 0.009) continue;
+    final takePrincipal = left < restoPrincipal ? left : restoPrincipal;
+    restoPrincipal = _money(restoPrincipal - takePrincipal);
+  }
+
+  final saldo = _money(restoPrincipal + restoJuros);
   return DebtBalance(
     contratado: contracted,
-    pago: paidSafe,
-    saldo: saldo,
-    principalRestante: principalRestante,
-    jurosRestantes: juros < 0 ? 0 : juros,
+    pago: pago,
+    saldo: saldo <= 0.009 ? 0 : saldo,
+    principalRestante: restoPrincipal < 0 ? 0 : restoPrincipal,
+    jurosRestantes: restoJuros < 0 ? 0 : restoJuros,
   );
 }
 

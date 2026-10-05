@@ -1,5 +1,5 @@
 name: tapago_app
-description: TáPago — gestão de débitos e cobranças.
+description: TáPago — caderneta de fiado, a prazo e empréstimo.
 publish_to: "none"
 version: 2.4.0+24
 
@@ -36,8 +36,19 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  image_path: assets/brand/tapago-icon.jpg
+  adaptive_icon_background: "#2F6BFF"
+  adaptive_icon_foreground: assets/brand/tapago-icon.jpg
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/brand/

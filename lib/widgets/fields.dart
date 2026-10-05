@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
@@ -17,6 +18,13 @@ class AppTextField extends StatelessWidget {
     this.suffix,
     this.obscureText = false,
     this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
+    this.autofillHints,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.textInputAction,
+    this.maxLength,
+    this.maxLines = 1,
   });
 
   final String label;
@@ -30,6 +38,13 @@ class AppTextField extends StatelessWidget {
   final Widget? suffix;
   final bool obscureText;
   final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
+  final Iterable<String>? autofillHints;
+  final bool autocorrect;
+  final bool enableSuggestions;
+  final TextInputAction? textInputAction;
+  final int? maxLength;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +68,20 @@ class AppTextField extends StatelessWidget {
           onTap: onTap,
           obscureText: obscureText,
           textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
+          autofillHints: autofillHints,
+          autocorrect: autocorrect,
+          enableSuggestions: enableSuggestions,
+          textInputAction: textInputAction,
+          maxLength: maxLength,
+          maxLines: obscureText ? 1 : maxLines,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
           decoration: InputDecoration(
             hintText: hint,
+            counterText: '',
             prefixIcon: Icon(icon, color: AppColors.muted, size: 20),
             suffixIcon: suffix,
           ),

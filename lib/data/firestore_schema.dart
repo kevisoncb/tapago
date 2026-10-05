@@ -5,13 +5,18 @@
 /// - is_premium: boolean
 /// - chave_pix: string
 /// - nome: string
+/// - telefone: string (opcional; contato do usuário)
+/// - whatsapp_conectado: boolean (opcional; default false)
 /// - notificacoes_diarias: boolean
 /// - acesso_biometrico: boolean
 /// - banco: string
 /// - agencia: string
 /// - conta: string
+/// - mensagem_cobranca: string (opcional; template Premium)
 /// - premium_vence_em: timestamp
 /// - premium_transaction_id: string
+/// - aceite_termos_em: timestamp
+/// - aceite_privacidade_em: timestamp
 ///
 /// Coleção `Debts` (documentId = debtId)
 /// - user_id: string
@@ -24,12 +29,12 @@
 /// - client_score: integer
 /// - created_at: timestamp
 ///
-/// Coleção `Payments` (histórico de comprovantes)
+/// Coleção `Payments` (abatimentos na caderneta)
 /// - debt_id: string
 /// - user_id: string
 /// - valor: double
 /// - data: timestamp
-/// - descricao: string
+/// - descricao: string (Juros | Abatimento | Quitação)
 class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';

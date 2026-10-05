@@ -64,8 +64,8 @@ Coleções `Users`, `Debts` e `Payments`. O saldo não é um campo gravado: ele 
 
 ## Último commit
 
+- Hash: `80dea79`
 - Branch: `cursor/cloud-billing-and-balances`
-- Base: `d73b4f4`
 - Mensagem: `Record real debt balances and keep accounts in Firebase.`
 - O `.env` continua fora do Git.
 

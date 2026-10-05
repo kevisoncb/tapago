@@ -1,96 +1,61 @@
 # TáPago — Contexto do sistema
 
-Arquivo vivo. **Não é histórico infinito.** A cada alteração este arquivo é **reescrito do zero** com o estado atual.
+Arquivo vivo. **Não é histórico infinito.** A cada alteração este arquivo é **reescrito do zero**.
 
 ## Como a IA deve usar (obrigatório)
 
-Em toda conversa:
-
-1. Ler este arquivo por completo.
-2. Entender código no Git, o que foi feito no Console (não vai no Git) e as pendências.
-3. Só então implementar.
-4. Depois de mexer, **apagar e reescrever** este arquivo.
-5. O contexto válido entre PCs é o que está em `origin/main` neste arquivo.
+1. Ler este arquivo.
+2. Separar: código no Git × o que vive só no Console (Firebase/Asaas).
+3. Implementar.
+4. Apagar e reescrever este arquivo.
+5. Entre PCs, o válido é `origin/main`.
 
 ## Estado atual
 
-- App Flutter **TáPago** — gestão de débitos/cobrança. UI em português. Azul `#2F6BFF`.
-- Pacote `tapago_app` · Android `com.tapago.tapago_app` · versão `2.4.0+24`.
-- Repo: https://github.com/kevisoncb/tapago · branch `main`.
-- Este PC: `C:\Users\ADM03\Desktop\tapago-app`. Flutter SDK: `C:\Users\ADM03\flutter` (fora do repo).
+- App Flutter **TáPago**. Pacote `tapago_app` · Android `com.tapago.tapago_app` · `2.4.0+24`.
+- Repo: https://github.com/kevisoncb/tapago · `main`.
+- Este PC: `C:\Users\ADM03\Desktop\tapago-app`.
 
-## Freemium e pagamentos (decisão de negócio)
+## Chaves (não sumiram)
 
-- Grátis: **máximo 5 clientes/débitos** (`AppConstants.freeDebtLimit`). Já barrado no app (`reachedFreeLimit` → paywall).
-- Premium: **R$ 59,90/mês**. Campo `Users.is_premium` na base.
-- Gateway escolhido: **Asaas** (assinatura recorrente com CPF, sem CNPJ agora).
-- Firebase: plano **Spark** (gratuito). Firestore em **modo teste** no Console Google — projeto criado em casa (4/out). Isso **não gera arquivo no Git**.
-- Assinar Agora no app **ainda abre Play Store** e liga `is_premium` local. **Ainda não há Asaas no código.** Não existe `asaas_server.dart`. Webhook precisa de URL pública (ex.: Render) para o Asaas avisar PIX/assinatura com o PC desligado.
+As chaves de **casa (4/out) estão nos painéis**, não no GitHub.
 
-## O que o app faz (código no Git)
-
-Cadastro de débitos, lista com atrasados em vermelho, perfil com WhatsApp, OCR simulado, paywall, configurações (PIX, notificações). Seed: João Dinâmico + clientes fictícios.
-
-### Telas (`lib/screens/`)
-
-| Tela | Arquivo | Função |
+| Onde | O que | Como trazer para este PC |
 |---|---|---|
-| Dashboard | `dashboard_page.dart` | Lucro Projetado, A Receber, Dinheiro na Rua; Premium; lista; FAB |
-| Novo Débito | `add_debt_page.dart` | Voz simulada, nome, WhatsApp, valor, juros, vencimento |
-| Perfil | `client_profile_page.dart` | Score, valor, 3 WhatsApp, OCR, histórico |
-| Premium | `premium_page.dart` | R$ 59,90, benefícios, Assinar Agora |
-| Configurações | `settings_page.dart` | PIX, banco, toggles, assinatura |
+| [Firebase Console](https://console.firebase.google.com) | projeto Spark, Firestore teste, apps | Neste PC: `flutterfire configure` (gera `firebase_options.dart` + `google-services.json`). **Esses arquivos vão no Git.** |
+| Painel Asaas | API key, webhook token, assinatura | Copiar de novo no Asaas → colar em `.env` local. **Nunca commitar `.env`.** Modelo: `.env.example`. |
 
-### Dados (schema no código)
+Git **não guarda** chave de API do Asaas (é segredo de servidor). Git **guarda** a ligação Firebase do app depois do `flutterfire configure` + push.
 
-- **Users**: `email`, `is_premium`, `chave_pix`, `nome`, notificações, biometria, banco, `premium_vence_em`
-- **Debts**: `user_id`, `nome`, `telefone`, `valor_principal`, `taxa_juros`, `data_vencimento`, `status_pago`, `client_score`
-- **Payments**: `debt_id`, `user_id`, `valor`, `data`, `descricao`
+## Freemium e pagamentos
 
-App sobe em **LocalRepository** (`USE_FIREBASE` default `false`). Sem `lib/firebase_options.dart` no Git — `flutterfire configure` ainda não foi commitado.
+- Grátis: 5 débitos. Premium: R$ 59,90/mês. Campo `Users.is_premium`.
+- Gateway: **Asaas** (CPF). Código ainda usa Play Store no botão Assinar.
+- Sem `asaas_server.dart`. Webhook precisa de URL pública (Render).
 
-```powershell
-$env:Path = "$env:USERPROFILE\flutter\bin;$env:LOCALAPPDATA\Pub\Cache\bin;" + $env:Path
-flutterfire configure
-flutter run --dart-define=USE_FIREBASE=true
-```
+## App no Git
 
-Depois: commitar `firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist`, `firebase.json`, `.firebaserc` e dar **push**.
-
-## Arquitetura de pastas
+Telas: Dashboard, Novo Débito, Perfil, Premium, Configurações. Dados locais por padrão (`USE_FIREBASE=false`). Schema Users / Debts / Payments no código.
 
 ```
-lib/main.dart app.dart
-lib/theme/ models/ data/ services/ state/ screens/ widgets/ utils/
-assets/images/water_splash.jpg
-firestore.rules  firestore.indexes.json
+lib/  screens/ services/ state/ models/ data/ theme/ widgets/ utils/
+firestore.rules  firestore.indexes.json  .env.example
 ```
 
-Não existe pasta/servidor Asaas no repo.
+## Último commit
 
-## Último commit no GitHub
-
-- `d73b4f4` (3/out) — refresh do SISTEMA.md
-- `41f0803` (3/out) — criou SISTEMA.md + regra Cursor
-- `9a7395c` (2/out) — app Flutter inicial
-- **Não houve commit em 4/out.** O trabalho de casa foi Console/Asaas/decisões, não push.
-
-## O que foi feito em casa (4/out) — fora do Git
-
-1. Modelo freemium (5 clientes / R$ 59,90) e `is_premium` na base.
-2. Stack: Flutter no Cursor + Firestore Spark + Asaas.
-3. Projeto Google criado, Firestore modo teste.
-4. Painel Asaas: onde fica webhook, chave de API e assinatura recorrente.
-5. Dúvidas resolvidas em conversa: recriar UI no Cursor (sem export de ferramenta visual); gateway com CPF; Git entre PCs; `flutterfire configure`; webhook Asaas exige servidor público (Render) para `asaas_server.dart`.
+- `719b730` — registrou decisões de casa no SISTEMA.md
+- `d73b4f4` / `41f0803` — SISTEMA.md
+- `9a7395c` — app inicial
+- **4/out: zero commit.** Trabalho foi Console + Asaas.
 
 ## Pendências
 
-- `flutterfire configure` + commit/push dos arquivos gerados.
-- Trocar Play Store por Asaas (app + `asaas_server.dart` + webhook no Render).
-- Atualizar `is_premium` de verdade quando o webhook confirmar o pagamento.
-- OCR e voz ainda simulados.
-- README ainda genérico.
+- Neste PC: login Google → `flutterfire configure` → commit/push dos arquivos gerados.
+- `.env` local com chave Asaas (copiar do painel).
+- Servidor Asaas + webhook Render; paywall deixar de usar Play Store.
+- OCR/voz simulados.
 
-## Última sessão (este PC, 5/out)
+## Última sessão (5/out, este PC)
 
-Pull não trouxe commit novo porque o remoto parou em `d73b4f4`. O trabalho de casa não estava no Git — estava no Console e nas decisões acima. Este arquivo foi reescrito para registrar isso.
+Usuário confirmou que em casa já tinha as chaves. Elas continuam no Firebase/Asaas. Criado `.env.example` e `.gitignore` para `.env`. Falta rodar `flutterfire configure` logado na mesma conta Google de casa.

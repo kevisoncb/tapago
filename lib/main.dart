@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app.dart';
-import 'services/repository_factory.dart';
+import 'services/session_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +16,7 @@ Future<void> main() async {
     ),
   );
 
-  final repository = await RepositoryFactory.create();
-  runApp(TapagoApp(repository: repository));
+  final gate = SessionGate();
+  await gate.bootstrap();
+  runApp(TapagoApp(gate: gate));
 }

@@ -74,7 +74,7 @@ class DashboardPage extends StatelessWidget {
                             value: Money.compact(state.dinheiroNaRua),
                             compact: true,
                           ),
-                          if (!state.user.isPremium) ...[
+                          if (!state.user.premiumAtivo) ...[
                             const SizedBox(height: 16),
                             const _PremiumBanner(),
                           ],
@@ -200,7 +200,9 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá, ${user.nome.split(' ').first}',
+                user.nome.trim().isEmpty
+                    ? 'Olá'
+                    : 'Olá, ${user.nome.trim().split(RegExp(r'\s+')).first}',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
@@ -488,7 +490,7 @@ class DebtTile extends StatelessWidget {
                 ),
               ),
               Text(
-                Money.full(debt.valorPrincipal),
+                Money.full(context.watch<AppController>().balanceFor(debt).saldo),
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,

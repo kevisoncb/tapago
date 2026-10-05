@@ -1,3 +1,5 @@
+import '../utils/premium_access.dart';
+
 class AppUser {
   const AppUser({
     required this.id,
@@ -7,10 +9,11 @@ class AppUser {
     required this.chavePix,
     this.notificacoesDiarias = true,
     this.acessoBiometrico = false,
-    this.banco = 'Banco Inter',
-    this.agencia = '0001',
-    this.conta = '12345-6',
+    this.banco = '',
+    this.agencia = '',
+    this.conta = '',
     this.premiumVenceEm,
+    this.premiumTransactionId,
   });
 
   final String id;
@@ -24,6 +27,13 @@ class AppUser {
   final String agencia;
   final String conta;
   final DateTime? premiumVenceEm;
+  final String? premiumTransactionId;
+
+  bool get premiumAtivo => premiumIsActive(
+        isPremium: isPremium,
+        until: premiumVenceEm,
+        now: DateTime.now(),
+      );
 
   AppUser copyWith({
     String? id,
@@ -37,6 +47,7 @@ class AppUser {
     String? agencia,
     String? conta,
     DateTime? premiumVenceEm,
+    String? premiumTransactionId,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -50,6 +61,7 @@ class AppUser {
       agencia: agencia ?? this.agencia,
       conta: conta ?? this.conta,
       premiumVenceEm: premiumVenceEm ?? this.premiumVenceEm,
+      premiumTransactionId: premiumTransactionId ?? this.premiumTransactionId,
     );
   }
 
@@ -66,6 +78,7 @@ class AppUser {
       'agencia': agencia,
       'conta': conta,
       'premium_vence_em': premiumVenceEm?.toIso8601String(),
+      'premium_transaction_id': premiumTransactionId,
     };
   }
 
@@ -82,6 +95,7 @@ class AppUser {
       agencia: map['agencia'] as String? ?? '',
       conta: map['conta'] as String? ?? '',
       premiumVenceEm: _parseDate(map['premium_vence_em']),
+      premiumTransactionId: map['premium_transaction_id'] as String?,
     );
   }
 

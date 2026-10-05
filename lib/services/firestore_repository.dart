@@ -1,15 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../data/firestore_schema.dart';
-import '../data/seed_data.dart';
 import '../models/models.dart';
-import '../utils/constants.dart';
 import 'app_repository.dart';
 
 class FirestoreRepository implements AppRepository {
-  FirestoreRepository({FirebaseFirestore? firestore, String? userId})
-      : _db = firestore ?? FirebaseFirestore.instance,
-        _userId = userId ?? AppConstants.demoUserId;
+  factory FirestoreRepository({
+    FirebaseFirestore? firestore,
+    required String userId,
+  }) {
+    return FirestoreRepository._(
+      firestore ?? FirebaseFirestore.instance,
+      userId,
+    );
+  }
+
+  FirestoreRepository._(this._db, this._userId);
 
   final FirebaseFirestore _db;
   final String _userId;
@@ -27,31 +33,12 @@ class FirestoreRepository implements AppRepository {
   bool get usesFirestore => true;
 
   @override
-  Future<void> init() async {
+  Future<void> init() async {}
+
+  Future<void> ensureProfile(AppUser profile) async {
     final snap = await _users.doc(_userId).get();
     if (snap.exists) return;
-
-    final seedUser = SeedData.user();
-    await _users.doc(_userId).set({
-      'email': seedUser.email,
-      'is_premium': seedUser.isPremium,
-      'chave_pix': seedUser.chavePix,
-      'nome': seedUser.nome,
-      'notificacoes_diarias': seedUser.notificacoesDiarias,
-      'acesso_biometrico': seedUser.acessoBiometrico,
-      'banco': seedUser.banco,
-      'agencia': seedUser.agencia,
-      'conta': seedUser.conta,
-    });
-
-    final batch = _db.batch();
-    for (final debt in SeedData.debts()) {
-      batch.set(_debts.doc(debt.id), debt.toFirestore());
-    }
-    for (final payment in SeedData.payments()) {
-      batch.set(_payments.doc(payment.id), payment.toFirestore());
-    }
-    await batch.commit();
+    await saveUser(profile);
   }
 
   @override
@@ -74,6 +61,7 @@ class FirestoreRepository implements AppRepository {
       'agencia': user.agencia,
       'conta': user.conta,
       'premium_vence_em': user.premiumVenceEm,
+      'premium_transaction_id': user.premiumTransactionId,
     }, SetOptions(merge: true));
   }
 
@@ -92,7 +80,16 @@ class FirestoreRepository implements AppRepository {
 
   @override
   Future<void> deleteDebt(String id) async {
-    await _debts.doc(id).delete();
+    final payments = await _payments
+        .where('user_id', isEqualTo: _userId)
+        .where('debt_id', isEqualTo: id)
+        .get();
+    final batch = _db.batch();
+    for (final doc in payments.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_debts.doc(id));
+    await batch.commit();
   }
 
   @override

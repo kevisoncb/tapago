@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/debt_balance.dart';
+import '../services/receipt_amount.dart';
+import '../services/receipt_reader.dart';
 import '../services/whatsapp_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
@@ -23,6 +26,7 @@ class ClientProfilePage extends StatelessWidget {
     final current =
         state.debts.where((item) => item.id == debt.id).firstOrNull ?? debt;
     final history = state.paymentsFor(current.id);
+    final balance = state.balanceFor(current);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -40,6 +44,10 @@ class ClientProfilePage extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            onPressed: () => _delete(context, current),
+            icon: const Icon(Icons.delete_outline_rounded),
           ),
         ],
       ),
@@ -99,7 +107,7 @@ class ClientProfilePage extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 20),
-          _ValueCard(debt: current),
+          _ValueCard(debt: current, balance: balance),
           const SizedBox(height: 26),
           Text(
             'Ações Rápidas WhatsApp',
@@ -152,6 +160,24 @@ class ClientProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _OcrButton(debt: current),
+          if (!current.statusPago) ...[
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => context.read<AppController>().markPaid(current),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.success,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: Color(0xFFBBF7D0)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                'Marcar como pago',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
           const SizedBox(height: 26),
           Row(
             children: [
@@ -163,19 +189,31 @@ class ClientProfilePage extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                'Ver Tudo',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => _PaymentHistoryPage(
+                        nome: current.nome,
+                        items: history,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Ver Tudo',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _PaymentHistory(items: history),
-          if (!state.user.isPremium) ...[
+          _PaymentHistory(items: history.take(3).toList()),
+          if (!state.user.premiumAtivo) ...[
             const SizedBox(height: 18),
             const _MiniPremiumBanner(),
           ],
@@ -189,23 +227,51 @@ class ClientProfilePage extends StatelessWidget {
     Debt current,
     WhatsAppAction action,
   ) async {
-    final pix = context.read<AppController>().user.chavePix;
+    final controller = context.read<AppController>();
+    final pix = controller.user.chavePix;
     final ok = await WhatsAppService.open(
       action: action,
       debt: current,
       chavePix: pix,
+      valorAberto: controller.balanceFor(current).saldo,
     );
     if (!context.mounted) return;
     if (!ok) {
       showTapagoSnack(context, 'Não foi possível abrir o WhatsApp.');
     }
   }
+
+  Future<void> _delete(BuildContext context, Debt current) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir débito'),
+        content: Text(
+          'Excluir ${current.nome} e o histórico de pagamentos desta cobrança?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await context.read<AppController>().deleteDebt(current.id);
+    if (context.mounted) Navigator.pop(context);
+  }
 }
 
 class _ValueCard extends StatelessWidget {
-  const _ValueCard({required this.debt});
+  const _ValueCard({required this.debt, required this.balance});
 
   final Debt debt;
+  final DebtBalance balance;
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +297,7 @@ class _ValueCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            Money.full(debt.valorAtualizado),
+            Money.full(balance.saldo),
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontSize: 36,
@@ -246,20 +312,16 @@ class _ValueCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.trending_up_rounded, size: 14, color: Colors.white),
-                const SizedBox(width: 6),
-                Text(
-                  'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% aplicados',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            child: Text(
+              balance.pago > 0
+                  ? 'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% sobre o restante · pago ${Money.full(balance.pago)}'
+                  : 'Juros de ${debt.taxaJuros.toStringAsFixed(0)}% sobre o restante',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -353,8 +415,32 @@ class _OcrButton extends StatelessWidget {
   }
 
   Future<void> _pick(BuildContext context) async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !context.mounted) return;
+
+    final file = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 85,
+    );
     if (file == null || !context.mounted) return;
 
     showDialog<void>(
@@ -362,26 +448,90 @@ class _OcrButton extends StatelessWidget {
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    String? text;
+    try {
+      text = await readReceiptText(file.path);
+    } catch (_) {
+      text = null;
+    }
     if (!context.mounted) return;
     Navigator.of(context).pop();
 
+    if (text == null || text.isEmpty) {
+      showTapagoSnack(
+        context,
+        'Não consegui ler o comprovante. Tente uma foto mais nítida.',
+      );
+      return;
+    }
+    final amount = extractReceiptAmount(text);
+    if (amount == null) {
+      showTapagoSnack(context, 'Não encontrei um valor no comprovante.');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Valor encontrado'),
+        content: Text(
+          'Registrar pagamento de ${Money.full(amount)} neste débito?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Registrar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
     final state = context.read<AppController>();
-    final valor = (debt.valorAtualizado * 0.35).clamp(50, 500);
     await state.addPayment(
       Payment(
         id: state.newId(),
         debtId: debt.id,
         userId: state.user.id,
-        valor: valor.toDouble(),
+        valor: amount,
         data: DateTime.now(),
-        descricao: 'Pagamento Recebido',
+        descricao: 'Comprovante lido',
       ),
     );
     if (!context.mounted) return;
-    showTapagoSnack(
-      context,
-      'Comprovante lido: ${Money.full(valor)} extraído via OCR.',
+    showTapagoSnack(context, 'Pagamento de ${Money.full(amount)} registrado.');
+  }
+}
+
+class _PaymentHistoryPage extends StatelessWidget {
+  const _PaymentHistoryPage({required this.nome, required this.items});
+
+  final String nome;
+  final List<Payment> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(title: Text(nome)),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        children: [
+          Text(
+            'Histórico de Pagamentos',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _PaymentHistory(items: items),
+        ],
+      ),
     );
   }
 }

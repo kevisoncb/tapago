@@ -1,31 +1,27 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
-
+import '../models/models.dart';
 import 'app_repository.dart';
+import 'cached_repository.dart';
 import 'firestore_repository.dart';
 import 'local_repository.dart';
 
 class RepositoryFactory {
-  static Future<AppRepository> create() async {
-    const useFirebase = bool.fromEnvironment('USE_FIREBASE', defaultValue: false);
-
-    if (!useFirebase) {
-      final local = LocalRepository();
-      await local.init();
-      return local;
+  static Future<AppRepository> open({
+    required String userId,
+    required AppUser profile,
+    required bool firebaseReady,
+  }) async {
+    final cache = LocalRepository(userId: userId);
+    await cache.init();
+    if (!firebaseReady) {
+      final existing = await cache.getCurrentUser();
+      if (existing.email.isEmpty && existing.nome.isEmpty) {
+        await cache.saveUser(profile);
+      }
+      return cache;
     }
 
-    try {
-      await Firebase.initializeApp();
-      final remote = FirestoreRepository();
-      await remote.init();
-      return remote;
-    } catch (error, stack) {
-      debugPrint('Firestore indisponível, usando dados locais: $error');
-      debugPrint('$stack');
-      final local = LocalRepository();
-      await local.init();
-      return local;
-    }
+    final remote = FirestoreRepository(userId: userId);
+    await remote.ensureProfile(profile);
+    return CachedRepository(remote: remote, cache: cache);
   }
 }

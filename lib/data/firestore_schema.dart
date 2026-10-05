@@ -11,6 +11,7 @@
 /// - agencia: string
 /// - conta: string
 /// - premium_vence_em: timestamp
+/// - premium_transaction_id: string
 ///
 /// Coleção `Debts` (documentId = debtId)
 /// - user_id: string

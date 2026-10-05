@@ -10,8 +10,9 @@ class WhatsAppService {
     required WhatsAppAction action,
     required Debt debt,
     required String chavePix,
+    required double valorAberto,
   }) {
-    final valor = Money.full(debt.valorAtualizado);
+    final valor = Money.full(valorAberto);
     final vencimento = Dates.full(debt.dataVencimento);
 
     switch (action) {
@@ -29,11 +30,17 @@ class WhatsAppService {
     required WhatsAppAction action,
     required Debt debt,
     required String chavePix,
+    required double valorAberto,
   }) async {
     final phone = digitsOnly(debt.telefone);
     final withCountry = phone.startsWith('55') ? phone : '55$phone';
     final text = Uri.encodeComponent(
-      messageFor(action: action, debt: debt, chavePix: chavePix),
+      messageFor(
+        action: action,
+        debt: debt,
+        chavePix: chavePix,
+        valorAberto: valorAberto,
+      ),
     );
     final uri = Uri.parse('https://wa.me/$withCountry?text=$text');
     return launchUrl(uri, mode: LaunchMode.externalApplication);

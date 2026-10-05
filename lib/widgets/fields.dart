@@ -15,6 +15,8 @@ class AppTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.suffix,
+    this.obscureText = false,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   final String label;
@@ -26,6 +28,8 @@ class AppTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? suffix;
+  final bool obscureText;
+  final TextCapitalization textCapitalization;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,8 @@ class AppTextField extends StatelessWidget {
           onChanged: onChanged,
           readOnly: readOnly,
           onTap: onTap,
+          obscureText: obscureText,
+          textCapitalization: textCapitalization,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,

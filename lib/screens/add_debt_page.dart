@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/speech_capture.dart';
+import '../services/voice_debt_parser.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
@@ -84,18 +86,38 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
   Future<void> _listenVoice() async {
     setState(() => _listening = true);
-    await Future<void>.delayed(const Duration(milliseconds: 1600));
+    final transcript = await SpeechCapture().listenOnce();
     if (!mounted) return;
+    if (transcript == null) {
+      setState(() => _listening = false);
+      showTapagoSnack(
+        context,
+        'Não ouvi nada. Confira o microfone e tente de novo.',
+      );
+      return;
+    }
+    final draft = parseVoiceDebt(transcript);
     setState(() {
-      _nome.text = 'João Silva';
-      _whatsapp.text = '(11) 98888-1234';
-      _valor.text = '750,00';
-      _juros.text = '5,00';
-      _vencimento = DateTime.now().add(const Duration(days: 30));
-      _date.text = Dates.full(_vencimento!);
+      if (draft.nome != null) _nome.text = draft.nome!;
+      if (draft.telefone != null) _whatsapp.text = draft.telefone!;
+      if (draft.valor != null) {
+        _valor.text = draft.valor!.toStringAsFixed(2).replaceAll('.', ',');
+      }
+      if (draft.juros != null) {
+        _juros.text = draft.juros!.toStringAsFixed(2).replaceAll('.', ',');
+      }
+      if (draft.vencimento != null) {
+        _vencimento = draft.vencimento;
+        _date.text = Dates.full(draft.vencimento!);
+      }
       _listening = false;
     });
-    showTapagoSnack(context, 'Dados capturados por voz com IA.');
+    showTapagoSnack(
+      context,
+      draft.hasAny
+          ? 'Revise os dados ouvidos antes de salvar.'
+          : 'Não entendi nome, valor ou vencimento. Tente falar de novo.',
+    );
   }
 
   Future<void> _save() async {

@@ -2,14 +2,17 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/seed_data.dart';
 import '../models/models.dart';
 import 'app_repository.dart';
 
 class LocalRepository implements AppRepository {
-  static const _userKey = 'tapago_user';
-  static const _debtsKey = 'tapago_debts';
-  static const _paymentsKey = 'tapago_payments';
+  LocalRepository({required this.userId});
+
+  final String userId;
+
+  String get _userKey => 'tapago_${userId}_user';
+  String get _debtsKey => 'tapago_${userId}_debts';
+  String get _paymentsKey => 'tapago_${userId}_payments';
 
   late SharedPreferences _prefs;
 
@@ -19,21 +22,20 @@ class LocalRepository implements AppRepository {
   @override
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    if (!_prefs.containsKey(_userKey)) {
-      await saveUser(SeedData.user());
-      for (final debt in SeedData.debts()) {
-        await upsertDebt(debt);
-      }
-      for (final payment in SeedData.payments()) {
-        await addPayment(payment);
-      }
-    }
   }
 
   @override
   Future<AppUser> getCurrentUser() async {
     final raw = _prefs.getString(_userKey);
-    if (raw == null) return SeedData.user();
+    if (raw == null) {
+      return AppUser(
+        id: userId,
+        nome: '',
+        email: '',
+        isPremium: false,
+        chavePix: '',
+      );
+    }
     return AppUser.fromMap(jsonDecode(raw) as Map<String, dynamic>);
   }
 
@@ -44,8 +46,14 @@ class LocalRepository implements AppRepository {
 
   @override
   Future<List<Debt>> getDebts() async {
-    final list = _decodeList(_debtsKey);
-    return list.map(Debt.fromMap).toList();
+    return _decodeList(_debtsKey).map(Debt.fromMap).toList();
+  }
+
+  Future<void> replaceDebts(List<Debt> debts) async {
+    await _prefs.setString(
+      _debtsKey,
+      jsonEncode(debts.map((item) => item.toMap()).toList()),
+    );
   }
 
   @override
@@ -55,20 +63,15 @@ class LocalRepository implements AppRepository {
       ...current.where((item) => item.id != debt.id),
       debt,
     ];
-    await _prefs.setString(
-      _debtsKey,
-      jsonEncode(next.map((item) => item.toMap()).toList()),
-    );
+    await replaceDebts(next);
   }
 
   @override
   Future<void> deleteDebt(String id) async {
     final current = await getDebts();
-    final next = current.where((item) => item.id != id).toList();
-    await _prefs.setString(
-      _debtsKey,
-      jsonEncode(next.map((item) => item.toMap()).toList()),
-    );
+    await replaceDebts(current.where((item) => item.id != id).toList());
+    final payments = await getPayments();
+    await replacePayments(payments.where((item) => item.debtId != id).toList());
   }
 
   @override
@@ -78,14 +81,21 @@ class LocalRepository implements AppRepository {
     return list.where((item) => item.debtId == debtId).toList();
   }
 
+  Future<void> replacePayments(List<Payment> payments) async {
+    await _prefs.setString(
+      _paymentsKey,
+      jsonEncode(payments.map((item) => item.toMap()).toList()),
+    );
+  }
+
   @override
   Future<void> addPayment(Payment payment) async {
     final current = await getPayments();
-    final next = [...current, payment];
-    await _prefs.setString(
-      _paymentsKey,
-      jsonEncode(next.map((item) => item.toMap()).toList()),
-    );
+    final next = [
+      ...current.where((item) => item.id != payment.id),
+      payment,
+    ];
+    await replacePayments(next);
   }
 
   List<Map<String, dynamic>> _decodeList(String key) {

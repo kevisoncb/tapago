@@ -94,7 +94,7 @@ class SettingsPage extends StatelessWidget {
                           fontSize: 12.5,
                         ),
                       ),
-                      if (user.isPremium) ...[
+                      if (user.premiumAtivo) ...[
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -131,7 +131,7 @@ class SettingsPage extends StatelessWidget {
                 title: 'Minha Chave PIX',
                 subtitle: user.chavePix.isEmpty
                     ? 'Toque para cadastrar'
-                    : 'Copia e cola ativada',
+                    : user.chavePix,
                 onTap: () => _editPix(context),
               ),
               const Divider(height: 1, indent: 68),
@@ -140,7 +140,7 @@ class SettingsPage extends StatelessWidget {
                 title: 'Dados Bancários',
                 subtitle: user.banco.isEmpty
                     ? 'Cadastre sua conta'
-                    : 'Copia e cola ativada',
+                    : '${user.banco} · Ag ${user.agencia} · Cc ${user.conta}',
                 onTap: () => _editBank(context),
               ),
             ],
@@ -156,10 +156,13 @@ class SettingsPage extends StatelessWidget {
                 subtitle: 'Lembretes de cobrança',
                 trailing: Switch.adaptive(
                   value: user.notificacoesDiarias,
-                  onChanged: (value) {
-                    context.read<AppController>().saveUser(
-                          user.copyWith(notificacoesDiarias: value),
-                        );
+                  onChanged: (value) async {
+                    final error = await context
+                        .read<AppController>()
+                        .setDailyReminders(value);
+                    if (error != null && context.mounted) {
+                      showTapagoSnack(context, error);
+                    }
                   },
                 ),
               ),
@@ -167,13 +170,15 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.fingerprint_rounded,
                 title: 'Acesso Biométrico',
-                subtitle: 'Copia e cola ativada',
+                subtitle: 'Pede digital ou rosto ao abrir',
                 trailing: Switch.adaptive(
                   value: user.acessoBiometrico,
-                  onChanged: (value) {
-                    context.read<AppController>().saveUser(
-                          user.copyWith(acessoBiometrico: value),
-                        );
+                  onChanged: (value) async {
+                    final error =
+                        await context.read<AppController>().setBiometric(value);
+                    if (error != null && context.mounted) {
+                      showTapagoSnack(context, error);
+                    }
                   },
                 ),
               ),
@@ -218,11 +223,9 @@ class SettingsPage extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            user.isPremium && user.premiumVenceEm != null
+                            user.premiumAtivo && user.premiumVenceEm != null
                                 ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
-                                : user.isPremium
-                                    ? 'Assinatura ativa'
-                                    : 'Desbloqueie WhatsApp, OCR e clientes ilimitados',
+                                : 'Desbloqueie clientes ilimitados',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.mutedDark,
@@ -252,7 +255,7 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      user.isPremium ? 'Gerenciar Assinatura' : 'Assinar Premium',
+                      user.premiumAtivo ? 'Gerenciar Assinatura' : 'Assinar Premium',
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w700,
                       ),
@@ -270,7 +273,7 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.help_outline_rounded,
                 title: 'Central de Ajuda',
-                subtitle: 'Copia e cola ativada',
+                subtitle: 'Dúvidas e tutoriais',
                 trailing: const Icon(Icons.open_in_new_rounded, size: 18),
                 onTap: () => launchUrl(Uri.parse(AppConstants.helpUrl)),
               ),
@@ -278,7 +281,7 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.verified_user_outlined,
                 title: 'Privacidade e Segurança',
-                subtitle: 'Copia e cola ativada',
+                subtitle: 'Política de privacidade',
                 onTap: () => launchUrl(Uri.parse(AppConstants.privacyUrl)),
               ),
             ],
@@ -286,10 +289,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 22),
           Center(
             child: TextButton(
-              onPressed: () {
-                showTapagoSnack(context, 'Sessão encerrada neste dispositivo.');
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
+              onPressed: () => context.read<AppController>().signOut(),
               child: Text(
                 'Sair da Conta',
                 style: GoogleFonts.plusJakartaSans(

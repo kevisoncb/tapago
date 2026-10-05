@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1077428127080",
+    "project_id": "tapago-ae948",
+    "storage_bucket": "tapago-ae948.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077428127080:android:04ca9e29d571127c0042dd",
+        "android_client_info": {
+          "package_name": "com.tapago.tapago_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFUHgKWkQrTH0qOTM2SMNTWzerYHSM_8o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

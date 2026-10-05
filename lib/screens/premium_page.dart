@@ -3,10 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/asaas_client.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
 import '../widgets/common.dart';
+import 'pix_checkout_page.dart';
 
 class PremiumPage extends StatelessWidget {
   const PremiumPage({super.key});
@@ -97,12 +99,16 @@ class PremiumPage extends StatelessWidget {
                             _FooterLink(
                               label: 'Restaurar',
                               onTap: () async {
-                                await context.read<AppController>().activatePremium();
-                                if (context.mounted) {
-                                  showTapagoSnack(
-                                    context,
-                                    'Assinatura restaurada com sucesso.',
-                                  );
+                                final message = await context
+                                    .read<AppController>()
+                                    .restorePremium();
+                                if (!context.mounted) return;
+                                if (message != null) {
+                                  showTapagoSnack(context, message);
+                                  return;
+                                }
+                                if (context.read<AppController>().user.premiumAtivo) {
+                                  showTapagoSnack(context, 'Assinatura restaurada.');
                                 }
                               },
                             ),
@@ -309,12 +315,48 @@ class _PriceCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           PrimaryButton(
-            label: 'Assinar Agora',
-            onPressed: () => _subscribe(context),
+            label: 'Pagar com PIX',
+            onPressed: () => _openPix(context),
           ),
           const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton(
+              onPressed: context.watch<AppController>().billingBusy
+                  ? null
+                  : () => _subscribe(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: Text(
+                context.watch<AppController>().billingBusy
+                    ? 'Aguardando a carteira...'
+                    : 'Cartão da carteira',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          if (context.watch<AppController>().billingMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              context.watch<AppController>().billingMessage!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.danger,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           Text(
-            'Pagamento processado via Google Play Store',
+            'PIX pelo Asaas ou cartão já salvo na carteira do telefone. O Premium só entra depois da confirmação.',
+            textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11.5,
               color: AppColors.mutedDark,
@@ -325,14 +367,33 @@ class _PriceCard extends StatelessWidget {
     );
   }
 
+  Future<void> _openPix(BuildContext context) async {
+    final client = AsaasClient();
+    if (!client.isConfigured) {
+      showTapagoSnack(
+        context,
+        'O PIX do Asaas ainda não está ligado. Crie a conta e suba o servidor com a chave.',
+      );
+      return;
+    }
+    final paid = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => PixCheckoutPage(client: client)),
+    );
+    if (paid == true && context.mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _subscribe(BuildContext context) async {
-    final uri = Uri.parse(AppConstants.checkoutUrl);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final message = await context.read<AppController>().subscribePremium();
     if (!context.mounted) return;
-    await context.read<AppController>().activatePremium();
-    if (!context.mounted) return;
-    showTapagoSnack(context, 'Premium ativado. Bem-vindo ao TáPago Premium!');
-    Navigator.of(context).pop();
+    if (message != null) {
+      showTapagoSnack(context, message);
+      return;
+    }
+    final state = context.read<AppController>();
+    if (state.user.premiumAtivo) {
+      showTapagoSnack(context, 'Premium ativado.');
+      Navigator.of(context).pop();
+    }
   }
 }
 

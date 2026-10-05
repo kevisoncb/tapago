@@ -14,6 +14,10 @@
 	<string>O TáPago acessa suas fotos para anexar comprovantes de pagamento.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>O TáPago usa o microfone para cadastrar débitos por voz.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>O TáPago usa o reconhecimento de fala para preencher o cadastro de débitos.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>O TáPago usa o Face ID para desbloquear o app.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>

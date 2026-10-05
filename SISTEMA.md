@@ -1,106 +1,96 @@
 # TáPago — Contexto do sistema
 
-Arquivo vivo do projeto. **Não é histórico infinito.** A cada alteração de código este arquivo é **reescrito do zero** com o estado atual (o que existe agora, o último commit e o que ficou pendente).
+Arquivo vivo. **Não é histórico infinito.** A cada alteração este arquivo é **reescrito do zero** com o estado atual.
 
 ## Como a IA deve usar (obrigatório)
 
-Em **toda** conversa, antes de criar ou alterar qualquer coisa:
+Em toda conversa:
 
 1. Ler este arquivo por completo.
-2. Entender o que já existe, o último commit e as pendências.
+2. Entender código no Git, o que foi feito no Console (não vai no Git) e as pendências.
 3. Só então implementar.
-4. Depois de mexer no código, **apagar o conteúdo antigo e reescrever** este arquivo com o estado novo.
-5. Se o usuário estiver em outro PC, o contexto correto é o que está **commitado neste arquivo** no GitHub (`origin/main`).
+4. Depois de mexer, **apagar e reescrever** este arquivo.
+5. O contexto válido entre PCs é o que está em `origin/main` neste arquivo.
 
 ## Estado atual
 
-- App Flutter **TáPago** (gestão de débitos / cobrança), UI em português, visual fintech (branco, cinza claro, azul `#2F6BFF`).
-- Pacote: `tapago_app` · Android id: `com.tapago.tapago_app` · versão `2.4.0+24`.
-- Repositório: https://github.com/kevisoncb/tapago
-- Branch: `main` (tracking `origin/main`).
-- Pasta local: `C:\Users\ADM03\Desktop\tapago-app` (neste PC).
-- Flutter SDK neste PC: `C:\Users\ADM03\flutter` (não faz parte do repo).
+- App Flutter **TáPago** — gestão de débitos/cobrança. UI em português. Azul `#2F6BFF`.
+- Pacote `tapago_app` · Android `com.tapago.tapago_app` · versão `2.4.0+24`.
+- Repo: https://github.com/kevisoncb/tapago · branch `main`.
+- Este PC: `C:\Users\ADM03\Desktop\tapago-app`. Flutter SDK: `C:\Users\ADM03\flutter` (fora do repo).
 
-## O que o app faz
+## Freemium e pagamentos (decisão de negócio)
 
-Cadastro de clientes/débitos, lista priorizando atrasados (vermelho) e próximos (azul), perfil do cliente com cobrança via WhatsApp, comprovante OCR (simulado), paywall Premium R$ 59,90/mês e configurações (PIX, notificações).
+- Grátis: **máximo 5 clientes/débitos** (`AppConstants.freeDebtLimit`). Já barrado no app (`reachedFreeLimit` → paywall).
+- Premium: **R$ 59,90/mês**. Campo `Users.is_premium` na base.
+- Gateway escolhido: **Asaas** (assinatura recorrente com CPF, sem CNPJ agora).
+- Firebase: plano **Spark** (gratuito). Firestore em **modo teste** no Console Google — projeto criado em casa (4/out). Isso **não gera arquivo no Git**.
+- Assinar Agora no app **ainda abre Play Store** e liga `is_premium` local. **Ainda não há Asaas no código.** Não existe `asaas_server.dart`. Webhook precisa de URL pública (ex.: Render) para o Asaas avisar PIX/assinatura com o PC desligado.
 
-Dados de demonstração: usuário **João Dinâmico**, clientes fictícios (Carlos, Mariana, Roberto, Ana, Ricardo).
+## O que o app faz (código no Git)
 
-## Telas (`lib/screens/`)
+Cadastro de débitos, lista com atrasados em vermelho, perfil com WhatsApp, OCR simulado, paywall, configurações (PIX, notificações). Seed: João Dinâmico + clientes fictícios.
+
+### Telas (`lib/screens/`)
 
 | Tela | Arquivo | Função |
 |---|---|---|
-| Dashboard | `dashboard_page.dart` | Cards Lucro Projetado, A Receber, Dinheiro na Rua; banner Premium; lista de débitos; FAB Novo Débito |
-| Novo Débito | `add_debt_page.dart` | Cadastro por voz (simulado), nome, WhatsApp, valor, juros, vencimento, total |
-| Perfil do Cliente | `client_profile_page.dart` | Score, valor atualizado, 3 botões WhatsApp, OCR, histórico de pagamentos |
-| Premium | `premium_page.dart` | Benefícios, R$ 59,90/mês, Assinar Agora (Play Store) |
-| Configurações | `settings_page.dart` | Perfil, chave PIX, banco, toggles, assinatura, suporte |
+| Dashboard | `dashboard_page.dart` | Lucro Projetado, A Receber, Dinheiro na Rua; Premium; lista; FAB |
+| Novo Débito | `add_debt_page.dart` | Voz simulada, nome, WhatsApp, valor, juros, vencimento |
+| Perfil | `client_profile_page.dart` | Score, valor, 3 WhatsApp, OCR, histórico |
+| Premium | `premium_page.dart` | R$ 59,90, benefícios, Assinar Agora |
+| Configurações | `settings_page.dart` | PIX, banco, toggles, assinatura |
 
-## Dados e Firebase
-
-Schema em `lib/data/firestore_schema.dart` e regras em `firestore.rules`.
+### Dados (schema no código)
 
 - **Users**: `email`, `is_premium`, `chave_pix`, `nome`, notificações, biometria, banco, `premium_vence_em`
 - **Debts**: `user_id`, `nome`, `telefone`, `valor_principal`, `taxa_juros`, `data_vencimento`, `status_pago`, `client_score`
 - **Payments**: `debt_id`, `user_id`, `valor`, `data`, `descricao`
 
-Por padrão o app **não** usa Firebase: `LocalRepository` + `SharedPreferences` (`USE_FIREBASE` default `false`).
-
-Para ligar o Firestore (console já existe):
+App sobe em **LocalRepository** (`USE_FIREBASE` default `false`). Sem `lib/firebase_options.dart` no Git — `flutterfire configure` ainda não foi commitado.
 
 ```powershell
 $env:Path = "$env:USERPROFILE\flutter\bin;$env:LOCALAPPDATA\Pub\Cache\bin;" + $env:Path
-npm install -g firebase-tools
-firebase login
-dart pub global activate flutterfire_cli
-cd C:\Users\ADM03\Desktop\tapago-app
 flutterfire configure
 flutter run --dart-define=USE_FIREBASE=true
 ```
 
-Ainda **não** existe `lib/firebase_options.dart`. `Firebase.initializeApp()` sem options só funciona depois do `flutterfire configure`.
+Depois: commitar `firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist`, `firebase.json`, `.firebaserc` e dar **push**.
 
 ## Arquitetura de pastas
 
 ```
-lib/
-  main.dart                 entrada, orientação retrato
-  app.dart                  MaterialApp pt_BR + Provider + moldura de celular no desktop
-  theme/                    cores e tema (Plus Jakarta Sans)
-  models/models.dart        AppUser, Debt, Payment
-  data/                     seed fictício + nomes das coleções
-  services/                 repositório local/Firestore, WhatsApp, factory
-  state/app_controller.dart estado (Provider)
-  screens/                  as 5 telas
-  widgets/                  campos, cards, botões
-  utils/                    dinheiro, datas, constantes
-assets/images/water_splash.jpg   hero do Premium
+lib/main.dart app.dart
+lib/theme/ models/ data/ services/ state/ screens/ widgets/ utils/
+assets/images/water_splash.jpg
+firestore.rules  firestore.indexes.json
 ```
 
-Estado: `provider`. Persistência local: `shared_preferences`. WhatsApp: `url_launcher` + `wa.me`.
+Não existe pasta/servidor Asaas no repo.
 
-## Último commit
+## Último commit no GitHub
 
-- Hash: `41f0803`
-- Mensagem: `Add a living SISTEMA.md so both PCs share the same project context.`
-- Conteúdo: criou `SISTEMA.md` e a regra `.cursor/rules/contexto-sistema.mdc`.
-- Anterior: `9a7395c` — app Flutter inicial (telas, Firestore, assets).
-- Remote: `origin/main` atualizado.
+- `d73b4f4` (3/out) — refresh do SISTEMA.md
+- `41f0803` (3/out) — criou SISTEMA.md + regra Cursor
+- `9a7395c` (2/out) — app Flutter inicial
+- **Não houve commit em 4/out.** O trabalho de casa foi Console/Asaas/decisões, não push.
+
+## O que foi feito em casa (4/out) — fora do Git
+
+1. Modelo freemium (5 clientes / R$ 59,90) e `is_premium` na base.
+2. Stack: Flutter no Cursor + Firestore Spark + Asaas.
+3. Projeto Google criado, Firestore modo teste.
+4. Painel Asaas: onde fica webhook, chave de API e assinatura recorrente.
+5. Dúvidas resolvidas em conversa: recriar UI no Cursor (sem export de ferramenta visual); gateway com CPF; Git entre PCs; `flutterfire configure`; webhook Asaas exige servidor público (Render) para `asaas_server.dart`.
 
 ## Pendências
 
-- Rodar `flutterfire configure` e commitar `firebase_options.dart` + arquivos nativos gerados.
-- Ligar `USE_FIREBASE=true` no dia a dia depois disso.
-- OCR e cadastro por voz ainda são simulados (não há microfone/ML reais).
-- Assinar Agora abre a Play Store e ativa Premium localmente (não há billing real).
-- README padrão do Flutter, desatualizado.
+- `flutterfire configure` + commit/push dos arquivos gerados.
+- Trocar Play Store por Asaas (app + `asaas_server.dart` + webhook no Render).
+- Atualizar `is_premium` de verdade quando o webhook confirmar o pagamento.
+- OCR e voz ainda simulados.
+- README ainda genérico.
 
-## Última sessão (o que aconteceu neste PC)
+## Última sessão (este PC, 5/out)
 
-1. Pasta vazia; Flutter não estava no PATH. SDK clonado em `C:\Users\ADM03\flutter` e `flutter create --empty` gerou o projeto.
-2. App TáPago montado a partir das imagens de referência: 5 telas, tema, seed fictício, WhatsApp, PIX, paywall.
-3. Camada Firestore escrita, mas o app sobe em modo local até configurar o Firebase.
-4. Código enviado para https://github.com/kevisoncb/tapago (`9a7395c`).
-5. Usuário pediu este arquivo para trabalhar em **dois PCs**: ler → entender → alterar código → reescrever este arquivo.
-6. Criada regra Cursor `.cursor/rules/contexto-sistema.mdc` (`alwaysApply: true`) para a IA sempre passar por aqui.
+Pull não trouxe commit novo porque o remoto parou em `d73b4f4`. O trabalho de casa não estava no Git — estava no Console e nas decisões acima. Este arquivo foi reescrito para registrar isso.

@@ -54,3 +54,7 @@ key.properties
 
 # Widget Preview related
 .widget_preview/
+
+# Secrets de servidor (Asaas). Firebase client files (firebase_options.dart, google-services.json) DEVEM ir no Git depois do flutterfire configure, para os dois PCs.
+.env
+.env.local

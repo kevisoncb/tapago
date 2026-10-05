@@ -14,11 +14,15 @@ Arquivo vivo do projeto. Não é histórico. A cada alteração de código este 
 - App Flutter TáPago, gestão de débitos, português, azul `#2F6BFF`.
 - Pacote `tapago_app`. Android `com.tapago.tapago_app`. Versão `2.4.0+24`.
 - Repositório: https://github.com/kevisoncb/tapago
-- Branch `main`, tracking `origin/main`.
-- Pasta neste PC: `C:\Users\kevis\OneDrive\Documentos\Projetos\tapago`.
-- A conta, o PIX, a carteira, o comprovante, a voz, a biometria, o lembrete, o webhook, o Firebase e o saldo estão no branch `cursor/cloud-billing-and-balances`.
+- Branch de trabalho: `cursor/cloud-billing-and-balances`, também em `origin`.
+- Este PC: `C:\Users\kevis\OneDrive\Documentos\Projetos\tapago`.
+- Outro PC: `C:\Users\ADM03\Desktop\tapago-app`.
 - O CLI do Firebase neste PC já está autenticado. O projeto padrão é `tapago-ae948`, em `.firebaserc`.
 - Este PC não tem Android SDK, então o APK ainda não foi gerado aqui.
+
+## Chaves
+
+A chave do Asaas e o token do webhook ficam só no `.env` local, fora do Git. O modelo sem segredo é `.env.example`. A ligação do app com o Firebase (`firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist`) entra no Git.
 
 ## O que o app faz agora
 
@@ -34,8 +38,10 @@ Na home, "Dinheiro na rua" é o principal que ainda falta. "Lucro projetado" é 
 
 Premium custa R$ 59,90. Dois caminhos, os dois só ligam depois da confirmação:
 
-- PIX pelo Asaas, via `server/asaas_server.dart`. A chave fica no `.env` da raiz, fora do Git. Ainda não está na nuvem.
+- PIX pelo Asaas, via `server/asaas_server.dart`. A chave fica no `.env` da raiz. Ainda não está na nuvem.
 - Cartão da carteira do telefone, pela Play Store (`tapago_premium_monthly`).
+
+O app anota pagamento de cliente. Ele não recebe esse dinheiro.
 
 ## Firebase
 
@@ -46,17 +52,11 @@ Apps registrados:
 - Android `com.tapago.tapago_app`
 - iOS e macOS `com.tapago.tapagoApp`
 
-`lib/firebase_options.dart` aponta para esse projeto. Android usa `android/app/google-services.json` e o plugin do Google Services. iOS usa `ios/Runner/GoogleService-Info.plist`, incluído no alvo do Xcode.
-
-O Firestore `(default)` já existe. As regras de `firestore.rules` e os índices foram publicados. Cada usuário só mexe no próprio `user_id`.
-
-O login por e-mail e senha está ligado no projeto.
+O Firestore `(default)` já existe. As regras de `firestore.rules` e os índices foram publicados. Cada usuário só mexe no próprio `user_id`. O login por e-mail e senha está ligado.
 
 ## Webhook do Asaas
 
 `functions/index.js` é a Cloud Function `asaasWebhook` (Node 20, região `southamerica-east1`). O código está pronto e não foi publicado. Cloud Functions pedem o plano Blaze.
-
-O PIX fica para depois. Não há túnel temporário.
 
 ## Dados
 
@@ -64,10 +64,9 @@ Coleções `Users`, `Debts` e `Payments`. O saldo não é um campo gravado: ele 
 
 ## Último commit
 
-- Hash: `80dea79`
-- Branch: `cursor/cloud-billing-and-balances`
-- Mensagem: `Record real debt balances and keep accounts in Firebase.`
-- O `.env` continua fora do Git.
+- `80dea79` — saldo real e conta no Firebase.
+- `fbe2c85` — `.env` fora do Git e `.env.example`.
+- O merge dos dois sobe para `origin/main`.
 
 ## Pendências
 

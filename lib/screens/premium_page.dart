@@ -48,7 +48,7 @@ class PremiumPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Apenas ${AppConstants.premiumPriceLabel}/mês para cadastro por voz e leitura de recibos',
+                          'Apenas ${AppConstants.premiumPriceLabel}/mês para voz, recibos e cobrança no seu texto',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
@@ -68,6 +68,12 @@ class PremiumPage extends StatelessWidget {
                           title: 'Leitura de recibos',
                           subtitle:
                               'Na caderneta do cliente, anexe o comprovante. A IA lê o valor e abate o saldo.',
+                        ),
+                        const _Benefit(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: 'Cobrança no seu texto',
+                          subtitle:
+                              'A mensagem do WhatsApp sai com as suas palavras, não um texto genérico.',
                         ),
                         const SizedBox(height: 8),
                         const _PriceCard(),
@@ -293,7 +299,7 @@ class _PriceCard extends StatelessWidget {
               const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
               const SizedBox(width: 6),
               Text(
-                'Cancelamento a qualquer momento',
+                'PIX libera 30 dias. Play cancela quando quiser',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,

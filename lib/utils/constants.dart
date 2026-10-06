@@ -19,6 +19,6 @@ class AppConstants {
   static const termsUrl = '$siteOrigin/termos';
   static const privacyUrl = '$siteOrigin/privacidade';
   static const lgpdUrl = '$siteOrigin/lgpd';
-  static const helpUrl = siteOrigin;
+  static const helpUrl = '$siteOrigin/ajuda';
   static const demoUserId = 'user_joao_dinamico';
 }

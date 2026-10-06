@@ -8,7 +8,7 @@ class LegalSection {
 }
 
 class LegalDocs {
-  static const updatedAt = '5 de outubro de 2026';
+  static const updatedAt = '6 de outubro de 2026';
   static const contact = 'ola@tapago.app';
 
   static String titleOf(LegalDoc doc) {
@@ -58,8 +58,8 @@ class LegalDocs {
     ),
     LegalSection(
       '5. Assinatura Premium',
-      'O Premium, quando disponível, custa R\$ 39,90 por mês, com renovação até o cancelamento. A cobrança pode ocorrer pela Google Play ou por PIX via Asaas, conforme o fluxo escolhido.\n\n'
-          'O cancelamento vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos da loja seguem as regras da Google Play. PIX confirmado libera o período contratado. Preços podem mudar com aviso prévio no app ou no site.',
+      'O Premium, quando disponível, custa R\$ 39,90 por mês. Na Google Play a renovação segue até o cancelamento. No PIX via Asaas o pagamento confirma 30 dias de acesso, sem renovação automática.\n\n'
+          'O cancelamento da loja vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos da loja seguem as regras da Google Play. Preços podem mudar com aviso prévio no app ou no site.',
     ),
     LegalSection(
       '6. Propriedade intelectual',

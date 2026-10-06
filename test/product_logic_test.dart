@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:tapago_app/models/models.dart';
 import 'package:tapago_app/services/client_match.dart';
 import 'package:tapago_app/services/debt_balance.dart';
@@ -6,6 +7,7 @@ import 'package:tapago_app/services/auth_messages.dart';
 import 'package:tapago_app/services/pix_status.dart';
 import 'package:tapago_app/services/password_hash.dart';
 import 'package:tapago_app/services/receipt_amount.dart';
+import 'package:tapago_app/services/reminder_service.dart';
 import 'package:tapago_app/services/trust_score.dart';
 import 'package:tapago_app/services/voice_debt_parser.dart';
 import 'package:tapago_app/services/whatsapp_service.dart';
@@ -158,6 +160,67 @@ Troco: R\$ 0,00
     expect(
       WhatsAppService.preview('Oi {primeiro}, paga {valor}{pix}'),
       'Oi Carlos, paga R\$ 450,00 PIX: sua-chave',
+    );
+  });
+
+  test('chave PIX vai em toda cobrança do WhatsApp', () async {
+    await initializeDateFormatting('pt_BR');
+    final debt = Debt(
+      id: '1',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '11987654321',
+      valorPrincipal: 450,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 10, 5),
+      statusPago: false,
+      clientScore: 80,
+    );
+    for (final action in WhatsAppAction.values) {
+      final text = WhatsAppService.messageFor(
+        action: action,
+        tone: WhatsAppTone.amigavel,
+        debt: debt,
+        saldo: 450,
+        chavePix: 'ana@email.com',
+      );
+      expect(text, contains('ana@email.com'));
+    }
+    expect(
+      whatsAppActionForDue(DateTime(2026, 10, 6), now: DateTime(2026, 10, 5)),
+      WhatsAppAction.preventivo,
+    );
+    expect(
+      whatsAppActionForDue(DateTime(2026, 10, 6), now: DateTime(2026, 10, 6)),
+      WhatsAppAction.cobrarHoje,
+    );
+    expect(
+      whatsAppActionForDue(DateTime(2026, 10, 6), now: DateTime(2026, 10, 7)),
+      WhatsAppAction.atraso,
+    );
+  });
+
+  test('lembrete cobre véspera, dia e atraso', () {
+    final due = DateTime(2026, 10, 6);
+    expect(
+      reminderKind(due: due, day: DateTime(2026, 10, 5), pago: false),
+      ReminderKind.amanha,
+    );
+    expect(
+      reminderKind(due: due, day: DateTime(2026, 10, 6), pago: false),
+      ReminderKind.hoje,
+    );
+    expect(
+      reminderKind(due: due, day: DateTime(2026, 10, 7), pago: false),
+      ReminderKind.atraso,
+    );
+    expect(
+      reminderKind(due: due, day: DateTime(2026, 10, 4), pago: false),
+      isNull,
+    );
+    expect(
+      reminderKind(due: due, day: DateTime(2026, 10, 6), pago: true),
+      isNull,
     );
   });
 

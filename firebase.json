@@ -1,4 +1,9 @@
 {
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
+  },
   "functions": [
     {
       "source": "functions",
@@ -6,6 +11,7 @@
       "ignore": [
         "node_modules",
         ".git",
+        ".env",
         "firebase-debug.log",
         "firebase-debug.*.log",
         "*.local"

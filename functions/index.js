@@ -1,12 +1,27 @@
 const crypto = require("crypto");
 
 const { onRequest } = require("firebase-functions/v2/https");
+const { defineString } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+const asaasKeyParam = defineString("ASAAS_API_KEY");
+const webhookTokenParam = defineString("ASAAS_WEBHOOK_TOKEN");
+const asaasBaseParam = defineString("ASAAS_BASE_URL", {
+  default: "https://api.asaas.com/v3",
+});
+
 function env(name, fallback = "") {
-  const value = String(process.env[name] || fallback).trim();
+  let raw = "";
+  try {
+    if (name === "ASAAS_API_KEY") raw = asaasKeyParam.value();
+    else if (name === "ASAAS_WEBHOOK_TOKEN") raw = webhookTokenParam.value();
+    else if (name === "ASAAS_BASE_URL") raw = asaasBaseParam.value();
+  } catch (_) {
+    raw = process.env[name] || fallback;
+  }
+  const value = String(raw || fallback).trim();
   if (!value || value === "UNSET") return "";
   return value;
 }

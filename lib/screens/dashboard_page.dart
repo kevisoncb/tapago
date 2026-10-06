@@ -7,6 +7,7 @@ import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/tapago_logo.dart';
+import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
 import 'caderneta_page.dart';
@@ -457,7 +458,10 @@ class DebtTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const WhatsAppMark(size: 28),
+              GestureDetector(
+                onTap: () => chargeOnWhatsApp(context: context, debt: debt),
+                child: const WhatsAppMark(size: 28),
+              ),
             ],
           ),
         ),

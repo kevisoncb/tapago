@@ -322,6 +322,12 @@ class AppController extends ChangeNotifier {
       await _reminders?.sync(
         enabled: user.notificacoesDiarias,
         debts: pendingDebts,
+        saldos: {
+          for (final debt in pendingDebts) debt.id: saldoOf(debt),
+        },
+        chavePix: user.chavePix,
+        customTemplate: user.mensagemCobranca,
+        isPremium: user.isPremium,
       );
     } catch (error) {
       debugPrint('Lembretes: $error');

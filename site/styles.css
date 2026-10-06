@@ -103,6 +103,11 @@ a {
   box-shadow: none;
 }
 
+.btn-whatsapp {
+  background: #25d366;
+  box-shadow: 0 10px 24px rgba(37, 211, 102, 0.32);
+}
+
 .hero,
 .use,
 .voice,

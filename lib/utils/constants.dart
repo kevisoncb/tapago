@@ -19,6 +19,8 @@ class AppConstants {
   static const termsUrl = '$siteOrigin/termos';
   static const privacyUrl = '$siteOrigin/privacidade';
   static const lgpdUrl = '$siteOrigin/lgpd';
-  static const helpUrl = '$siteOrigin/ajuda';
+  static const supportWhatsApp = '5527999019162';
+  static const helpUrl =
+      'https://wa.me/$supportWhatsApp?text=Oi%2C%20vim%20pelo%20T%C3%A1Pago%20e%20quero%20tirar%20uma%20d%C3%BAvida.';
   static const demoUserId = 'user_joao_dinamico';
 }

@@ -331,11 +331,16 @@ class SettingsPage extends StatelessWidget {
           GroupCard(
             children: [
               SettingsRow(
-                icon: Icons.help_outline_rounded,
-                title: 'Central de Ajuda',
-                subtitle: 'Dúvidas sobre o app',
-                trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                onTap: () => launchUrl(Uri.parse(AppConstants.helpUrl)),
+                icon: Icons.chat_rounded,
+                iconBackground: AppColors.whatsappSoft,
+                iconColor: AppColors.whatsapp,
+                title: 'Ajuda',
+                subtitle: 'Mesmo WhatsApp do site',
+                trailing: const Icon(Icons.chat_rounded, size: 18, color: AppColors.whatsapp),
+                onTap: () => launchUrl(
+                  Uri.parse(AppConstants.helpUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
               const Divider(height: 1, indent: 68),
               SettingsRow(

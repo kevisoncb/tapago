@@ -12,8 +12,8 @@ Arquivo vivo. Reescrito a cada alteração.
 
 ## Git neste PC
 
-- Branch `main`. Este retrato sobe neste commit para `origin/main`.
-- Anterior em origin: `8141917` — Ship live Firestore rules, PIX Functions, and the Premium site cards.
+- Branch `main`. Origin após este push: `b9f7b7a` — Align the app and site on PIX, reminders, and Premium extras.
+- Anterior: `8141917` — Ship live Firestore rules, PIX Functions, and the Premium site cards.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored). Não copiar chave para o Git.
 
 ## O que o app faz agora

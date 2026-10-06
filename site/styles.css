@@ -1030,6 +1030,18 @@ h2 {
   word-break: break-all;
 }
 
+.pix-receipt-static {
+  text-align: left;
+  max-width: 280px;
+  margin: 0 auto 16px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.pix-receipt-static .bubble-caption {
+  margin: 0;
+  color: #0f172a;
+}
+
 .typing {
   display: flex;
   gap: 4px;
@@ -1304,8 +1316,10 @@ h2 {
 }
 
 .plan.featured {
-  border: 1.5px solid #d7e6ff;
-  box-shadow: 0 20px 40px rgba(47, 107, 255, 0.12);
+  background:
+    linear-gradient(180deg, #f3f7ff 0%, #ffffff 42%);
+  border: 1.5px solid #2f6bff;
+  box-shadow: 0 24px 48px rgba(47, 107, 255, 0.18);
 }
 
 .badge {
@@ -1319,10 +1333,42 @@ h2 {
   margin-bottom: 8px;
 }
 
+.plan.featured .badge {
+  background: var(--blue);
+  color: #fff;
+}
+
 .plan-kicker {
   color: var(--muted);
   font-weight: 700;
   margin: 6px 0 16px;
+}
+
+.plan-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
+.plan-price strong {
+  font-size: 34px;
+  letter-spacing: -0.04em;
+  color: var(--blue-dark);
+}
+
+.plan-price span {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.plan-include {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 14px;
+  margin: 0 0 14px;
 }
 
 .plan ul {
@@ -1350,9 +1396,51 @@ h2 {
   transform: rotate(-45deg);
 }
 
-.plan li.no {
-  color: #94a3b8;
-  text-decoration: line-through;
+.plan-extras {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.plan-extras li {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #dbe7ff;
+  box-shadow: 0 8px 18px rgba(47, 107, 255, 0.06);
+}
+
+.plan-extras li::before {
+  content: none;
+}
+
+.plan-extras strong {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.plan-extras span:not(.plan-ico) {
+  display: block;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.plan-ico {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--soft);
+  color: var(--blue);
 }
 
 .plan .btn {
@@ -1519,6 +1607,10 @@ h2 {
 
   .plan {
     padding: 22px;
+  }
+
+  .plan-price strong {
+    font-size: 28px;
   }
 
   .lock-time {

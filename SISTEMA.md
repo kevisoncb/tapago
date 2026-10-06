@@ -12,28 +12,37 @@ Arquivo vivo. Reescrito a cada alteração.
 
 ## Git neste PC
 
-- Branch `main`. Este commit sobe o overlay da caderneta para o remoto.
+- Branch `main`. Este retrato entra no commit que sobe para `origin/main`.
 
 ## O que o app faz agora
 
-Caderneta de fiado/empréstimo. Contatos na Configurações (pagos ou não). WhatsApp já usado por outra pessoa trava o Salvar. Sem “lançar mesmo assim”. Novo lançamento da mesma gente só pelo contato.
-
-Abater: sem juros, teclado direto; com juros, total / parte / juros do mês.
-
-Premium **R$ 39,90/mês**: voz no microfone e OCR no celular (ML Kit). Grátis: caderneta, WhatsApp no aparelho da pessoa, abate, dados na conta. Sem PDF. Sync/backup não são extra: são o banco da conta.
-
-Site em `site/`: planos alinhados a isso. Hosting ainda precisa de redeploy.
+Caderneta de fiado/empréstimo. Site em https://tapago-ae948.web.app. Grátis ilimitado. Premium R$ 39,90: voz, OCR e cobrança no texto. Firestore com rules no Console: dono só vê a própria caderneta; `is_premium` só Functions/Admin. PIX e Play passam por `https://tapago-ae948.web.app/api/...`.
 
 ## Mapa
 
-- App: `lib/`
 - Site: `site/`
-- Preço: `lib/utils/constants.dart`
+- Rules: `firestore.rules`
+- Functions: `functions/index.js` (Node 22, southamerica-east1)
+- Android: `com.tapago.tapago_app`
+
+## Firebase / Console
+
+- Projeto `tapago-ae948`, Blaze ativo.
+- Functions no ar: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`.
+- Env vazio até o Asaas: `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`.
+- Webhook: `https://tapago-ae948.web.app/api/webhooks/asaas`.
+
+## Último commit em origin/main
+
+Este push. Anterior: `1dd07e8` — Ship caderneta, Premium voice/OCR, and the marketing site.
 
 ## Pendências
 
-Redeploy hosting. Play (IAP a R$ 39,90). Functions/Asaas no ar. Testar voz e OCR no aparelho.
+1. Asaas no CPF (migrar para CNPJ depois): colar chaves nas Functions.
+2. Android SDK + keystore + AAB + Play (`tapago_premium_monthly` R$ 39,90).
+3. Auth e-mail/senha no Console.
+4. Domínio tapago.app.
 
-## Última sessão (5/out)
+## Última sessão (6/out)
 
-App local desligado. Commit e push do overlay (caderneta, voz, OCR, site, duplicata).
+Blaze, Functions e `/api` no ar. Site Premium só com as vantagens pagas. Conta Asaas sobe no CPF.

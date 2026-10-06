@@ -136,7 +136,7 @@ async function playChat() {
     await wait(line.pix ? 1200 : 900);
     dots.remove();
     addBubble(line);
-    await wait(line.pix ? 1400 : 700);
+    await wait(line.pix ? 2400 : 700);
   }
   await playAbateOnPhone();
   await wait(2800);

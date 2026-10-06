@@ -2,7 +2,7 @@
   "name": "tapago-functions",
   "description": "Webhook do Asaas para liberar o Premium no Firestore.",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "private": true,

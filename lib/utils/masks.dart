@@ -205,6 +205,26 @@ bool isValidCpfOrCnpj(String value) {
   return false;
 }
 
+bool isValidEmail(String value) {
+  return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(sanitizeEmail(value));
+}
+
+/// Chave PIX: e-mail, celular, CPF/CNPJ (com dígito) ou chave aleatória.
+bool isValidPixKey(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return true;
+  if (trimmed.contains('@')) return isValidEmail(trimmed);
+  if (RegExp(r'[A-Za-z]').hasMatch(trimmed)) {
+    final hex = trimmed.replaceAll(RegExp(r'[^a-fA-F0-9]'), '');
+    return hex.length == 32;
+  }
+  final digits = digitsOnly(trimmed);
+  if (_looksLikePhone(digits)) return isValidPhoneBr(digits);
+  if (digits.length == 11) return isValidCpf(digits);
+  if (digits.length == 14) return isValidCnpj(digits);
+  return false;
+}
+
 String _takeDigits(String value, int max) {
   final digits = digitsOnly(value);
   return digits.length > max ? digits.substring(0, max) : digits;

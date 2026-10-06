@@ -180,6 +180,14 @@ class _AuthPageState extends State<AuthPage> {
                     NoSpaceFormatter(),
                     LengthLimitingTextInputFormatter(64),
                   ],
+                  suffix: IconButton(
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 _TermsAccept(

@@ -216,6 +216,12 @@ Troco: R\$ 0,00
     expect(parseMoneyInput(r'R$ 1.250,50'), 1250.50);
     expect(formatPercentInput('20,00'), '20,00');
     expect(parsePercentInput('20,00'), 20);
+    expect(isValidPixKey('ana@email.com'), isTrue);
+    expect(isValidPixKey('ANA@EMAIL.COM'), isTrue);
+    expect(isValidPixKey('123.456.789-09'), isTrue);
+    expect(isValidPixKey('111.111.111-11'), isFalse);
+    expect(isValidPixKey('11988881234'), isTrue);
+    expect(isValidPixKey(''), isTrue);
   });
 
   test('histórico diz se foi juros ou valor total', () {

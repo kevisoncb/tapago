@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20261006c" />
     <link rel="icon" href="./assets/tapago-icon.jpg" type="image/jpeg" />
     <link rel="apple-touch-icon" href="./assets/tapago-icon.jpg" />
   </head>
@@ -290,12 +290,22 @@
           </p>
         </div>
         <div class="ocr-card">
-          <div class="receipt" aria-hidden="true">
-            <span>Comprovante PIX</span>
-            <strong>R$ 150,00</strong>
-            <small>Ana Costa · hoje</small>
-          </div>
-          <p class="ocr-result">Lido e abatido na caderneta.</p>
+          <article class="pix-receipt pix-receipt-static" aria-label="Comprovante PIX">
+            <header class="pix-receipt-head">
+              <span class="pix-mark">PIX</span>
+              <p>Transferência concluída</p>
+            </header>
+            <p class="pix-amount">R$ 1.450,00</p>
+            <p class="pix-when">05/10/2026 às 03:05</p>
+            <div class="pix-receipt-body">
+              <div class="pix-row"><span>De</span><strong>Ricardo Carvalho</strong></div>
+              <div class="pix-row"><span>Para</span><strong>João</strong></div>
+              <div class="pix-row"><span>Chave</span><strong>joao.dinamico@email.com</strong></div>
+              <div class="pix-row"><span>ID</span><strong>E4a92c31b8f0d7e1</strong></div>
+            </div>
+            <p class="bubble-caption">Enviei. Valeu!</p>
+          </article>
+          <p class="ocr-result">No WhatsApp chega o comprovante. No app, você anexa e abate.</p>
           <span class="pill pill-light">Somente no Premium</span>
         </div>
       </section>
@@ -368,12 +378,58 @@
           <article class="plan featured">
             <p class="badge">Voz e recibos, quando a mão cansar</p>
             <h3>Premium</h3>
-            <p class="plan-kicker">R$ 39,90/mês · cancela quando quiser</p>
-            <ul>
-              <li>Tudo o que tem no plano livre</li>
-              <li>Cadastro por voz</li>
-              <li>OCR de recibos e comprovantes</li>
-              <li>Cobrança no seu texto</li>
+            <p class="plan-price">
+              <strong>R$ 39,90</strong>
+              <span>/mês · cancela quando quiser</span>
+            </p>
+            <p class="plan-include">Tudo do plano grátis, e ainda:</p>
+            <ul class="plan-extras">
+              <li>
+                <span class="plan-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+                    <path
+                      d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Cadastro por voz</strong>
+                  <span>Fala nome, valor e vencimento. O app monta o lançamento.</span>
+                </div>
+              </li>
+              <li>
+                <span class="plan-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                    <rect x="3" y="6" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2" />
+                    <circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 6l1.2-2h5.6L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>OCR de recibos e comprovantes</strong>
+                  <span>Tira foto do PIX. O valor entra e o saldo baixa sozinho.</span>
+                </div>
+              </li>
+              <li>
+                <span class="plan-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                    <path
+                      d="M4 6.5A3.5 3.5 0 0 1 7.5 3h9A3.5 3.5 0 0 1 20 6.5v6A3.5 3.5 0 0 1 16.5 16H13l-4.2 3.2c-.7.54-1.8.04-1.8-.82V16H7.5A3.5 3.5 0 0 1 4 12.5v-6Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <path d="M8 8.5h8M8 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Cobrança no seu texto</strong>
+                  <span>A mensagem do WhatsApp sai com as suas palavras, não um texto genérico.</span>
+                </div>
+              </li>
             </ul>
             <a class="btn" href="mailto:ola@tapago.app?subject=Quero%20ser%20Premium"
               >Quero ser Premium</a
@@ -401,6 +457,6 @@
         pessoais conforme a Lei nº 13.709/2018 (LGPD).
       </p>
     </footer>
-    <script src="./main.js"></script>
+    <script src="./main.js?v=20261006"></script>
   </body>
 </html>

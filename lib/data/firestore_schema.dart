@@ -18,6 +18,8 @@
 /// - aceite_termos_em: timestamp
 /// - aceite_privacidade_em: timestamp
 ///
+/// Coleção `PremiumCharges` (só Admin SDK / Functions)
+///
 /// Coleção `Debts` (documentId = debtId)
 /// - user_id: string
 /// - nome: string
@@ -39,4 +41,5 @@ class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';
   static const payments = 'Payments';
+  static const premiumCharges = 'PremiumCharges';
 }

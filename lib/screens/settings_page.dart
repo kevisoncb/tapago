@@ -430,8 +430,16 @@ class SettingsPage extends StatelessWidget {
               PrimaryButton(
                 label: 'Salvar chave',
                 onPressed: () async {
+                  final chave = formatPixKey(controller.text);
+                  if (chave.isNotEmpty && !isValidPixKey(chave)) {
+                    showTapagoSnack(
+                      context,
+                      'Chave PIX inválida. Use CPF/CNPJ válido, e-mail, celular ou chave aleatória.',
+                    );
+                    return;
+                  }
                   await state.saveUser(
-                    state.user.copyWith(chavePix: formatPixKey(controller.text)),
+                    state.user.copyWith(chavePix: chave),
                   );
                   if (context.mounted) Navigator.pop(context);
                 },
@@ -473,6 +481,7 @@ class SettingsPage extends StatelessWidget {
                 controller: banco,
                 textCapitalization: TextCapitalization.words,
                 keyboardType: TextInputType.name,
+                inputFormatters: [NameMaskFormatter()],
               ),
               const SizedBox(height: 12),
               AppTextField(

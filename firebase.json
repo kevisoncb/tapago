@@ -47,10 +47,46 @@
     ],
     "headers": [
       {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, max-age=0" }
+        ]
+      },
+      {
         "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|css|js)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=604800" }
         ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/api/premium/pix",
+        "function": {
+          "functionId": "createPremiumPix",
+          "region": "southamerica-east1"
+        }
+      },
+      {
+        "source": "/api/premium/pix/**",
+        "function": {
+          "functionId": "premiumPixStatus",
+          "region": "southamerica-east1"
+        }
+      },
+      {
+        "source": "/api/play/confirm",
+        "function": {
+          "functionId": "confirmPlayPurchase",
+          "region": "southamerica-east1"
+        }
+      },
+      {
+        "source": "/api/webhooks/asaas",
+        "function": {
+          "functionId": "asaasWebhook",
+          "region": "southamerica-east1"
+        }
       }
     ]
   }

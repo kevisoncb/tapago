@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import '../utils/constants.dart';
@@ -36,7 +37,7 @@ class AsaasClient {
   }) async {
     final response = await _http.post(
       Uri.parse('$_base/premium/pix'),
-      headers: {'content-type': 'application/json'},
+      headers: await _headers(),
       body: jsonEncode({
         'userId': userId,
         'name': name,
@@ -63,12 +64,40 @@ class AsaasClient {
     final uri = Uri.parse('$_base/premium/pix/$paymentId').replace(
       queryParameters: {'userId': userId},
     );
-    final response = await _http.get(uri);
+    final response = await _http.get(uri, headers: await _headers());
     final data = _decode(response);
     if (response.statusCode >= 400) {
       throw AsaasException(_message(data) ?? 'Não foi possível consultar o PIX.');
     }
     return data['status'] as String? ?? 'PENDING';
+  }
+
+  Future<void> confirmPlayPurchase({String? transactionId}) async {
+    final response = await _http.post(
+      Uri.parse('$_base/play/confirm'),
+      headers: await _headers(),
+      body: jsonEncode({
+        if (transactionId != null && transactionId.isNotEmpty)
+          'transactionId': transactionId,
+      }),
+    );
+    if (response.statusCode >= 400) {
+      final data = _decode(response);
+      throw AsaasException(
+        _message(data) ?? 'Não foi possível confirmar a compra na loja.',
+      );
+    }
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final headers = {'content-type': 'application/json'};
+    try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (_) {}
+    return headers;
   }
 
   Map<String, dynamic> _decode(http.Response response) {

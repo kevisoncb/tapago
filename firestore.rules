@@ -1,22 +1,228 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: Users
+    // Document ID: Firebase Auth uid
+    // Fields:
+    //   - email: string (required)
+    //   - nome: string (required)
+    //   - chave_pix: string
+    //   - telefone: string (optional)
+    //   - whatsapp_conectado: bool
+    //   - notificacoes_diarias: bool
+    //   - acesso_biometrico: bool
+    //   - banco, agencia, conta: string
+    //   - mensagem_cobranca: string
+    //   - aceite_termos_em, aceite_privacidade_em: timestamp (optional)
+    //   - is_premium: bool (server-only after create)
+    //   - premium_vence_em: timestamp (server-only)
+    //   - premium_transaction_id: string (server-only)
+    //
+    // Collection: Debts
+    // Document ID: debtId
+    // Fields:
+    //   - user_id: string (immutable, must equal auth.uid)
+    //   - nome, telefone: string
+    //   - valor_principal, taxa_juros: number
+    //   - data_vencimento, created_at: timestamp
+    //   - status_pago: bool
+    //   - client_score: number
+    //
+    // Collection: Payments
+    // Document ID: paymentId
+    // Fields:
+    //   - user_id: string (immutable, must equal auth.uid)
+    //   - debt_id: string
+    //   - valor: number
+    //   - data: timestamp
+    //   - descricao: string
+    //
+    // Collection: PremiumCharges
+    // Written only by Admin SDK (webhook / Functions). Clients: deny.
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function optionalString(data, field, maxLen) {
+      return !(field in data)
+        || data[field] == null
+        || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function requiredString(data, field, maxLen) {
+      return data[field] is string
+        && data[field].size() > 0
+        && data[field].size() <= maxLen;
+    }
+
+    function optionalBool(data, field) {
+      return !(field in data) || data[field] is bool;
+    }
+
+    function optionalTimestamp(data, field) {
+      return !(field in data) || data[field] == null || data[field] is timestamp;
+    }
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields([
+          'email',
+          'nome',
+          'chave_pix',
+          'telefone',
+          'whatsapp_conectado',
+          'notificacoes_diarias',
+          'acesso_biometrico',
+          'banco',
+          'agencia',
+          'conta',
+          'mensagem_cobranca',
+          'aceite_termos_em',
+          'aceite_privacidade_em',
+          'is_premium',
+          'premium_vence_em',
+          'premium_transaction_id',
+        ])
+        && requiredString(data, 'email', 120)
+        && requiredString(data, 'nome', 80)
+        && optionalString(data, 'chave_pix', 120)
+        && optionalString(data, 'telefone', 24)
+        && optionalString(data, 'banco', 80)
+        && optionalString(data, 'agencia', 20)
+        && optionalString(data, 'conta', 24)
+        && optionalString(data, 'mensagem_cobranca', 2000)
+        && optionalBool(data, 'whatsapp_conectado')
+        && optionalBool(data, 'notificacoes_diarias')
+        && optionalBool(data, 'acesso_biometrico')
+        && optionalTimestamp(data, 'aceite_termos_em')
+        && optionalTimestamp(data, 'aceite_privacidade_em')
+        && optionalBool(data, 'is_premium')
+        && optionalTimestamp(data, 'premium_vence_em')
+        && optionalString(data, 'premium_transaction_id', 120);
+    }
+
+    function premiumUnchanged() {
+      return request.resource.data.get('is_premium', false)
+          == resource.data.get('is_premium', false)
+        && request.resource.data.get('premium_vence_em', null)
+          == resource.data.get('premium_vence_em', null)
+        && request.resource.data.get('premium_transaction_id', null)
+          == resource.data.get('premium_transaction_id', null);
+    }
+
+    function premiumStartsFree() {
+      return dataFalse(request.resource.data, 'is_premium')
+        && request.resource.data.get('premium_vence_em', null) == null
+        && request.resource.data.get('premium_transaction_id', null) == null;
+    }
+
+    function dataFalse(data, field) {
+      return !(field in data) || data[field] == false;
+    }
+
+    function isValidDebt(data) {
+      return hasOnlyAllowedFields([
+          'user_id',
+          'nome',
+          'telefone',
+          'valor_principal',
+          'taxa_juros',
+          'data_vencimento',
+          'status_pago',
+          'client_score',
+          'created_at',
+        ])
+        && data.user_id is string
+        && data.user_id == request.auth.uid
+        && requiredString(data, 'nome', 80)
+        && optionalString(data, 'telefone', 24)
+        && data.valor_principal is number
+        && data.valor_principal >= 0
+        && data.valor_principal <= 100000000
+        && data.taxa_juros is number
+        && data.taxa_juros >= 0
+        && data.taxa_juros <= 1000
+        && data.data_vencimento is timestamp
+        && data.status_pago is bool
+        && data.client_score is number
+        && data.client_score >= 0
+        && data.client_score <= 100
+        && optionalTimestamp(data, 'created_at');
+    }
+
+    function isValidPayment(data) {
+      return hasOnlyAllowedFields([
+          'user_id',
+          'debt_id',
+          'valor',
+          'data',
+          'descricao',
+        ])
+        && data.user_id is string
+        && data.user_id == request.auth.uid
+        && data.debt_id is string
+        && data.debt_id.size() > 0
+        && data.debt_id.size() <= 80
+        && data.valor is number
+        && data.valor > 0
+        && data.valor <= 100000000
+        && data.data is timestamp
+        && data.descricao is string
+        && data.descricao.size() > 0
+        && data.descricao.size() <= 80;
     }
 
     match /Users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidUser(request.resource.data)
+        && premiumStartsFree();
+      allow update: if isOwner(userId)
+        && isValidUser(request.resource.data)
+        && premiumUnchanged();
+      allow delete: if false;
     }
 
     match /Debts/{debtId} {
-      allow read, delete, update: if isOwner(resource.data.user_id);
-      allow create: if isOwner(request.resource.data.user_id);
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated() && isValidDebt(request.resource.data);
+      allow update: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && isValidDebt(request.resource.data)
+        && request.resource.data.user_id == resource.data.user_id;
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
     }
 
     match /Payments/{paymentId} {
-      allow read, delete, update: if isOwner(resource.data.user_id);
-      allow create: if isOwner(request.resource.data.user_id);
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated() && isValidPayment(request.resource.data);
+      allow update: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && isValidPayment(request.resource.data)
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.debt_id == resource.data.debt_id;
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+
+    match /PremiumCharges/{chargeId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

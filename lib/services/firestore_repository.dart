@@ -36,9 +36,8 @@ class FirestoreRepository implements AppRepository {
     if (snap.exists) return;
     await _users.doc(profile.id).set({
       'email': profile.email,
-      'is_premium': profile.isPremium,
-      'chave_pix': profile.chavePix,
       'nome': profile.nome,
+      'chave_pix': profile.chavePix,
       'telefone': profile.telefone,
       'whatsapp_conectado': profile.whatsappConectado,
       'notificacoes_diarias': profile.notificacoesDiarias,
@@ -47,10 +46,9 @@ class FirestoreRepository implements AppRepository {
       'agencia': profile.agencia,
       'conta': profile.conta,
       'mensagem_cobranca': profile.mensagemCobranca,
-      'premium_vence_em': profile.premiumVenceEm,
-      'premium_transaction_id': profile.premiumTransactionId,
       'aceite_termos_em': profile.aceiteTermosEm,
       'aceite_privacidade_em': profile.aceitePrivacidadeEm,
+      'is_premium': false,
     }, SetOptions(merge: true));
   }
 
@@ -65,9 +63,8 @@ class FirestoreRepository implements AppRepository {
   Future<void> saveUser(AppUser user) async {
     await _users.doc(user.id).set({
       'email': user.email,
-      'is_premium': user.isPremium,
-      'chave_pix': user.chavePix,
       'nome': user.nome,
+      'chave_pix': user.chavePix,
       'telefone': user.telefone,
       'whatsapp_conectado': user.whatsappConectado,
       'notificacoes_diarias': user.notificacoesDiarias,
@@ -76,8 +73,6 @@ class FirestoreRepository implements AppRepository {
       'agencia': user.agencia,
       'conta': user.conta,
       'mensagem_cobranca': user.mensagemCobranca,
-      'premium_vence_em': user.premiumVenceEm,
-      'premium_transaction_id': user.premiumTransactionId,
       'aceite_termos_em': user.aceiteTermosEm,
       'aceite_privacidade_em': user.aceitePrivacidadeEm,
     }, SetOptions(merge: true));

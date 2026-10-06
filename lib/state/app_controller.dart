@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
 import '../services/app_repository.dart';
+import '../services/asaas_client.dart';
 import '../services/billing_service.dart';
 import '../services/biometric_service.dart';
 import '../services/debt_balance.dart';
@@ -205,6 +206,10 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> activatePremium() async {
+    if (usesFirestore) {
+      await _grantFromStore();
+      return;
+    }
     final next = user.copyWith(
       isPremium: true,
       premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
@@ -213,13 +218,18 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> grantConfirmedPix(String paymentId) async {
-    await saveUser(
-      user.copyWith(
-        isPremium: true,
-        premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
-        premiumTransactionId: paymentId,
-      ),
-    );
+    user = await _repository.getCurrentUser();
+    notifyListeners();
+    if (user.premiumAtivo) return;
+    if (!usesFirestore) {
+      await saveUser(
+        user.copyWith(
+          isPremium: true,
+          premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
+          premiumTransactionId: paymentId,
+        ),
+      );
+    }
   }
 
   Future<String?> subscribePremium() async {
@@ -231,7 +241,7 @@ class AppController extends ChangeNotifier {
       switch (update.outcome) {
         case PurchaseOutcome.purchased:
         case PurchaseOutcome.restored:
-          await activatePremium();
+          await _grantFromStore(transactionId: update.transactionId);
           return null;
         case PurchaseOutcome.pending:
           return 'A loja está confirmando o pagamento.';
@@ -239,12 +249,18 @@ class AppController extends ChangeNotifier {
           return 'Compra cancelada.';
         case PurchaseOutcome.unavailable:
         case PurchaseOutcome.missing:
-          await activatePremium();
-          return null;
+          if (kDebugMode && !usesFirestore) {
+            await activatePremium();
+            return null;
+          }
+          return update.message;
         case PurchaseOutcome.error:
           billingMessage = update.message;
           return update.message;
       }
+    } on AsaasException catch (error) {
+      billingMessage = error.message;
+      return error.message;
     } finally {
       billingBusy = false;
       notifyListeners();
@@ -256,7 +272,7 @@ class AppController extends ChangeNotifier {
     final update = await _billing?.restore();
     if (update?.outcome == PurchaseOutcome.restored ||
         update?.outcome == PurchaseOutcome.purchased) {
-      await activatePremium();
+      await _grantFromStore(transactionId: update?.transactionId);
       return null;
     }
     return update?.message ?? 'Nada para restaurar neste aparelho.';
@@ -271,8 +287,12 @@ class AppController extends ChangeNotifier {
   Future<void> _onPurchase(PurchaseUpdate update) async {
     if (update.outcome == PurchaseOutcome.purchased ||
         update.outcome == PurchaseOutcome.restored) {
-      await activatePremium();
-      billingMessage = null;
+      try {
+        await _grantFromStore(transactionId: update.transactionId);
+        billingMessage = null;
+      } on AsaasException catch (error) {
+        billingMessage = error.message;
+      }
       notifyListeners();
       return;
     }
@@ -280,6 +300,21 @@ class AppController extends ChangeNotifier {
       billingMessage = update.message;
       notifyListeners();
     }
+  }
+
+  Future<void> _grantFromStore({String? transactionId}) async {
+    if (usesFirestore) {
+      await AsaasClient().confirmPlayPurchase(transactionId: transactionId);
+      user = await _repository.getCurrentUser();
+      notifyListeners();
+      return;
+    }
+    final next = user.copyWith(
+      isPremium: true,
+      premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
+      premiumTransactionId: transactionId,
+    );
+    await saveUser(next);
   }
 
   Future<void> _syncReminders() async {

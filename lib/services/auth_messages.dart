@@ -1,3 +1,5 @@
+import '../utils/masks.dart';
+
 String authErrorMessage(String code) {
   switch (code) {
     case 'email-already-in-use':
@@ -29,8 +31,7 @@ String? validateAccount({
   bool acceptedTerms = false,
 }) {
   if (creating && nome.trim().length < 2) return 'Informe seu nome.';
-  final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.trim());
-  if (!emailOk) return 'E-mail inválido.';
+  if (!isValidEmail(email)) return 'E-mail inválido.';
   if (password.contains(RegExp(r'\s'))) return 'A senha não pode ter espaços.';
   if (password.length < 6) return 'A senha precisa ter pelo menos 6 caracteres.';
   if (creating && passwordConfirm != null && passwordConfirm != password) {
@@ -38,7 +39,7 @@ String? validateAccount({
   }
   if (creating) {
     final phone = telefone == null ? '' : telefone.replaceAll(RegExp(r'\D'), '');
-    if (phone.isNotEmpty && phone.length != 10 && phone.length != 11) {
+    if (phone.isNotEmpty && !isValidPhoneBr(phone)) {
       return 'Informe um WhatsApp válido.';
     }
     if (!acceptedTerms) {

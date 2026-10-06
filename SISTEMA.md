@@ -12,8 +12,7 @@ Arquivo vivo. Reescrito a cada alteração.
 
 ## Git neste PC
 
-- Branch `main`. Este retrato sobe neste commit para `origin/main`.
-- Anterior: `df2e5cb`. Asaas já no CNPJ. Ajuda no site e no app, WhatsApp só no clique, número nunca na tela.
+- Branch `main`. Origin após este push: `617a57d` — Route site and app help to WhatsApp without showing the number.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
 
 ## O que o app faz agora

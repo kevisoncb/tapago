@@ -16,5 +16,5 @@ Depois de criar, alterar ou remover código:
 1. **Apagar o conteúdo de `SISTEMA.md` e reescrever** com o estado atual.
 2. Manter: o que o app faz agora, mapa de pastas/telas, dados, último commit, pendências, última sessão.
 3. Não acumular changelog. O arquivo é um retrato atual, não um diário infinito.
-4. Feature e ideia nova só na branch `develop`. A `main` é produção: não misturar.
-5. Entre PCs: produção é `origin/main`. Desenvolvimento é `origin/develop`.
+4. Feature e ideia nova só na branch `dev`. A `producao` (e a `main`) é o estável: não misturar.
+5. Entre PCs: teste é `origin/dev`. Produção é `origin/producao` e `origin/main`.

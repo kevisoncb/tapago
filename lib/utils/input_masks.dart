@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import 'boleto_code.dart';
 import 'masks.dart';
 
 class _FnMaskFormatter extends TextInputFormatter {
@@ -26,6 +27,14 @@ class PhoneMaskFormatter extends _FnMaskFormatter {
 
 class CpfCnpjMaskFormatter extends _FnMaskFormatter {
   CpfCnpjMaskFormatter() : super(formatCpfCnpj);
+}
+
+class CnpjMaskFormatter extends _FnMaskFormatter {
+  CnpjMaskFormatter() : super(formatCnpj);
+}
+
+class BoletoCodeMaskFormatter extends _FnMaskFormatter {
+  BoletoCodeMaskFormatter() : super(formatBoletoCode);
 }
 
 class MoneyMaskFormatter extends _FnMaskFormatter {

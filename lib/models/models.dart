@@ -327,3 +327,125 @@ class Payment {
     );
   }
 }
+
+/// Conta que a empresa precisa pagar (fornecedor, imposto, aluguel...).
+class Boleto {
+  const Boleto({
+    required this.id,
+    required this.userId,
+    required this.empresa,
+    required this.valor,
+    required this.dataVencimento,
+    this.cnpj = '',
+    this.descricao = '',
+    this.linhaDigitavel = '',
+    this.statusPago = false,
+    this.pagoEm,
+    this.createdAt,
+  });
+
+  final String id;
+  final String userId;
+  final String empresa;
+  final double valor;
+  final DateTime dataVencimento;
+  final String cnpj;
+  final String descricao;
+  final String linhaDigitavel;
+  final bool statusPago;
+  final DateTime? pagoEm;
+  final DateTime? createdAt;
+
+  int diasParaVencer([DateTime? now]) {
+    final ref = now ?? DateTime.now();
+    final start = DateTime(ref.year, ref.month, ref.day);
+    final due = DateTime(
+      dataVencimento.year,
+      dataVencimento.month,
+      dataVencimento.day,
+    );
+    return due.difference(start).inDays;
+  }
+
+  bool get isOverdue => !statusPago && diasParaVencer() < 0;
+
+  bool get venceLogo {
+    if (statusPago) return false;
+    final dias = diasParaVencer();
+    return dias >= 0 && dias <= 3;
+  }
+
+  Boleto copyWith({
+    String? empresa,
+    double? valor,
+    DateTime? dataVencimento,
+    String? cnpj,
+    String? descricao,
+    String? linhaDigitavel,
+    bool? statusPago,
+    DateTime? pagoEm,
+    bool clearPagoEm = false,
+  }) {
+    return Boleto(
+      id: id,
+      userId: userId,
+      empresa: empresa ?? this.empresa,
+      valor: valor ?? this.valor,
+      dataVencimento: dataVencimento ?? this.dataVencimento,
+      cnpj: cnpj ?? this.cnpj,
+      descricao: descricao ?? this.descricao,
+      linhaDigitavel: linhaDigitavel ?? this.linhaDigitavel,
+      statusPago: statusPago ?? this.statusPago,
+      pagoEm: clearPagoEm ? null : (pagoEm ?? this.pagoEm),
+      createdAt: createdAt,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'empresa': empresa,
+      'cnpj': cnpj,
+      'descricao': descricao,
+      'valor': valor,
+      'data_vencimento': dataVencimento.toIso8601String(),
+      'linha_digitavel': linhaDigitavel,
+      'status_pago': statusPago,
+      'pago_em': pagoEm?.toIso8601String(),
+      'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'user_id': userId,
+      'empresa': empresa,
+      'cnpj': cnpj,
+      'descricao': descricao,
+      'valor': valor,
+      'data_vencimento': dataVencimento,
+      'linha_digitavel': linhaDigitavel,
+      'status_pago': statusPago,
+      'pago_em': pagoEm,
+      'created_at': createdAt ?? DateTime.now(),
+    };
+  }
+
+  factory Boleto.fromMap(Map<String, dynamic> map, {String? id}) {
+    return Boleto(
+      id: id ?? map['id'] as String? ?? '',
+      userId: map['user_id'] as String? ?? '',
+      empresa: map['empresa'] as String? ?? '',
+      cnpj: map['cnpj'] as String? ?? '',
+      descricao: map['descricao'] as String? ?? '',
+      valor: (map['valor'] as num?)?.toDouble() ?? 0,
+      dataVencimento:
+          Debt._parseDate(map['data_vencimento']) ?? DateTime.now(),
+      linhaDigitavel: map['linha_digitavel'] as String? ?? '',
+      statusPago: map['status_pago'] as bool? ?? false,
+      pagoEm: Debt._parseDate(map['pago_em']),
+      createdAt: Debt._parseDate(map['created_at']),
+    );
+  }
+}

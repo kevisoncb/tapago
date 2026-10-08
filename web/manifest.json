@@ -1,11 +1,11 @@
 {
-    "name": "TáPago",
-    "short_name": "TáPago",
+    "name": "Pagô!",
+    "short_name": "Pagô!",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "TáPago — caderneta de fiado, a prazo e empréstimo.",
+    "description": "Pagô! — E aí, pagô? Caderneta de fiado e boletos da empresa.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -473,7 +473,7 @@ class _OcrButton extends StatelessWidget {
     if (kIsWeb) {
       showTapagoSnack(
         context,
-        'A leitura do comprovante funciona no celular. Abra o TáPago no Android.',
+        'A leitura do comprovante funciona no celular. Abra o Pagô! no Android.',
       );
       return;
     }
@@ -732,7 +732,7 @@ class _MiniPremiumBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'TáPago Premium',
+                  'Pagô! Premium',
                   style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
                 ),
                 Text(

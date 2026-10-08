@@ -7,15 +7,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>TáPago</string>
+	<string>Pagô!</string>
 	<key>NSCameraUsageDescription</key>
-	<string>O TáPago usa a câmera para ler comprovantes com OCR.</string>
+	<string>O Pagô usa a câmera para ler comprovantes com OCR.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>O TáPago acessa suas fotos para anexar comprovantes de pagamento.</string>
+	<string>O Pagô acessa suas fotos para anexar comprovantes de pagamento.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>O TáPago usa o microfone para cadastrar lançamentos por voz.</string>
+	<string>O Pagô usa o microfone para cadastrar lançamentos por voz.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>O TáPago transforma o que você fala em nome, valor e vencimento do lançamento.</string>
+	<string>O Pagô transforma o que você fala em nome, valor e vencimento do lançamento.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>
@@ -28,7 +28,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>TáPago</string>
+	<string>Pagô!</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

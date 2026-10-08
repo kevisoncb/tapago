@@ -39,6 +39,7 @@ class AppController extends ChangeNotifier {
   );
   List<Debt> debts = [];
   List<Payment> payments = [];
+  List<Boleto> boletos = [];
   bool loading = true;
   String? errorMessage;
   bool billingBusy = false;
@@ -92,6 +93,26 @@ class AppController extends ChangeNotifier {
       .where((debt) => debt.isDueThisWeek || debt.isOverdue)
       .fold(0, (sum, debt) => sum + saldoOf(debt));
 
+  List<Boleto> get boletosAbertos {
+    return boletos.where((item) => !item.statusPago).toList()
+      ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+  }
+
+  List<Boleto> get boletosPagos {
+    return boletos.where((item) => item.statusPago).toList()
+      ..sort((a, b) => (b.pagoEm ?? b.dataVencimento)
+          .compareTo(a.pagoEm ?? a.dataVencimento));
+  }
+
+  double get boletosAPagar =>
+      boletosAbertos.fold(0, (sum, item) => sum + item.valor);
+
+  int get boletosVencidos =>
+      boletosAbertos.where((item) => item.isOverdue).length;
+
+  int get boletosVencendo =>
+      boletosAbertos.where((item) => item.venceLogo).length;
+
   List<Payment> paymentsFor(String debtId) {
     final list = payments.where((item) => item.debtId == debtId).toList()
       ..sort((a, b) => b.data.compareTo(a.data));
@@ -106,6 +127,11 @@ class AppController extends ChangeNotifier {
       user = await _repository.getCurrentUser();
       debts = await _repository.getDebts();
       payments = await _repository.getPayments();
+      try {
+        boletos = await _repository.getBoletos();
+      } catch (error) {
+        debugPrint('Boletos: $error');
+      }
       _billing?.onUpdate = _onPurchase;
       await _billing?.start();
       await _syncReminders();
@@ -203,6 +229,34 @@ class AppController extends ChangeNotifier {
 
   Future<void> markPaid(Debt debt) async {
     await upsertDebt(debt.copyWith(statusPago: true));
+  }
+
+  Future<void> upsertBoleto(Boleto boleto) async {
+    await _repository.upsertBoleto(boleto);
+    final exists = boletos.any((item) => item.id == boleto.id);
+    boletos = exists
+        ? [
+            for (final item in boletos)
+              if (item.id == boleto.id) boleto else item,
+          ]
+        : [...boletos, boleto];
+    notifyListeners();
+    await _syncReminders();
+  }
+
+  Future<void> deleteBoleto(String id) async {
+    await _repository.deleteBoleto(id);
+    boletos = boletos.where((item) => item.id != id).toList();
+    notifyListeners();
+    await _syncReminders();
+  }
+
+  Future<void> setBoletoPago(Boleto boleto, bool pago) async {
+    await upsertBoleto(
+      pago
+          ? boleto.copyWith(statusPago: true, pagoEm: DateTime.now())
+          : boleto.copyWith(statusPago: false, clearPagoEm: true),
+    );
   }
 
   Future<void> activatePremium() async {
@@ -328,6 +382,7 @@ class AppController extends ChangeNotifier {
         chavePix: user.chavePix,
         customTemplate: user.mensagemCobranca,
         isPremium: user.isPremium,
+        boletos: boletosAbertos,
       );
     } catch (error) {
       debugPrint('Lembretes: $error');

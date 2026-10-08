@@ -114,7 +114,7 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Text(
-            'TáPago Premium',
+            'Pagô! Premium',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
               fontWeight: FontWeight.w800,

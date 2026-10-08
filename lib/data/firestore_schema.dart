@@ -1,4 +1,4 @@
-/// Schema Firestore do TáPago.
+/// Schema Firestore do Pagô!.
 ///
 /// Coleção `Users` (documentId = uid)
 /// - email: string
@@ -37,9 +37,22 @@
 /// - valor: double
 /// - data: timestamp
 /// - descricao: string (Juros | Abatimento | Quitação)
+///
+/// Coleção `Boletos` (contas da empresa a pagar)
+/// - user_id: string
+/// - empresa: string
+/// - cnpj: string (opcional)
+/// - descricao: string (opcional)
+/// - valor: double
+/// - data_vencimento: timestamp
+/// - linha_digitavel: string (opcional)
+/// - status_pago: boolean
+/// - pago_em: timestamp (opcional)
+/// - created_at: timestamp
 class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';
   static const payments = 'Payments';
+  static const boletos = 'Boletos';
   static const premiumCharges = 'PremiumCharges';
 }

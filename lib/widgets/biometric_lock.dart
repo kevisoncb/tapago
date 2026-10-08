@@ -101,7 +101,7 @@ class _LockScreen extends StatelessWidget {
                 const Icon(Icons.fingerprint_rounded, size: 72, color: AppColors.primary),
                 const SizedBox(height: 16),
                 Text(
-                  'TáPago bloqueado',
+                  'Pagô! bloqueado',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,

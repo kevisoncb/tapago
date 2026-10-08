@@ -1,6 +1,7 @@
 class AppConstants {
-  static const appName = 'TáPago';
-  static const versionLabel = 'TáPago v2.4.0';
+  static const appName = 'Pagô!';
+  static const slogan = 'E aí, pagô?';
+  static const versionLabel = 'Pagô! v2.5.0';
   static const logoAsset = 'assets/brand/tapago-icon.jpg';
   static const premiumPrice = 39.90;
   static const premiumPriceLabel = r'R$ 39,90';
@@ -21,6 +22,6 @@ class AppConstants {
   static const lgpdUrl = '$siteOrigin/lgpd';
   static const supportWhatsApp = '5527999019162';
   static const helpUrl =
-      'https://wa.me/$supportWhatsApp?text=Oi%2C%20vim%20pelo%20T%C3%A1Pago%20e%20quero%20tirar%20uma%20d%C3%BAvida.';
+      'https://wa.me/$supportWhatsApp?text=Oi%2C%20vim%20pelo%20Pag%C3%B4%21%20e%20quero%20tirar%20uma%20d%C3%BAvida.';
   static const demoUserId = 'user_joao_dinamico';
 }

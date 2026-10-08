@@ -5,6 +5,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/models.dart';
+import '../utils/formatters.dart';
 import 'whatsapp_service.dart';
 
 enum ReminderKind { amanha, hoje, atraso }
@@ -22,6 +23,24 @@ ReminderKind? reminderKind({
     return ReminderKind.amanha;
   }
   if (vencimento.isBefore(start)) return ReminderKind.atraso;
+  return null;
+}
+
+enum BoletoAviso { emTresDias, amanha, hoje, vencido }
+
+BoletoAviso? boletoAviso({
+  required DateTime due,
+  required DateTime day,
+  required bool pago,
+}) {
+  if (pago) return null;
+  final vencimento = DateTime(due.year, due.month, due.day);
+  final start = DateTime(day.year, day.month, day.day);
+  final dias = vencimento.difference(start).inDays;
+  if (dias < 0) return BoletoAviso.vencido;
+  if (dias == 0) return BoletoAviso.hoje;
+  if (dias == 1) return BoletoAviso.amanha;
+  if (dias == 3) return BoletoAviso.emTresDias;
   return null;
 }
 
@@ -109,6 +128,7 @@ class ReminderService {
     String chavePix = '',
     String customTemplate = '',
     bool isPremium = false,
+    List<Boleto> boletos = const [],
   }) async {
     await init();
     if (!_ready) return;
@@ -177,7 +197,78 @@ class ReminderService {
         );
         slot++;
       }
+
+      for (final aviso in BoletoAviso.values) {
+        final group = boletos
+            .where(
+              (boleto) =>
+                  boletoAviso(
+                    due: boleto.dataVencimento,
+                    day: day,
+                    pago: boleto.statusPago,
+                  ) ==
+                  aviso,
+            )
+            .toList();
+        if (group.isEmpty) continue;
+        await _plugin.zonedSchedule(
+          slot,
+          _boletoTitle(aviso, group),
+          _boletoBody(group),
+          when,
+          _boletoDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: 'boleto|${aviso.name}|${group.first.id}',
+        );
+        slot++;
+      }
     }
+  }
+
+  static const _boletoDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'boletos',
+      'Boletos a pagar',
+      channelDescription: 'Avisos de vencimento dos boletos da empresa',
+      importance: Importance.high,
+      priority: Priority.high,
+    ),
+    iOS: DarwinNotificationDetails(),
+  );
+
+  String _boletoTitle(BoletoAviso aviso, List<Boleto> boletos) {
+    if (boletos.length == 1) {
+      final empresa = boletos.first.empresa;
+      switch (aviso) {
+        case BoletoAviso.emTresDias:
+          return 'Boleto de $empresa vence em 3 dias.';
+        case BoletoAviso.amanha:
+          return 'Boleto de $empresa vence amanhã.';
+        case BoletoAviso.hoje:
+          return 'E aí, pagô? Boleto de $empresa vence hoje.';
+        case BoletoAviso.vencido:
+          return 'Boleto de $empresa está vencido.';
+      }
+    }
+    final n = boletos.length;
+    switch (aviso) {
+      case BoletoAviso.emTresDias:
+        return '$n boletos vencem em 3 dias.';
+      case BoletoAviso.amanha:
+        return '$n boletos vencem amanhã.';
+      case BoletoAviso.hoje:
+        return 'E aí, pagô? $n boletos vencem hoje.';
+      case BoletoAviso.vencido:
+        return '$n boletos vencidos.';
+    }
+  }
+
+  String _boletoBody(List<Boleto> boletos) {
+    final total = boletos.fold<double>(0, (sum, item) => sum + item.valor);
+    if (boletos.length == 1) {
+      return '${Money.full(total)}. Abra o app para copiar o código.';
+    }
+    return 'Total ${Money.full(total)}. Abra o app para ver.';
   }
 
   Future<void> _onNotificationResponse(NotificationResponse response) async {

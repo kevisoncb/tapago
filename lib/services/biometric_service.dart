@@ -26,7 +26,7 @@ class BiometricService {
     if (!_supportedPlatform) return false;
     try {
       return await _auth.authenticate(
-        localizedReason: 'Use sua digital ou o reconhecimento facial para abrir o TáPago.',
+        localizedReason: 'Use sua digital ou o reconhecimento facial para abrir o Pagô!',
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,

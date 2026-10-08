@@ -116,7 +116,7 @@ exports.createPremiumPix = onRequest(httpOptions, async (req, res) => {
       billingType: "PIX",
       value: PREMIUM_VALUE,
       dueDate,
-      description: "TáPago Premium",
+      description: "Pagô! Premium",
       externalReference: user.uid,
     });
     const paymentId = payment.id || "";

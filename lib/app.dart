@@ -97,7 +97,7 @@ class _SignedInAppState extends State<SignedInApp> {
 
 Widget _materialApp({required Widget home, bool lock = false}) {
   return MaterialApp(
-    title: 'TáPago',
+    title: 'Pagô!',
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     locale: const Locale('pt', 'BR'),

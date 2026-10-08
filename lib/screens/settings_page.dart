@@ -247,7 +247,7 @@ class SettingsPage extends StatelessWidget {
                 subtitle: 'Português (BR)',
                 onTap: () => showTapagoSnack(
                   context,
-                  'O TáPago está disponível em Português (BR).',
+                  'O Pagô! está disponível em Português (BR).',
                 ),
               ),
             ],
@@ -275,7 +275,7 @@ class SettingsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TáPago Premium',
+                            'Pagô! Premium',
                             style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.w800,
                             ),

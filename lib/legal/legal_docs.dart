@@ -36,8 +36,8 @@ class LegalDocs {
   static const termos = <LegalSection>[
     LegalSection(
       '1. Quem somos e o que estes termos regulam',
-      'Estes Termos de Uso regulam o acesso e o uso do aplicativo e do site TáPago, caderneta digital para organizar fiado, venda a prazo e empréstimos entre o usuário e os clientes que ele cadastra.\n\n'
-          'O TáPago não é instituição financeira, não é correspondente bancário, não concede crédito em nome próprio e não intermedia o pagamento entre você e o seu cliente, salvo no fluxo de assinatura Premium, quando indicado.\n\n'
+      'Estes Termos de Uso regulam o acesso e o uso do aplicativo e do site Pagô, caderneta digital para organizar fiado, venda a prazo e empréstimos entre o usuário e os clientes que ele cadastra.\n\n'
+          'O Pagô não é instituição financeira, não é correspondente bancário, não concede crédito em nome próprio e não intermedia o pagamento entre você e o seu cliente, salvo no fluxo de assinatura Premium, quando indicado.\n\n'
           'Ao criar uma conta ou usar o serviço, você declara ter 18 anos ou mais, capacidade civil e concordar com estes Termos e com a Política de Privacidade. O aceite eletrônico vale como manifestação de vontade, nos termos do Marco Civil da Internet (Lei nº 12.965/2014) e da Medida Provisória nº 2.200-2/2001.',
     ),
     LegalSection(
@@ -47,14 +47,14 @@ class LegalDocs {
     ),
     LegalSection(
       '3. O serviço',
-      'O plano gratuito permite cadastrar clientes e lançamentos, abater valores na caderneta (inclusive juros, quando você usa essa função) e abrir mensagens de cobrança no WhatsApp da sua conta (wa.me). O TáPago não envia mensagem em nome próprio ao seu cliente: o disparo sai do seu aplicativo de mensagens.\n\n'
+      'O plano gratuito permite cadastrar clientes e lançamentos, abater valores na caderneta (inclusive juros, quando você usa essa função) e abrir mensagens de cobrança no WhatsApp da sua conta (wa.me). O Pagô não envia mensagem em nome próprio ao seu cliente: o disparo sai do seu aplicativo de mensagens.\n\n'
           'A caderneta da conta fica no banco de dados do serviço. Isso vale no plano gratuito e no Premium: não é um extra pago. Juros são opcionais e definidos por você. O registro de “somente juros” ou “valor total” é ferramenta interna da sua conta e não substitui contrato, recibo ou título que você eventualmente emita com o cliente.\n\n'
           'Recursos Premium (quando contratados) incluem cadastro por voz, leitura de recibos e mensagem de cobrança no seu texto. Funções anunciadas e ainda em implantação serão indicadas no app.',
     ),
     LegalSection(
       '4. Relação com os seus clientes',
       'Os clientes, valores e telefones que você cadastra são da sua operação. Você é o controlador desses dados e deve ter base legal para tratá-los (relação comercial, contrato, consentimento ou outra hipótese da LGPD).\n\n'
-          'Cobranças devem respeitar o Código de Defesa do Consumidor (Lei nº 8.078/1990), em especial o art. 42: é vedado expor o consumidor a ridículo, constrangimento ou ameaça. É proibido usar o TáPago para assédio, fraude, ameaça, discriminação ou cobrança ilegal. Mensagens ofensivas ou fora da lei são de sua responsabilidade.',
+          'Cobranças devem respeitar o Código de Defesa do Consumidor (Lei nº 8.078/1990), em especial o art. 42: é vedado expor o consumidor a ridículo, constrangimento ou ameaça. É proibido usar o Pagô para assédio, fraude, ameaça, discriminação ou cobrança ilegal. Mensagens ofensivas ou fora da lei são de sua responsabilidade.',
     ),
     LegalSection(
       '5. Assinatura Premium',
@@ -63,12 +63,12 @@ class LegalDocs {
     ),
     LegalSection(
       '6. Propriedade intelectual',
-      'Marca, layout, código e conteúdos do TáPago pertencem aos seus titulares. Você não adquire licença para copiar, revender, descompilar ou explorar o serviço senão para o uso pessoal da conta. Os dados que você lança na caderneta continuam seus.',
+      'Marca, layout, código e conteúdos do Pagô pertencem aos seus titulares. Você não adquire licença para copiar, revender, descompilar ou explorar o serviço senão para o uso pessoal da conta. Os dados que você lança na caderneta continuam seus.',
     ),
     LegalSection(
       '7. Disponibilidade e limitação de responsabilidade',
       'O serviço é prestado “como disponível”. Podemos interromper, corrigir falhas e alterar funções. Não garantimos que lembretes, sincronização ou abertura do WhatsApp funcionem em todo aparelho ou operadora.\n\n'
-          'Na medida permitida pela lei, o TáPago não responde por lucros cessantes, inadimplência do seu cliente, bloqueio de WhatsApp, indisponibilidade de terceiros (Google, WhatsApp, Asaas) nem por lançamentos que você cadastrar de forma incorreta. Isso não afasta direitos irrenunciáveis do CDC quando você for consumidor do app.',
+          'Na medida permitida pela lei, o Pagô não responde por lucros cessantes, inadimplência do seu cliente, bloqueio de WhatsApp, indisponibilidade de terceiros (Google, WhatsApp, Asaas) nem por lançamentos que você cadastrar de forma incorreta. Isso não afasta direitos irrenunciáveis do CDC quando você for consumidor do app.',
     ),
     LegalSection(
       '8. Privacidade',
@@ -88,7 +88,7 @@ class LegalDocs {
   static const privacidade = <LegalSection>[
     LegalSection(
       '1. Controlador e contato',
-      'O TáPago é o controlador dos dados da sua conta (cadastro, assinatura, uso do app). Dos dados dos clientes que você informa (nome, telefone, valores), você é o controlador e o TáPago atua como operador, nos termos da LGPD.\n\n'
+      'O Pagô é o controlador dos dados da sua conta (cadastro, assinatura, uso do app). Dos dados dos clientes que você informa (nome, telefone, valores), você é o controlador e o Pagô atua como operador, nos termos da LGPD.\n\n'
           'Encarregado / canal LGPD: ola@tapago.app. Pedidos de titular serão respondidos no prazo legal.',
     ),
     LegalSection(
@@ -124,7 +124,7 @@ class LegalDocs {
     ),
     LegalSection(
       '8. Segurança e crianças',
-      'Usamos autenticação, regras de acesso e SSL. Nenhum sistema é infalível. O TáPago não se destina a menores de 18 anos.',
+      'Usamos autenticação, regras de acesso e SSL. Nenhum sistema é infalível. O Pagô não se destina a menores de 18 anos.',
     ),
     LegalSection(
       '9. Alterações',
@@ -135,7 +135,7 @@ class LegalDocs {
   static const lgpd = <LegalSection>[
     LegalSection(
       'Papéis',
-      'Na sua conta, o TáPago é controlador. Nos dados dos clientes da caderneta, você é controlador e o TáPago é operador: só trata o que for preciso para prestar o serviço que você contratou.',
+      'Na sua conta, o Pagô é controlador. Nos dados dos clientes da caderneta, você é controlador e o Pagô é operador: só trata o que for preciso para prestar o serviço que você contratou.',
     ),
     LegalSection(
       'Base legal',
@@ -143,7 +143,7 @@ class LegalDocs {
     ),
     LegalSection(
       'Clientes que você cadastra',
-      'Informe só dados que você tem legitimidade para tratar. O TáPago não cobra o seu cliente em nome próprio: a mensagem sai do seu WhatsApp. Cobrança vexatória é proibida pelo CDC.',
+      'Informe só dados que você tem legitimidade para tratar. O Pagô não cobra o seu cliente em nome próprio: a mensagem sai do seu WhatsApp. Cobrança vexatória é proibida pelo CDC.',
     ),
     LegalSection(
       'Direitos e prazos',

@@ -11,6 +11,7 @@ import 'package:tapago_app/services/reminder_service.dart';
 import 'package:tapago_app/services/trust_score.dart';
 import 'package:tapago_app/services/voice_debt_parser.dart';
 import 'package:tapago_app/services/whatsapp_service.dart';
+import 'package:tapago_app/utils/boleto_code.dart';
 import 'package:tapago_app/utils/formatters.dart';
 import 'package:tapago_app/utils/masks.dart';
 import 'package:tapago_app/utils/premium_access.dart';
@@ -222,6 +223,67 @@ Troco: R\$ 0,00
       reminderKind(due: due, day: DateTime(2026, 10, 6), pago: true),
       isNull,
     );
+  });
+
+  test('boleto avisa 3 dias antes, véspera, dia e vencido', () {
+    final due = DateTime(2026, 10, 20);
+    BoletoAviso? on(int day, {bool pago = false}) =>
+        boletoAviso(due: due, day: DateTime(2026, 10, day), pago: pago);
+    expect(on(17), BoletoAviso.emTresDias);
+    expect(on(18), isNull);
+    expect(on(19), BoletoAviso.amanha);
+    expect(on(20), BoletoAviso.hoje);
+    expect(on(22), BoletoAviso.vencido);
+    expect(on(22, pago: true), isNull);
+  });
+
+  test('linha digitável bancária preenche valor e vencimento', () {
+    final linha = '2379${'0' * 29}1605${'0000012345'}';
+    expect(linha.length, 47);
+    expect(isValidBoletoCode(linha), isTrue);
+    final info = readBoletoCode(formatBoletoCode(linha))!;
+    expect(info.valor, closeTo(123.45, 0.001));
+    expect(info.vencimento, DateTime(2026, 10, 20));
+    expect(boletoDueFromFactor(1000), DateTime(2025, 2, 22));
+    expect(boletoDueFromFactor(0), isNull);
+    expect(
+      formatBoletoCode(linha),
+      '23790.00000 00000.000000 00000.000000 0 16050000012345',
+    );
+  });
+
+  test('conta de consumo (48 dígitos) lê o valor', () {
+    final barras = '8360${'00000015990'}${'1' * 29}';
+    expect(barras.length, 44);
+    final linha = [
+      for (var i = 0; i < 4; i++) '${barras.substring(i * 11, i * 11 + 11)}0',
+    ].join();
+    expect(linha.length, 48);
+    expect(isValidBoletoCode(linha), isTrue);
+    final info = readBoletoCode(linha)!;
+    expect(info.valor, closeTo(159.90, 0.001));
+    expect(info.vencimento, isNull);
+    expect(isValidBoletoCode('1234'), isFalse);
+  });
+
+  test('boleto ida e volta pelo mapa local', () {
+    final boleto = Boleto(
+      id: 'b1',
+      userId: 'u1',
+      empresa: 'Distribuidora Silva',
+      cnpj: '11222333000181',
+      valor: 250,
+      dataVencimento: DateTime(2026, 10, 20),
+      statusPago: true,
+      pagoEm: DateTime(2026, 10, 19),
+    );
+    final back = Boleto.fromMap(boleto.toMap());
+    expect(back.empresa, 'Distribuidora Silva');
+    expect(back.valor, 250);
+    expect(back.statusPago, isTrue);
+    expect(back.pagoEm, DateTime(2026, 10, 19));
+    expect(back.diasParaVencer(DateTime(2026, 10, 18)), 2);
+    expect(back.copyWith(statusPago: false, clearPagoEm: true).pagoEm, isNull);
   });
 
   test('cadastro exige nome, e-mail, senha e aceite dos termos', () {

@@ -10,6 +10,7 @@ import '../widgets/tapago_logo.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
+import 'boletos_page.dart';
 import 'caderneta_page.dart';
 import 'client_profile_page.dart';
 import 'premium_page.dart';
@@ -72,6 +73,14 @@ class DashboardPage extends StatelessWidget {
                             value: Money.compact(state.dinheiroNaRua),
                             compact: true,
                           ),
+                          if (state.boletosAbertos.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _BoletosCard(
+                              total: state.boletosAPagar,
+                              vencidos: state.boletosVencidos,
+                              vencendo: state.boletosVencendo,
+                            ),
+                          ],
                           if (!state.user.isPremium) ...[
                             const SizedBox(height: 16),
                             const _PremiumBanner(),
@@ -159,6 +168,8 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final alertas = state.boletosVencidos + state.boletosVencendo;
     return Row(
       children: [
         Expanded(
@@ -166,7 +177,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá, ${user.nome.split(' ').first}',
+                'E aí, ${user.nome.split(' ').first}',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
@@ -176,6 +187,19 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 4),
               const TapagoWordmark(markSize: 28, fontSize: 24),
             ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Boletos a pagar',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BoletosPage()),
+            );
+          },
+          icon: Badge(
+            isLabelVisible: alertas > 0,
+            label: Text('$alertas'),
+            child: const Icon(Icons.receipt_long_outlined),
           ),
         ),
         IconButton(
@@ -207,6 +231,83 @@ class _Header extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BoletosCard extends StatelessWidget {
+  const _BoletosCard({
+    required this.total,
+    required this.vencidos,
+    required this.vencendo,
+  });
+
+  final double total;
+  final int vencidos;
+  final int vencendo;
+
+  @override
+  Widget build(BuildContext context) {
+    final urgente = vencidos > 0;
+    final detalhe = urgente
+        ? '$vencidos vencido${vencidos == 1 ? '' : 's'}'
+        : vencendo > 0
+            ? '$vencendo vence${vencendo == 1 ? '' : 'm'} em até 3 dias'
+            : 'Nenhum vencendo agora';
+    return Material(
+      color: urgente ? AppColors.dangerSoft : const Color(0xFFF3F8FF),
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BoletosPage()),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  color: urgente ? AppColors.danger : AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Boletos a pagar · ${Money.full(total)}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      detalhe,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: urgente ? AppColors.danger : AppColors.mutedDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

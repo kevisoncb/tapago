@@ -1,6 +1,6 @@
-# TáPago — Contexto do sistema
+# Pagô! — Contexto do sistema
 
-Arquivo vivo. Reescrito a cada alteração.
+Arquivo vivo. Reescrito a cada alteração. Slogan: **E aí, pagô?** (antigo nome: TáPago).
 
 ## Como a IA deve usar (obrigatório)
 
@@ -12,61 +12,68 @@ Arquivo vivo. Reescrito a cada alteração.
 
 ## Git
 
-- `dev` — teste. Trabalho novo entra aqui. Igual à `develop`.
-- `producao` — o que está estável. Igual à `main`. Só recebe merge da `dev` quando estiver pronto.
-- `main` continua no GitHub como padrão da produção, no mesmo commit da `producao`.
+- `dev` — teste. Trabalho novo entra aqui.
+- `producao` — estável. Igual à `main`. Só recebe merge da `dev` quando estiver pronto.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
 
-## O que o app faz agora (produção)
+## Marca
 
-Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. WhatsApp sai do celular do usuário (wa.me), sem bot do TáPago. Premium: voz, OCR e mensagem no texto. R$ 39,90/mês. Ajuda: no site (`/ajuda`) e no app (Configurações → Ajuda) o botão abre o WhatsApp, sem número na tela. Site: https://tapago-ae948.web.app.
+- Nome na tela: `Pagô!` (`AppConstants.appName`). Slogan: `AppConstants.slogan` = "E aí, pagô?".
+- Em texto corrido (termos, LGPD, iOS): "o Pagô".
+- **Não mudou**: package `com.tapago.tapago_app` / bundle `com.tapago.tapagoApp`, projeto Firebase `tapago-ae948`, pasta `tapago`, classes `Tapago*`, chaves locais `tapago_*`. Trocar quebra Firebase e dados salvos.
+
+## O que o app faz agora
+
+- **Caderneta (a receber)**: fiado, venda a prazo, empréstimo. Grátis ilimitado. Cobrança pelo WhatsApp do usuário (wa.me). Premium R$ 39,90: voz, OCR, texto próprio.
+- **Boletos a pagar (só na `dev`)**: contas da empresa do usuário (fornecedor, aluguel, imposto). Empresa, CNPJ opcional, valor, vencimento, descrição e código do boleto. O código (47 dígitos bancário, 48 consumo, 44 barras) preenche valor e vencimento sozinho. Copiar código, marcar pago/desfazer, editar, excluir.
+- **Notificações** às 9h (mesmo interruptor "notificações diárias"):
+  - Caderneta: véspera, dia, atraso. Canal `cobrancas`, ações Agora não / Enviar cobrança.
+  - Boletos: 3 dias antes, véspera, dia ("E aí, pagô?") e todo dia enquanto vencido. Canal `boletos`. Payload `boleto|aviso|id`.
 
 ## Mapa
 
-- `lib/screens/auth_page.dart` — login e cadastro (aceite de termos).
-- `lib/screens/dashboard_page.dart` — saldo, lista, FAB, ícone WhatsApp.
-- `lib/screens/add_debt_page.dart` — lançamento, voz Premium, duplicata bloqueada.
-- `lib/screens/client_profile_page.dart` — Abater, OCR, Lembrete / Cobrar hoje / Atraso.
-- `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
-- `lib/screens/settings_page.dart` — PIX, banco, mensagem, caderneta, Premium, Ajuda (WhatsApp).
-- `lib/screens/premium_page.dart` / `pix_checkout_page.dart` — voz, OCR, texto, PIX 30 dias, Play.
-- `site/` — landing, planos, termos, privacidade, LGPD, ajuda.
+- `lib/screens/auth_page.dart` — login/cadastro, nome + slogan.
+- `lib/screens/dashboard_page.dart` — "E aí, Nome", saldo, card de boletos, ícone de boletos com contador (vencidos + vencendo em 3 dias).
+- `lib/screens/boletos_page.dart` — total a pagar, abertos, pagos, ações.
+- `lib/screens/add_boleto_page.dart` — formulário com colar código.
+- `lib/screens/add_debt_page.dart`, `client_profile_page.dart`, `caderneta_page.dart`, `contact_history_page.dart` — caderneta.
+- `lib/screens/settings_page.dart`, `premium_page.dart`, `pix_checkout_page.dart`.
+- `lib/utils/boleto_code.dart` — máscara e leitura do código (fator de vencimento base 22/02/2025).
+- `lib/services/reminder_service.dart` — `reminderKind` (caderneta) e `boletoAviso` (boletos).
+- `site/` — landing com slogan e boletos, termos, privacidade, LGPD, ajuda.
 - `functions/index.js` — webhook Asaas, PIX Premium, status, confirm Play.
 
 ## Dados
 
-Firestore: `Users`, `Debts`, `Payments`, `PremiumCharges`. Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
-
-## Feito
-
-- Caderneta, dashboard, WhatsApp wa.me com PIX, lembretes (véspera, dia, atraso).
-- Premium 39,90: voz, OCR no celular, texto próprio.
-- Auth e-mail/senha, Firestore, Functions, webhook Asaas. Conta Asaas no CNPJ.
-- Ajuda no site e no app: mesmo WhatsApp, só no clique do botão.
+Firestore: `Users`, `Debts`, `Payments`, `Boletos`, `PremiumCharges`.
+`Boletos`: `user_id`, `empresa`, `cnpj`, `descricao`, `valor`, `data_vencimento`, `linha_digitavel`, `status_pago`, `pago_em`, `created_at`. Regras publicadas em `tapago-ae948` (8/out).
+Local: `tapago_${uid}_boletos` no SharedPreferences (cache).
 
 ## Parcial
 
-- Hosting ao vivo pode estar na versão antiga até o deploy.
+- Boletos e marca nova só na `dev`; produção/Hosting ainda mostram TáPago até merge + deploy.
+- Toque na notificação de boleto abre o app, não a tela de boletos.
 - PIX Premium: 30 dias. Play no app, sem AAB na loja.
 - OCR/voz: real no Android/iOS; stub na web/Windows.
 - CTAs do site ainda `mailto:ola@tapago.app`.
+- Ícone do app continua o mesmo (check azul).
 
 ## Faltando
 
-- Publicar na Play: documento, SDK, keystore, AAB, ficha.
-- Comprar um domínio próprio e apontar no Hosting.
+- Publicar na Play: documento, SDK, keystore, AAB, ficha (nome "Pagô!").
+- Domínio próprio para o Pagô! e apontar no Hosting.
 - `firebase deploy --only hosting` a partir da `producao`.
 - Teste PIX de ponta a ponta.
-- Bot WhatsApp TáPago: futuro, não implementar.
-- iOS na loja: não é o go-live.
+- Ler boleto pela câmera (código de barras): futuro.
+- Bot WhatsApp: futuro, não implementar.
 
 ## Firebase / Console
 
 - Projeto `tapago-ae948`, Blaze. Hosting: https://tapago-ae948.web.app
-- Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`.
+- Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase` (descrição do PIX vira "Pagô! Premium" no próximo deploy das Functions).
 - Webhook: `https://tapago-ae948.web.app/api/webhooks/asaas`
 - Auth: e-mail/senha. Asaas: CNPJ.
 
 ## Última sessão (8/out)
 
-Este PC criou `dev` (teste) e `producao` (estável) e enviou as duas para o GitHub. Trabalho daqui em diante é na `dev`.
+Na `dev`: renomeado para Pagô! ("E aí, pagô?") em app, Android, iOS, web, site e textos legais. Criados os Boletos a pagar com leitura do código e avisos (3 dias, véspera, dia, vencido). Regras do Firestore publicadas. 21 testes passando.

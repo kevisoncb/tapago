@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Contexto vivo do Pagô!
 
+**Idioma:** falar com o usuário sempre em português (BR), inclusive nas mensagens curtas de progresso.
+
 Antes de qualquer implementação, leitura de código ou resposta sobre o sistema:
 
 1. Abrir e ler `SISTEMA.md` na raiz do repositório.

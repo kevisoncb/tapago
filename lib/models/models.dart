@@ -342,11 +342,18 @@ class Boleto {
     this.statusPago = false,
     this.pagoEm,
     this.createdAt,
+    this.parcela = 0,
+    this.parcelas = 0,
+    this.grupoId = '',
   });
 
   final String id;
   final String userId;
   final String empresa;
+  /// 0 = boleto único. Em compra parcelada: 1..parcelas.
+  final int parcela;
+  final int parcelas;
+  final String grupoId;
   final double valor;
   final DateTime dataVencimento;
   final String cnpj;
@@ -368,6 +375,10 @@ class Boleto {
   }
 
   bool get isOverdue => !statusPago && diasParaVencer() < 0;
+
+  bool get parcelado => parcelas > 1 && parcela > 0;
+
+  String get parcelaLabel => parcelado ? 'Parcela $parcela/$parcelas' : '';
 
   bool get venceLogo {
     if (statusPago) return false;
@@ -398,6 +409,9 @@ class Boleto {
       statusPago: statusPago ?? this.statusPago,
       pagoEm: clearPagoEm ? null : (pagoEm ?? this.pagoEm),
       createdAt: createdAt,
+      parcela: parcela,
+      parcelas: parcelas,
+      grupoId: grupoId,
     );
   }
 
@@ -414,6 +428,9 @@ class Boleto {
       'status_pago': statusPago,
       'pago_em': pagoEm?.toIso8601String(),
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+      'parcela': parcela,
+      'parcelas': parcelas,
+      'grupo_id': grupoId,
     };
   }
 
@@ -429,6 +446,9 @@ class Boleto {
       'status_pago': statusPago,
       'pago_em': pagoEm,
       'created_at': createdAt ?? DateTime.now(),
+      'parcela': parcela,
+      'parcelas': parcelas,
+      'grupo_id': grupoId,
     };
   }
 
@@ -446,6 +466,9 @@ class Boleto {
       statusPago: map['status_pago'] as bool? ?? false,
       pagoEm: Debt._parseDate(map['pago_em']),
       createdAt: Debt._parseDate(map['created_at']),
+      parcela: (map['parcela'] as num?)?.toInt() ?? 0,
+      parcelas: (map['parcelas'] as num?)?.toInt() ?? 0,
+      grupoId: map['grupo_id'] as String? ?? '',
     );
   }
 }

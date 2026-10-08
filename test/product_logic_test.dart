@@ -12,6 +12,7 @@ import 'package:tapago_app/services/trust_score.dart';
 import 'package:tapago_app/services/voice_debt_parser.dart';
 import 'package:tapago_app/services/whatsapp_service.dart';
 import 'package:tapago_app/utils/boleto_code.dart';
+import 'package:tapago_app/utils/boleto_prazo.dart';
 import 'package:tapago_app/utils/formatters.dart';
 import 'package:tapago_app/utils/masks.dart';
 import 'package:tapago_app/utils/premium_access.dart';
@@ -266,6 +267,24 @@ Troco: R\$ 0,00
     expect(isValidBoletoCode('1234'), isFalse);
   });
 
+  test('prazo 30/45/60 divide o valor e calcula vencimentos', () {
+    expect(parsePrazoDias('30/45/60'), [30, 45, 60]);
+    expect(parsePrazoDias(' 28 / 56 / 84 '), [28, 56, 84]);
+    expect(parsePrazoDias('30'), [30]);
+    expect(parsePrazoDias('60/30'), isNull);
+    expect(parsePrazoDias('0/30'), isNull);
+    expect(parsePrazoDias(''), isNull);
+
+    final valores = dividirParcelas(1000, 3);
+    expect(valores, [333.34, 333.33, 333.33]);
+    expect(valores.fold<double>(0, (a, b) => a + b), closeTo(1000, 0.001));
+
+    expect(
+      vencimentosParcelas(DateTime(2026, 10, 8), [15, 30, 45]),
+      [DateTime(2026, 10, 23), DateTime(2026, 11, 7), DateTime(2026, 11, 22)],
+    );
+  });
+
   test('boleto ida e volta pelo mapa local', () {
     final boleto = Boleto(
       id: 'b1',
@@ -276,8 +295,13 @@ Troco: R\$ 0,00
       dataVencimento: DateTime(2026, 10, 20),
       statusPago: true,
       pagoEm: DateTime(2026, 10, 19),
+      parcela: 2,
+      parcelas: 3,
+      grupoId: 'g1',
     );
     final back = Boleto.fromMap(boleto.toMap());
+    expect(back.parcelaLabel, 'Parcela 2/3');
+    expect(back.grupoId, 'g1');
     expect(back.empresa, 'Distribuidora Silva');
     expect(back.valor, 250);
     expect(back.statusPago, isTrue);

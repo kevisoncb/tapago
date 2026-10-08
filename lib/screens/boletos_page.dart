@@ -205,9 +205,11 @@ class _BoletoTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      boleto.descricao.isEmpty
-                          ? status.label
-                          : '${status.label} · ${boleto.descricao}',
+                      [
+                        status.label,
+                        if (boleto.parcelado) boleto.parcelaLabel,
+                        if (boleto.descricao.isNotEmpty) boleto.descricao,
+                      ].join(' · '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
@@ -305,7 +307,9 @@ Future<void> _showActions(BuildContext context, Boleto boleto) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                boleto.empresa,
+                boleto.parcelado
+                    ? '${boleto.empresa} · ${boleto.parcelaLabel}'
+                    : boleto.empresa,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,

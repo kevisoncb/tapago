@@ -25,7 +25,8 @@ Arquivo vivo. Reescrito a cada alteração. Slogan: **E aí, pagô?** (antigo no
 ## O que o app faz agora
 
 - **Caderneta (a receber)**: fiado, venda a prazo, empréstimo. Grátis ilimitado. Cobrança pelo WhatsApp do usuário (wa.me). Premium R$ 39,90: voz, OCR, texto próprio.
-- **Boletos a pagar (só na `dev`)**: contas da empresa do usuário (fornecedor, aluguel, imposto). Empresa, CNPJ opcional, valor, vencimento, descrição e código do boleto. O código (47 dígitos bancário, 48 consumo, 44 barras) preenche valor e vencimento sozinho. Copiar código, marcar pago/desfazer, editar, excluir.
+- **Boletos a pagar (só na `dev`)**: contas da empresa do usuário (fornecedor, aluguel, imposto). Empresa, CNPJ opcional, valor, vencimento, descrição e código do boleto.
+- **Prazo de pagamento** no boleto novo: À vista, 15/30/45, 30/45/60 ou Outro (dias digitados, ex. 28/56/84). Parcelado: valor total + data da compra, gera uma parcela por prazo (centavo que sobra vai na 1ª), cada uma com aviso próprio e "Parcela n/N". Código de cada parcela se cola depois, editando. Lógica em `lib/utils/boleto_prazo.dart`. O código (47 dígitos bancário, 48 consumo, 44 barras) preenche valor e vencimento sozinho. Copiar código, marcar pago/desfazer, editar, excluir.
 - **Notificações** às 9h (mesmo interruptor "notificações diárias"):
   - Caderneta: véspera, dia, atraso. Canal `cobrancas`, ações Agora não / Enviar cobrança.
   - Boletos: 3 dias antes, véspera, dia ("E aí, pagô?") e todo dia enquanto vencido. Canal `boletos`. Payload `boleto|aviso|id`.
@@ -46,7 +47,7 @@ Arquivo vivo. Reescrito a cada alteração. Slogan: **E aí, pagô?** (antigo no
 ## Dados
 
 Firestore: `Users`, `Debts`, `Payments`, `Boletos`, `PremiumCharges`.
-`Boletos`: `user_id`, `empresa`, `cnpj`, `descricao`, `valor`, `data_vencimento`, `linha_digitavel`, `status_pago`, `pago_em`, `created_at`. Regras publicadas em `tapago-ae948` (8/out).
+`Boletos`: `user_id`, `empresa`, `cnpj`, `descricao`, `valor`, `data_vencimento`, `linha_digitavel`, `status_pago`, `pago_em`, `created_at`, `parcela`, `parcelas` (0 = único), `grupo_id`. Regras publicadas em `tapago-ae948` (8/out).
 Local: `tapago_${uid}_boletos` no SharedPreferences (cache).
 
 ## Parcial
@@ -76,4 +77,4 @@ Local: `tapago_${uid}_boletos` no SharedPreferences (cache).
 
 ## Última sessão (8/out)
 
-App rodando no emulador Android (`Medium_Phone_API_37.0`, via `flutter run -d emulator-5554`). Corrigido `android/app/build.gradle.kts` (imports `java.util.Properties` / `java.io.FileInputStream`) que não compilava no Gradle 9. Na `dev`: renomeado para Pagô! ("E aí, pagô?") em app, Android, iOS, web, site e textos legais. Criados os Boletos a pagar com leitura do código e avisos (3 dias, véspera, dia, vencido). Regras do Firestore publicadas. 21 testes passando.
+App rodando no emulador Android (`Medium_Phone_API_37.0`, via `flutter run -d emulator-5554`). Corrigido `android/app/build.gradle.kts` (imports `java.util.Properties` / `java.io.FileInputStream`) que não compilava no Gradle 9. Na `dev`: renomeado para Pagô! ("E aí, pagô?") em app, Android, iOS, web, site e textos legais. Criados os Boletos a pagar com leitura do código e avisos (3 dias, véspera, dia, vencido). Depois: prazo 15/30/45, 30/45/60 ou personalizado gerando parcelas. Regras do Firestore publicadas (com parcelas). 22 testes passando.

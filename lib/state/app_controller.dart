@@ -244,6 +244,19 @@ class AppController extends ChangeNotifier {
     await _syncReminders();
   }
 
+  Future<void> addBoletos(List<Boleto> novos) async {
+    for (final boleto in novos) {
+      await _repository.upsertBoleto(boleto);
+    }
+    final ids = novos.map((item) => item.id).toSet();
+    boletos = [
+      ...boletos.where((item) => !ids.contains(item.id)),
+      ...novos,
+    ];
+    notifyListeners();
+    await _syncReminders();
+  }
+
   Future<void> deleteBoleto(String id) async {
     await _repository.deleteBoleto(id);
     boletos = boletos.where((item) => item.id != id).toList();

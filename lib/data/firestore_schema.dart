@@ -49,6 +49,8 @@
 /// - status_pago: boolean
 /// - pago_em: timestamp (opcional)
 /// - created_at: timestamp
+/// - parcela, parcelas: int (0 = único; prazo 30/45/60 vira 1/3, 2/3, 3/3)
+/// - grupo_id: string (mesma compra parcelada)
 class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';

@@ -49,6 +49,7 @@ service cloud.firestore {
     //   - valor: number
     //   - data_vencimento, pago_em, created_at: timestamp
     //   - status_pago: bool
+    //   - parcela, parcelas: int (0 = boleto único), grupo_id: string
     //
     // Collection: PremiumCharges
     // Written only by Admin SDK (webhook / Functions). Clients: deny.
@@ -206,6 +207,9 @@ service cloud.firestore {
           'status_pago',
           'pago_em',
           'created_at',
+          'parcela',
+          'parcelas',
+          'grupo_id',
         ])
         && data.user_id is string
         && data.user_id == request.auth.uid
@@ -219,7 +223,15 @@ service cloud.firestore {
         && data.data_vencimento is timestamp
         && data.status_pago is bool
         && optionalTimestamp(data, 'pago_em')
-        && optionalTimestamp(data, 'created_at');
+        && optionalTimestamp(data, 'created_at')
+        && optionalSmallInt(data, 'parcela')
+        && optionalSmallInt(data, 'parcelas')
+        && optionalString(data, 'grupo_id', 60);
+    }
+
+    function optionalSmallInt(data, field) {
+      return !(field in data)
+        || (data[field] is int && data[field] >= 0 && data[field] <= 24);
     }
 
     match /Users/{userId} {

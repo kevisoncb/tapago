@@ -238,7 +238,10 @@ class ReminderService {
 
   String _boletoTitle(BoletoAviso aviso, List<Boleto> boletos) {
     if (boletos.length == 1) {
-      final empresa = boletos.first.empresa;
+      final boleto = boletos.first;
+      final empresa = boleto.parcelado
+          ? '${boleto.empresa} (${boleto.parcela}/${boleto.parcelas})'
+          : boleto.empresa;
       switch (aviso) {
         case BoletoAviso.emTresDias:
           return 'Boleto de $empresa vence em 3 dias.';

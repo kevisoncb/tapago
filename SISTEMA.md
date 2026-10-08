@@ -76,4 +76,4 @@ Local: `tapago_${uid}_boletos` no SharedPreferences (cache).
 
 ## Última sessão (8/out)
 
-Na `dev`: renomeado para Pagô! ("E aí, pagô?") em app, Android, iOS, web, site e textos legais. Criados os Boletos a pagar com leitura do código e avisos (3 dias, véspera, dia, vencido). Regras do Firestore publicadas. 21 testes passando.
+App rodando no emulador Android (`Medium_Phone_API_37.0`, via `flutter run -d emulator-5554`). Corrigido `android/app/build.gradle.kts` (imports `java.util.Properties` / `java.io.FileInputStream`) que não compilava no Gradle 9. Na `dev`: renomeado para Pagô! ("E aí, pagô?") em app, Android, iOS, web, site e textos legais. Criados os Boletos a pagar com leitura do código e avisos (3 dias, véspera, dia, vencido). Regras do Firestore publicadas. 21 testes passando.

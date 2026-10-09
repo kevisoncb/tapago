@@ -116,7 +116,7 @@ exports.createPremiumPix = onRequest(httpOptions, async (req, res) => {
       billingType: "PIX",
       value: PREMIUM_VALUE,
       dueDate,
-      description: "TáPago Premium",
+      description: "Pagô Premium",
       externalReference: user.uid,
     });
     const paymentId = payment.id || "";
@@ -263,7 +263,7 @@ async function asaas(method, path, apiKey, body) {
     headers: {
       access_token: apiKey,
       "content-type": "application/json",
-      "user-agent": "Tapago/2.4.0",
+      "user-agent": "Pago/2.4.0",
     },
     body: body ? JSON.stringify(body) : undefined,
   });

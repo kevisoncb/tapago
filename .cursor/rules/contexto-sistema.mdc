@@ -1,9 +1,9 @@
 ---
-description: Sempre ler e reescrever SISTEMA.md ao trabalhar no TáPago
+description: Sempre ler e reescrever SISTEMA.md ao trabalhar no Pagô
 alwaysApply: true
 ---
 
-# Contexto vivo do TáPago
+# Contexto vivo do Pagô
 
 Antes de qualquer implementação, leitura de código ou resposta sobre o sistema:
 

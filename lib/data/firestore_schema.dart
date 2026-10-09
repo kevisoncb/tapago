@@ -1,4 +1,4 @@
-/// Schema Firestore do TáPago.
+/// Schema Firestore do Pagô.
 ///
 /// Coleção `Users` (documentId = uid)
 /// - email: string

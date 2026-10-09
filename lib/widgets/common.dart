@@ -121,7 +121,7 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
-void showTapagoSnack(BuildContext context, String message) {
+void showPagoSnack(BuildContext context, String message) {
   ScaffoldMessenger.of(context).hideCurrentSnackBar();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

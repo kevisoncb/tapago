@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1077428127080:android:04ca9e29d571127c0042dd",
+        "mobilesdk_app_id": "1:1077428127080:android:53dca34d493288510042dd",
         "android_client_info": {
-          "package_name": "com.tapago.tapago_app"
+          "package_name": "app.usepago"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1077428127080-b288hihr7em54loanob9vioa316d1lm7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBFUHgKWkQrTH0qOTM2SMNTWzerYHSM_8o"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1077428127080-b288hihr7em54loanob9vioa316d1lm7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

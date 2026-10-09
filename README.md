@@ -1,3 +1,3 @@
-# tapago_app
+# pago_app
 
 A new Flutter project.

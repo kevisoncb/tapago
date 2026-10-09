@@ -285,7 +285,7 @@ class ClientProfilePage extends StatelessWidget {
         );
     if (!context.mounted) return;
     final next = context.read<AppController>().balanceOf(current);
-    showTapagoSnack(
+    showPagoSnack(
       context,
       error ?? _abateSnack(kind: kind, valor: valor, next: next),
     );
@@ -471,9 +471,9 @@ class _OcrButton extends StatelessWidget {
 
   Future<void> _pick(BuildContext context) async {
     if (kIsWeb) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
-        'A leitura do comprovante funciona no celular. Abra o TáPago no Android.',
+        'A leitura do comprovante funciona no celular. Abra o Pagô no Android.',
       );
       return;
     }
@@ -553,7 +553,7 @@ class _OcrButton extends StatelessWidget {
 
     final lido = text == null ? null : extractReceiptAmount(text);
     if (lido == null || lido <= 0) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         'Não achei o valor nesse comprovante. Tente outra foto, mais nítida.',
       );
@@ -565,7 +565,7 @@ class _OcrButton extends StatelessWidget {
         state.debts.where((item) => item.id == debt.id).firstOrNull ?? debt;
     final balance = state.balanceOf(current);
     if (balance.saldo <= 0.009) {
-      showTapagoSnack(context, 'Essa caderneta já está quitada.');
+      showPagoSnack(context, 'Essa caderneta já está quitada.');
       return;
     }
 
@@ -583,7 +583,7 @@ class _OcrButton extends StatelessWidget {
     final somenteJuros = kind == AbateKind.juros;
     final teto = somenteJuros ? balance.jurosRestantes : balance.saldo;
     if (teto <= 0.009) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         'Não há valor em aberto para esse tipo de abate.',
       );
@@ -610,7 +610,7 @@ class _OcrButton extends StatelessWidget {
       somenteJuros: somenteJuros,
     );
     if (!context.mounted) return;
-    showTapagoSnack(
+    showPagoSnack(
       context,
       error ??
           (somenteJuros
@@ -732,7 +732,7 @@ class _MiniPremiumBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'TáPago Premium',
+                  'Pagô Premium',
                   style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
                 ),
                 Text(

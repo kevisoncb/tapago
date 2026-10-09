@@ -6,7 +6,7 @@ import '../models/models.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
-import '../widgets/tapago_logo.dart';
+import '../widgets/pago_logo.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
@@ -174,7 +174,7 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const TapagoWordmark(markSize: 28, fontSize: 24),
+              const PagoWordmark(markSize: 28, fontSize: 24),
             ],
           ),
         ),

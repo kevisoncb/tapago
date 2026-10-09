@@ -48,7 +48,7 @@ Future<void> main() async {
   await store.load();
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
-  stdout.writeln('PIX do TáPago em http://localhost:$port');
+  stdout.writeln('PIX do Pagô em http://localhost:$port');
 
   await for (final request in server) {
     _cors(request.response);
@@ -113,7 +113,7 @@ Future<void> _route(
         'billingType': 'PIX',
         'value': 39.90,
         'dueDate': dueDate,
-        'description': 'TáPago Premium',
+        'description': 'Pagô Premium',
         'externalReference': userId,
       },
     );
@@ -246,7 +246,7 @@ Future<Map<String, dynamic>> _asaas(
     final request = await client.openUrl(method, Uri.parse(url));
     request.headers.set('access_token', apiKey);
     request.headers.set('content-type', 'application/json');
-    request.headers.set('user-agent', 'Tapago/2.4.0');
+    request.headers.set('user-agent', 'Pago/2.4.0');
     if (body != null) {
       request.add(utf8.encode(jsonEncode(body)));
     }

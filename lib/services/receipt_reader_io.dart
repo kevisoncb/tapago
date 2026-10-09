@@ -13,7 +13,7 @@ Future<String?> readReceiptText(String path) async {
 Future<String?> readReceiptBytes(List<int> bytes) async {
   if (bytes.isEmpty) return null;
   final file = File(
-    '${Directory.systemTemp.path}${Platform.pathSeparator}tapago_ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    '${Directory.systemTemp.path}${Platform.pathSeparator}pago_ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
   );
   await file.writeAsBytes(Uint8List.fromList(bytes), flush: true);
   try {

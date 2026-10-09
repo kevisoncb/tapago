@@ -1,19 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:tapago_app/models/models.dart';
-import 'package:tapago_app/services/client_match.dart';
-import 'package:tapago_app/services/debt_balance.dart';
-import 'package:tapago_app/services/auth_messages.dart';
-import 'package:tapago_app/services/pix_status.dart';
-import 'package:tapago_app/services/password_hash.dart';
-import 'package:tapago_app/services/receipt_amount.dart';
-import 'package:tapago_app/services/reminder_service.dart';
-import 'package:tapago_app/services/trust_score.dart';
-import 'package:tapago_app/services/voice_debt_parser.dart';
-import 'package:tapago_app/services/whatsapp_service.dart';
-import 'package:tapago_app/utils/formatters.dart';
-import 'package:tapago_app/utils/masks.dart';
-import 'package:tapago_app/utils/premium_access.dart';
+import 'package:pago_app/models/models.dart';
+import 'package:pago_app/services/client_match.dart';
+import 'package:pago_app/services/debt_balance.dart';
+import 'package:pago_app/services/auth_messages.dart';
+import 'package:pago_app/services/pix_status.dart';
+import 'package:pago_app/services/password_hash.dart';
+import 'package:pago_app/services/receipt_amount.dart';
+import 'package:pago_app/services/reminder_service.dart';
+import 'package:pago_app/services/trust_score.dart';
+import 'package:pago_app/services/voice_debt_parser.dart';
+import 'package:pago_app/services/whatsapp_service.dart';
+import 'package:pago_app/utils/formatters.dart';
+import 'package:pago_app/utils/masks.dart';
+import 'package:pago_app/utils/premium_access.dart';
 
 void main() {
   test('pagamento do total baixa juros e depois o principal', () {

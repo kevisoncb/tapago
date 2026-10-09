@@ -105,6 +105,6 @@ Future<void> chargeOnWhatsApp({
   );
   if (!context.mounted) return;
   if (!ok) {
-    showTapagoSnack(context, 'Não foi possível abrir o WhatsApp.');
+    showPagoSnack(context, 'Não foi possível abrir o WhatsApp.');
   }
 }

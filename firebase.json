@@ -27,7 +27,7 @@
       "android": {
         "default": {
           "projectId": "tapago-ae948",
-          "appId": "1:1077428127080:android:04ca9e29d571127c0042dd",
+          "appId": "1:1077428127080:android:53dca34d493288510042dd",
           "fileOutput": "android/app/google-services.json"
         }
       },
@@ -35,9 +35,9 @@
         "lib/firebase_options.dart": {
           "projectId": "tapago-ae948",
           "configurations": {
-            "android": "1:1077428127080:android:04ca9e29d571127c0042dd",
-            "ios": "1:1077428127080:ios:cfb8bcee870273c20042dd",
-            "macos": "1:1077428127080:ios:cfb8bcee870273c20042dd"
+            "android": "1:1077428127080:android:53dca34d493288510042dd",
+            "ios": "1:1077428127080:ios:577755df013cd6380042dd",
+            "macos": "1:1077428127080:ios:577755df013cd6380042dd"
           }
         }
       }

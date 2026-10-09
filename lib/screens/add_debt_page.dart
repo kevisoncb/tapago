@@ -138,7 +138,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
     final text = spoken?.trim() ?? '';
     if (text.isEmpty) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         'Não ouvi. Permita o microfone e fale, por exemplo: Maria, 200 reais, vence dia 20.',
       );
@@ -147,7 +147,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
     final draft = parseVoiceDebt(text);
     if (!draft.hasAny) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         'Ouvi “$text”, mas não deu para montar o lançamento. Fale o nome, o valor em reais e o vencimento.',
       );
@@ -184,7 +184,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       if (draft.juros != null) 'juros',
       if (draft.vencimento != null) 'vencimento',
     ];
-    showTapagoSnack(
+    showPagoSnack(
       context,
       'Preenchi ${filled.join(', ')}. Confira e salve.',
     );
@@ -193,11 +193,11 @@ class _AddDebtPageState extends State<AddDebtPage> {
   Future<void> _save() async {
     final phone = digitsOnly(_whatsapp.text);
     if (_nome.text.trim().isEmpty || _principal <= 0 || _vencimento == null) {
-      showTapagoSnack(context, 'Preencha nome, valor e vencimento.');
+      showPagoSnack(context, 'Preencha nome, valor e vencimento.');
       return;
     }
     if (phone.isNotEmpty && !isValidPhoneBr(phone)) {
-      showTapagoSnack(context, 'Informe um WhatsApp válido.');
+      showPagoSnack(context, 'Informe um WhatsApp válido.');
       return;
     }
 
@@ -212,7 +212,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       allowNome: widget.prefillNome,
     );
     if (blocked != null) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         blocked.phoneTaken
             ? 'Este WhatsApp já é de ${blocked.debt.nome}. Abra a caderneta dele.'

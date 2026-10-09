@@ -93,7 +93,7 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
       _poll?.cancel();
       await context.read<AppController>().grantConfirmedPix(charge.paymentId);
       if (!mounted) return;
-      showTapagoSnack(context, 'PIX confirmado. Premium ativado.');
+      showPagoSnack(context, 'PIX confirmado. Premium ativado.');
       Navigator.of(context).pop(true);
     } catch (_) {}
   }
@@ -114,7 +114,7 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Text(
-            'TáPago Premium',
+            'Pagô Premium',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -182,7 +182,7 @@ class _PixCheckoutPageState extends State<PixCheckoutPage> {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: charge.payload));
                 if (!context.mounted) return;
-                showTapagoSnack(context, 'Código PIX copiado.');
+                showPagoSnack(context, 'Código PIX copiado.');
               },
             ),
           ],

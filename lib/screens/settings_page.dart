@@ -14,7 +14,7 @@ import '../utils/input_masks.dart';
 import '../utils/masks.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
-import '../widgets/tapago_logo.dart';
+import '../widgets/pago_logo.dart';
 import 'caderneta_page.dart';
 import 'contact_history_page.dart';
 import 'legal_page.dart';
@@ -245,9 +245,9 @@ class SettingsPage extends StatelessWidget {
                 icon: Icons.translate_rounded,
                 title: 'Idioma do App',
                 subtitle: 'Português (BR)',
-                onTap: () => showTapagoSnack(
+                onTap: () => showPagoSnack(
                   context,
-                  'O TáPago está disponível em Português (BR).',
+                  'O Pagô está disponível em Português (BR).',
                 ),
               ),
             ],
@@ -275,7 +275,7 @@ class SettingsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TáPago Premium',
+                            'Pagô Premium',
                             style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.w800,
                             ),
@@ -369,7 +369,7 @@ class SettingsPage extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () {
-                showTapagoSnack(context, 'Sessão encerrada neste dispositivo.');
+                showPagoSnack(context, 'Sessão encerrada neste dispositivo.');
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: Text(
@@ -381,7 +381,7 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          const Center(child: TapagoMark(size: 44)),
+          const Center(child: PagoMark(size: 44)),
           const SizedBox(height: 10),
           Center(
             child: Text(
@@ -437,7 +437,7 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () async {
                   final chave = formatPixKey(controller.text);
                   if (chave.isNotEmpty && !isValidPixKey(chave)) {
-                    showTapagoSnack(
+                    showPagoSnack(
                       context,
                       'Chave PIX inválida. Use CPF/CNPJ válido, e-mail, celular ou chave aleatória.',
                     );

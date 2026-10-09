@@ -18,5 +18,5 @@ Future<void> main() async {
 
   final gate = SessionGate();
   await gate.bootstrap();
-  runApp(TapagoApp(gate: gate));
+  runApp(PagoApp(gate: gate));
 }

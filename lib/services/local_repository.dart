@@ -10,9 +10,9 @@ class LocalRepository implements AppRepository {
 
   final String userId;
 
-  String get _userKey => 'tapago_${userId}_user';
-  String get _debtsKey => 'tapago_${userId}_debts';
-  String get _paymentsKey => 'tapago_${userId}_payments';
+  String get _userKey => 'pago_${userId}_user';
+  String get _debtsKey => 'pago_${userId}_debts';
+  String get _paymentsKey => 'pago_${userId}_payments';
 
   late SharedPreferences _prefs;
 

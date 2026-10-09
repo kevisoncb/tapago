@@ -98,11 +98,11 @@ class PremiumPage extends StatelessWidget {
                                     .restorePremium();
                                 if (!context.mounted) return;
                                 if (message != null) {
-                                  showTapagoSnack(context, message);
+                                  showPagoSnack(context, message);
                                   return;
                                 }
                                 if (context.read<AppController>().user.premiumAtivo) {
-                                  showTapagoSnack(context, 'Assinatura restaurada.');
+                                  showPagoSnack(context, 'Assinatura restaurada.');
                                 }
                               },
                             ),
@@ -124,7 +124,7 @@ class PremiumPage extends StatelessWidget {
     final uri = Uri.parse(url);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      showTapagoSnack(context, 'Não foi possível abrir o link.');
+      showPagoSnack(context, 'Não foi possível abrir o link.');
     }
   }
 }
@@ -364,7 +364,7 @@ class _PriceCard extends StatelessWidget {
   Future<void> _openPix(BuildContext context) async {
     final client = AsaasClient();
     if (!client.isConfigured) {
-      showTapagoSnack(
+      showPagoSnack(
         context,
         'O PIX do Asaas ainda não está ligado. Crie a conta e suba o servidor com a chave.',
       );
@@ -380,12 +380,12 @@ class _PriceCard extends StatelessWidget {
     final message = await context.read<AppController>().subscribePremium();
     if (!context.mounted) return;
     if (message != null) {
-      showTapagoSnack(context, message);
+      showPagoSnack(context, message);
       return;
     }
     final state = context.read<AppController>();
     if (state.user.premiumAtivo) {
-      showTapagoSnack(context, 'Premium ativado.');
+      showPagoSnack(context, 'Premium ativado.');
       Navigator.of(context).pop();
     }
   }

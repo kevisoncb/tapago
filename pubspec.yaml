@@ -1,5 +1,5 @@
-name: tapago_app
-description: TáPago — caderneta de fiado, a prazo e empréstimo.
+name: pago_app
+description: Pagô — caderneta de fiado, a prazo e empréstimo.
 publish_to: "none"
 version: 2.4.0+24
 
@@ -43,9 +43,9 @@ flutter_launcher_icons:
   ios: true
   web:
     generate: true
-  image_path: assets/brand/tapago-icon.jpg
+  image_path: assets/brand/pago-icon.jpg
   adaptive_icon_background: "#2F6BFF"
-  adaptive_icon_foreground: assets/brand/tapago-icon.jpg
+  adaptive_icon_foreground: assets/brand/pago-icon.jpg
 
 flutter:
   uses-material-design: true

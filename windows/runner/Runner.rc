@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.tapago" "\0"
-            VALUE "FileDescription", "tapago_app" "\0"
+            VALUE "CompanyName", "app.usepago" "\0"
+            VALUE "FileDescription", "pago_app" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "tapago_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.tapago. All rights reserved." "\0"
-            VALUE "OriginalFilename", "tapago_app.exe" "\0"
-            VALUE "ProductName", "tapago_app" "\0"
+            VALUE "InternalName", "pago_app" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 app.usepago. All rights reserved." "\0"
+            VALUE "OriginalFilename", "pago_app.exe" "\0"
+            VALUE "ProductName", "pago_app" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

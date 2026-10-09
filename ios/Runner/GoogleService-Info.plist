@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>1077428127080-3t43o8hdvtg0tmc9h5pb0jd23fahp0he.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1077428127080-3t43o8hdvtg0tmc9h5pb0jd23fahp0he</string>
 	<key>API_KEY</key>
 	<string>AIzaSyADnZIbf1W5E59hhXNb9zAx0UPaklDc8nA</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.tapago.tapagoApp</string>
+	<string>app.usepago</string>
 	<key>PROJECT_ID</key>
 	<string>tapago-ae948</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1077428127080:ios:cfb8bcee870273c20042dd</string>
+	<string>1:1077428127080:ios:577755df013cd6380042dd</string>
 </dict>
 </plist>

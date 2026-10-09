@@ -28,7 +28,7 @@ class PurchaseUpdate {
   static const missing = PurchaseUpdate(
     outcome: PurchaseOutcome.missing,
     message:
-        'O plano tapago_premium_monthly ainda não está publicado na Play Store.',
+        'O plano pago_premium_monthly ainda não está publicado na Play Store.',
   );
   static const canceled = PurchaseUpdate(outcome: PurchaseOutcome.canceled);
 }

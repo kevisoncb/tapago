@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/constants.dart';
 
-class TapagoMark extends StatelessWidget {
-  const TapagoMark({super.key, this.size = 36});
+class PagoMark extends StatelessWidget {
+  const PagoMark({super.key, this.size = 36});
 
   final double size;
 
@@ -22,8 +22,8 @@ class TapagoMark extends StatelessWidget {
   }
 }
 
-class TapagoWordmark extends StatelessWidget {
-  const TapagoWordmark({
+class PagoWordmark extends StatelessWidget {
+  const PagoWordmark({
     super.key,
     this.markSize = 36,
     this.fontSize = 26,
@@ -37,7 +37,7 @@ class TapagoWordmark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TapagoMark(size: markSize),
+        PagoMark(size: markSize),
         SizedBox(width: markSize * 0.28),
         Text(
           AppConstants.appName,

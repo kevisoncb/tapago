@@ -48,7 +48,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBFUHgKWkQrTH0qOTM2SMNTWzerYHSM_8o',
-    appId: '1:1077428127080:android:04ca9e29d571127c0042dd',
+    appId: '1:1077428127080:android:53dca34d493288510042dd',
     messagingSenderId: '1077428127080',
     projectId: 'tapago-ae948',
     storageBucket: 'tapago-ae948.firebasestorage.app',
@@ -56,19 +56,19 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyADnZIbf1W5E59hhXNb9zAx0UPaklDc8nA',
-    appId: '1:1077428127080:ios:cfb8bcee870273c20042dd',
+    appId: '1:1077428127080:ios:577755df013cd6380042dd',
     messagingSenderId: '1077428127080',
     projectId: 'tapago-ae948',
     storageBucket: 'tapago-ae948.firebasestorage.app',
-    iosBundleId: 'com.tapago.tapagoApp',
+    iosBundleId: 'app.usepago',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyADnZIbf1W5E59hhXNb9zAx0UPaklDc8nA',
-    appId: '1:1077428127080:ios:cfb8bcee870273c20042dd',
+    appId: '1:1077428127080:ios:577755df013cd6380042dd',
     messagingSenderId: '1077428127080',
     projectId: 'tapago-ae948',
     storageBucket: 'tapago-ae948.firebasestorage.app',
-    iosBundleId: 'com.tapago.tapagoApp',
+    iosBundleId: 'app.usepago',
   );
 }

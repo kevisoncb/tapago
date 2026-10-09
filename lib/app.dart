@@ -14,8 +14,8 @@ import 'theme/app_theme.dart';
 import 'widgets/biometric_lock.dart';
 import 'widgets/common.dart';
 
-class TapagoApp extends StatelessWidget {
-  const TapagoApp({super.key, required this.gate});
+class PagoApp extends StatelessWidget {
+  const PagoApp({super.key, required this.gate});
 
   final SessionGate gate;
 
@@ -97,7 +97,7 @@ class _SignedInAppState extends State<SignedInApp> {
 
 Widget _materialApp({required Widget home, bool lock = false}) {
   return MaterialApp(
-    title: 'TáPago',
+    title: 'Pagô',
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     locale: const Locale('pt', 'BR'),

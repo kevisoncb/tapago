@@ -52,8 +52,8 @@ class LocalSession {
 }
 
 class LocalAccountStore {
-  static const _accountsKey = 'tapago_local_accounts';
-  static const _sessionKey = 'tapago_session_user_id';
+  static const _accountsKey = 'pago_local_accounts';
+  static const _sessionKey = 'pago_session_user_id';
   static const _uuid = Uuid();
 
   Future<LocalSession?> current() async {

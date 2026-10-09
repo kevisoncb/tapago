@@ -7,6 +7,7 @@ import '../legal/legal_docs.dart';
 import '../screens/legal_page.dart';
 import '../services/session_gate.dart';
 import '../theme/app_colors.dart';
+import '../utils/constants.dart';
 import '../utils/input_masks.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
@@ -74,11 +75,19 @@ class _AuthPageState extends State<AuthPage> {
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
             children: [
               Text(
-                'TáPago',
+                AppConstants.appName,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
+                ),
+              ),
+              Text(
+                AppConstants.tagline,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
                 ),
               ),
               const SizedBox(height: 6),

@@ -5,6 +5,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/models.dart';
+import '../utils/formatters.dart';
 import 'whatsapp_service.dart';
 
 enum ReminderKind { amanha, hoje, atraso }
@@ -34,6 +35,33 @@ WhatsAppAction whatsAppActionForReminder(ReminderKind kind) {
     case ReminderKind.atraso:
       return WhatsAppAction.atraso;
   }
+}
+
+String billReminderTitle(ReminderKind kind, List<Bill> bills) {
+  if (bills.length == 1) {
+    final fornecedor = bills.first.fornecedor;
+    switch (kind) {
+      case ReminderKind.amanha:
+        return 'Boleto de $fornecedor vence amanhã.';
+      case ReminderKind.hoje:
+        return 'Boleto de $fornecedor vence hoje.';
+      case ReminderKind.atraso:
+        return 'Boleto de $fornecedor está atrasado.';
+    }
+  }
+  switch (kind) {
+    case ReminderKind.amanha:
+      return '${bills.length} boletos vencem amanhã.';
+    case ReminderKind.hoje:
+      return '${bills.length} boletos vencem hoje.';
+    case ReminderKind.atraso:
+      return '${bills.length} boletos atrasados.';
+  }
+}
+
+String billReminderBody(List<Bill> bills) {
+  final total = bills.fold<double>(0, (sum, bill) => sum + bill.valor);
+  return 'Total ${Money.full(total)}. Toque para abrir.';
 }
 
 class ReminderService {
@@ -109,6 +137,7 @@ class ReminderService {
     String chavePix = '',
     String customTemplate = '',
     bool isPremium = false,
+    List<Bill> bills = const [],
   }) async {
     await init();
     if (!_ready) return;
@@ -135,6 +164,16 @@ class ReminderService {
     );
     const details = NotificationDetails(
       android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+    const billDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'boletos',
+        'Boletos a pagar',
+        channelDescription: 'Avisos de boletos que você precisa pagar',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
       iOS: DarwinNotificationDetails(),
     );
 
@@ -174,6 +213,31 @@ class ReminderService {
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: '${kind.name}|${group.first.id}',
+        );
+        slot++;
+      }
+
+      for (final kind in ReminderKind.values) {
+        final group = bills
+            .where(
+              (bill) =>
+                  reminderKind(
+                    due: bill.dataVencimento,
+                    day: day,
+                    pago: bill.pago,
+                  ) ==
+                  kind,
+            )
+            .toList();
+        if (group.isEmpty) continue;
+        await _plugin.zonedSchedule(
+          slot,
+          billReminderTitle(kind, group),
+          billReminderBody(group),
+          when,
+          billDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: 'boleto|${group.first.id}',
         );
         slot++;
       }

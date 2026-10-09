@@ -278,6 +278,139 @@ class Debt {
   }
 }
 
+class Bill {
+  const Bill({
+    required this.id,
+    required this.userId,
+    required this.fornecedor,
+    required this.valor,
+    required this.dataVencimento,
+    this.codigo = '',
+    this.pago = false,
+    this.pagoEm,
+    this.grupoId = '',
+    this.parcela = 1,
+    this.totalParcelas = 1,
+    this.createdAt,
+  });
+
+  final String id;
+  final String userId;
+  final String fornecedor;
+  final double valor;
+  final DateTime dataVencimento;
+  final String codigo;
+  final bool pago;
+  final DateTime? pagoEm;
+  final String grupoId;
+  final int parcela;
+  final int totalParcelas;
+  final DateTime? createdAt;
+
+  bool get parcelado => totalParcelas > 1;
+
+  String get parcelaLabel => 'Parcela $parcela de $totalParcelas';
+
+  bool get isOverdue {
+    if (pago) return false;
+    final today = DateTime.now();
+    final due = DateTime(
+      dataVencimento.year,
+      dataVencimento.month,
+      dataVencimento.day,
+    );
+    return due.isBefore(DateTime(today.year, today.month, today.day));
+  }
+
+  bool get isDueThisWeek {
+    if (pago) return false;
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day);
+    final due = DateTime(
+      dataVencimento.year,
+      dataVencimento.month,
+      dataVencimento.day,
+    );
+    return !due.isBefore(start) &&
+        due.isBefore(start.add(const Duration(days: 7)));
+  }
+
+  Bill copyWith({
+    String? fornecedor,
+    double? valor,
+    DateTime? dataVencimento,
+    String? codigo,
+    bool? pago,
+    DateTime? pagoEm,
+    bool clearPagoEm = false,
+  }) {
+    return Bill(
+      id: id,
+      userId: userId,
+      fornecedor: fornecedor ?? this.fornecedor,
+      valor: valor ?? this.valor,
+      dataVencimento: dataVencimento ?? this.dataVencimento,
+      codigo: codigo ?? this.codigo,
+      pago: pago ?? this.pago,
+      pagoEm: clearPagoEm ? null : pagoEm ?? this.pagoEm,
+      grupoId: grupoId,
+      parcela: parcela,
+      totalParcelas: totalParcelas,
+      createdAt: createdAt,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'fornecedor': fornecedor,
+      'valor': valor,
+      'data_vencimento': dataVencimento.toIso8601String(),
+      'codigo': codigo,
+      'pago': pago,
+      'pago_em': pagoEm?.toIso8601String(),
+      'grupo_id': grupoId,
+      'parcela': parcela,
+      'total_parcelas': totalParcelas,
+      'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'user_id': userId,
+      'fornecedor': fornecedor,
+      'valor': valor,
+      'data_vencimento': dataVencimento,
+      'codigo': codigo,
+      'pago': pago,
+      'pago_em': pagoEm,
+      'grupo_id': grupoId,
+      'parcela': parcela,
+      'total_parcelas': totalParcelas,
+      'created_at': createdAt ?? DateTime.now(),
+    };
+  }
+
+  factory Bill.fromMap(Map<String, dynamic> map, {String? id}) {
+    return Bill(
+      id: id ?? map['id'] as String? ?? '',
+      userId: map['user_id'] as String? ?? '',
+      fornecedor: map['fornecedor'] as String? ?? '',
+      valor: (map['valor'] as num?)?.toDouble() ?? 0,
+      dataVencimento: Debt._parseDate(map['data_vencimento']) ?? DateTime.now(),
+      codigo: map['codigo'] as String? ?? '',
+      pago: map['pago'] as bool? ?? false,
+      pagoEm: Debt._parseDate(map['pago_em']),
+      grupoId: map['grupo_id'] as String? ?? '',
+      parcela: (map['parcela'] as num?)?.toInt() ?? 1,
+      totalParcelas: (map['total_parcelas'] as num?)?.toInt() ?? 1,
+      createdAt: Debt._parseDate(map['created_at']),
+    );
+  }
+}
+
 class Payment {
   const Payment({
     required this.id,

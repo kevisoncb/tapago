@@ -4,6 +4,7 @@ import 'package:pago_app/models/models.dart';
 import 'package:pago_app/services/client_match.dart';
 import 'package:pago_app/services/debt_balance.dart';
 import 'package:pago_app/services/auth_messages.dart';
+import 'package:pago_app/services/bill_installments.dart';
 import 'package:pago_app/services/pix_status.dart';
 import 'package:pago_app/services/password_hash.dart';
 import 'package:pago_app/services/receipt_amount.dart';
@@ -407,5 +408,64 @@ Troco: R\$ 0,00
     expect(grouped.last.nome, 'Mariana');
     expect(contactMatchesQuery(grouped.first, 'carlos'), isTrue);
     expect(contactMatchesQuery(grouped.first, 'mariana'), isFalse);
+  });
+
+  test('boleto parcelado divide em centavos e soma o total', () {
+    final parcelas = splitBill(
+      total: 1000,
+      base: DateTime(2026, 10, 9),
+      prazos: const [30, 60, 90],
+    );
+    expect(parcelas, hasLength(3));
+    expect(parcelas.map((item) => item.valor), [333.33, 333.33, 333.34]);
+    expect(parcelas.fold<double>(0, (sum, item) => sum + item.valor),
+        closeTo(1000, 0.001));
+    expect(parcelas.first.vencimento, DateTime(2026, 11, 8));
+    expect(parcelas.last.vencimento, DateTime(2027, 1, 7));
+    expect(parcelas.last.parcela, 3);
+  });
+
+  test('prazos e código do boleto', () {
+    expect(parsePrazos('15/30/45'), [15, 30, 45]);
+    expect(parsePrazos('28 56, 84'), [28, 56, 84]);
+    expect(parsePrazos('30/30'), isNull);
+    expect(parsePrazos('60/30'), isNull);
+    expect(parsePrazos(''), isNull);
+    expect(normalizeBoletoCode(''), '');
+    expect(normalizeBoletoCode('123'), isNull);
+    final linha =
+        '23793.38128 60000.000003 00000.000400 1 84340000010000';
+    expect(normalizeBoletoCode(linha), hasLength(47));
+  });
+
+  test('boleto no modelo e no lembrete', () {
+    final bill = Bill(
+      id: 'b1',
+      userId: 'u',
+      fornecedor: 'Distribuidora Silva',
+      valor: 500,
+      dataVencimento: DateTime(2026, 10, 10),
+      parcela: 2,
+      totalParcelas: 3,
+    );
+    final back = Bill.fromMap(bill.toMap());
+    expect(back.fornecedor, 'Distribuidora Silva');
+    expect(back.parcelaLabel, 'Parcela 2 de 3');
+    expect(back.pago, isFalse);
+
+    expect(
+      reminderKind(
+        due: bill.dataVencimento,
+        day: DateTime(2026, 10, 9),
+        pago: bill.pago,
+      ),
+      ReminderKind.amanha,
+    );
+    expect(
+      billReminderTitle(ReminderKind.amanha, [bill]),
+      'Boleto de Distribuidora Silva vence amanhã.',
+    );
+    expect(billReminderTitle(ReminderKind.atraso, [bill, bill]),
+        '2 boletos atrasados.');
   });
 }

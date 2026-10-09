@@ -18,4 +18,10 @@ abstract class AppRepository {
   Future<List<Payment>> getPayments({String? debtId});
 
   Future<void> addPayment(Payment payment);
+
+  Future<List<Bill>> getBills();
+
+  Future<void> upsertBill(Bill bill);
+
+  Future<void> deleteBill(String id);
 }

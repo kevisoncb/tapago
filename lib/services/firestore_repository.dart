@@ -23,6 +23,9 @@ class FirestoreRepository implements AppRepository {
   CollectionReference<Map<String, dynamic>> get _payments =>
       _db.collection(FirestoreSchema.payments);
 
+  CollectionReference<Map<String, dynamic>> get _bills =>
+      _db.collection(FirestoreSchema.bills);
+
   @override
   bool get usesFirestore => true;
 
@@ -112,6 +115,24 @@ class FirestoreRepository implements AppRepository {
   @override
   Future<void> addPayment(Payment payment) async {
     await _payments.doc(payment.id).set(payment.toFirestore());
+  }
+
+  @override
+  Future<List<Bill>> getBills() async {
+    final snap = await _bills.where('user_id', isEqualTo: _userId).get();
+    return snap.docs
+        .map((doc) => Bill.fromMap(_withTimestamp(doc.data()), id: doc.id))
+        .toList();
+  }
+
+  @override
+  Future<void> upsertBill(Bill bill) async {
+    await _bills.doc(bill.id).set(bill.toFirestore());
+  }
+
+  @override
+  Future<void> deleteBill(String id) async {
+    await _bills.doc(id).delete();
   }
 
   Map<String, dynamic> _withTimestamp(Map<String, dynamic> data) {

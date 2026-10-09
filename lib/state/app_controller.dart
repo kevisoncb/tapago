@@ -39,6 +39,7 @@ class AppController extends ChangeNotifier {
   );
   List<Debt> debts = [];
   List<Payment> payments = [];
+  List<Bill> bills = [];
   bool loading = true;
   String? errorMessage;
   bool billingBusy = false;
@@ -92,6 +93,47 @@ class AppController extends ChangeNotifier {
       .where((debt) => debt.isDueThisWeek || debt.isOverdue)
       .fold(0, (sum, debt) => sum + saldoOf(debt));
 
+  List<Bill> get pendingBills => bills.where((bill) => !bill.pago).toList()
+    ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+
+  List<Bill> get paidBills => bills.where((bill) => bill.pago).toList()
+    ..sort((a, b) => (b.pagoEm ?? b.dataVencimento)
+        .compareTo(a.pagoEm ?? a.dataVencimento));
+
+  double get aPagarAberto =>
+      pendingBills.fold(0, (sum, bill) => sum + bill.valor);
+
+  double get aPagarNaSemana => pendingBills
+      .where((bill) => bill.isDueThisWeek || bill.isOverdue)
+      .fold(0, (sum, bill) => sum + bill.valor);
+
+  Future<void> addBills(List<Bill> next) async {
+    for (final bill in next) {
+      await _repository.upsertBill(bill);
+    }
+    final ids = next.map((bill) => bill.id).toSet();
+    bills = [...bills.where((bill) => !ids.contains(bill.id)), ...next];
+    notifyListeners();
+    await _syncReminders();
+  }
+
+  Future<void> setBillPaid(Bill bill, bool pago) async {
+    await addBills([
+      bill.copyWith(
+        pago: pago,
+        pagoEm: pago ? DateTime.now() : null,
+        clearPagoEm: !pago,
+      ),
+    ]);
+  }
+
+  Future<void> deleteBill(Bill bill) async {
+    await _repository.deleteBill(bill.id);
+    bills = bills.where((item) => item.id != bill.id).toList();
+    notifyListeners();
+    await _syncReminders();
+  }
+
   List<Payment> paymentsFor(String debtId) {
     final list = payments.where((item) => item.debtId == debtId).toList()
       ..sort((a, b) => b.data.compareTo(a.data));
@@ -106,6 +148,12 @@ class AppController extends ChangeNotifier {
       user = await _repository.getCurrentUser();
       debts = await _repository.getDebts();
       payments = await _repository.getPayments();
+      try {
+        bills = await _repository.getBills();
+      } catch (error) {
+        bills = [];
+        debugPrint('Boletos: $error');
+      }
       _billing?.onUpdate = _onPurchase;
       await _billing?.start();
       await _syncReminders();
@@ -328,6 +376,7 @@ class AppController extends ChangeNotifier {
         chavePix: user.chavePix,
         customTemplate: user.mensagemCobranca,
         isPremium: user.isPremium,
+        bills: user.premiumAtivo ? pendingBills : const [],
       );
     } catch (error) {
       debugPrint('Lembretes: $error');

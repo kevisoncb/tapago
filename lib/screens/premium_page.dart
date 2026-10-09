@@ -48,7 +48,7 @@ class PremiumPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Apenas ${AppConstants.premiumPriceLabel}/mês para voz, recibos e cobrança no seu texto',
+                          'Apenas ${AppConstants.premiumPriceLabel}/mês para voz, recibos, cobrança no seu texto e boletos a pagar',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
@@ -74,6 +74,12 @@ class PremiumPage extends StatelessWidget {
                           title: 'Cobrança no seu texto',
                           subtitle:
                               'A mensagem do WhatsApp sai com as suas palavras, não um texto genérico.',
+                        ),
+                        const _Benefit(
+                          icon: Icons.receipt_long_rounded,
+                          title: 'Boletos a pagar',
+                          subtitle:
+                              'Boleto do fornecedor à vista ou em 15/30/45, 30/60/90. Código para copiar e aviso antes de vencer.',
                         ),
                         const SizedBox(height: 8),
                         const _PriceCard(),

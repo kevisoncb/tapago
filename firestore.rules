@@ -41,6 +41,14 @@ service cloud.firestore {
     //   - data: timestamp
     //   - descricao: string
     //
+    // Collection: Bills (boletos a pagar, Premium)
+    // Fields:
+    //   - user_id: string (must equal auth.uid)
+    //   - fornecedor: string, valor: number, codigo: string (optional)
+    //   - data_vencimento, created_at, pago_em: timestamp
+    //   - pago: bool, grupo_id: string, parcela/total_parcelas: int
+    // Create/update require active Premium on the Users doc.
+    //
     // Collection: PremiumCharges
     // Written only by Admin SDK (webhook / Functions). Clients: deny.
     // ===============================================================
@@ -185,6 +193,47 @@ service cloud.firestore {
         && data.descricao.size() <= 80;
     }
 
+    function hasActivePremium() {
+      let profile = get(/databases/$(database)/documents/Users/$(request.auth.uid)).data;
+      return profile.get('is_premium', false) == true
+        && profile.get('premium_vence_em', null) is timestamp
+        && profile.premium_vence_em > request.time;
+    }
+
+    function isValidBill(data) {
+      return hasOnlyAllowedFields([
+          'user_id',
+          'fornecedor',
+          'valor',
+          'data_vencimento',
+          'codigo',
+          'pago',
+          'pago_em',
+          'grupo_id',
+          'parcela',
+          'total_parcelas',
+          'created_at',
+        ])
+        && data.user_id is string
+        && data.user_id == request.auth.uid
+        && requiredString(data, 'fornecedor', 80)
+        && data.valor is number
+        && data.valor > 0
+        && data.valor <= 100000000
+        && data.data_vencimento is timestamp
+        && optionalString(data, 'codigo', 64)
+        && data.pago is bool
+        && optionalTimestamp(data, 'pago_em')
+        && optionalString(data, 'grupo_id', 80)
+        && data.parcela is int
+        && data.total_parcelas is int
+        && data.total_parcelas >= 1
+        && data.total_parcelas <= 12
+        && data.parcela >= 1
+        && data.parcela <= data.total_parcelas
+        && optionalTimestamp(data, 'created_at');
+    }
+
     match /Users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
@@ -214,6 +263,18 @@ service cloud.firestore {
         && isValidPayment(request.resource.data)
         && request.resource.data.user_id == resource.data.user_id
         && request.resource.data.debt_id == resource.data.debt_id;
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+
+    match /Bills/{billId} {
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated()
+        && hasActivePremium()
+        && isValidBill(request.resource.data);
+      allow update: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && hasActivePremium()
+        && isValidBill(request.resource.data);
       allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
     }
 

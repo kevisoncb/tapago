@@ -13,6 +13,7 @@ class LocalRepository implements AppRepository {
   String get _userKey => 'pago_${userId}_user';
   String get _debtsKey => 'pago_${userId}_debts';
   String get _paymentsKey => 'pago_${userId}_payments';
+  String get _billsKey => 'pago_${userId}_bills';
 
   late SharedPreferences _prefs;
 
@@ -96,6 +97,33 @@ class LocalRepository implements AppRepository {
       payment,
     ];
     await replacePayments(next);
+  }
+
+  @override
+  Future<List<Bill>> getBills() async {
+    return _decodeList(_billsKey).map(Bill.fromMap).toList();
+  }
+
+  Future<void> replaceBills(List<Bill> bills) async {
+    await _prefs.setString(
+      _billsKey,
+      jsonEncode(bills.map((item) => item.toMap()).toList()),
+    );
+  }
+
+  @override
+  Future<void> upsertBill(Bill bill) async {
+    final current = await getBills();
+    await replaceBills([
+      ...current.where((item) => item.id != bill.id),
+      bill,
+    ]);
+  }
+
+  @override
+  Future<void> deleteBill(String id) async {
+    final current = await getBills();
+    await replaceBills(current.where((item) => item.id != id).toList());
   }
 
   List<Map<String, dynamic>> _decodeList(String key) {

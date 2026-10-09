@@ -76,4 +76,30 @@ class CachedRepository implements AppRepository {
     await remote.addPayment(payment);
     await cache.addPayment(payment);
   }
+
+  @override
+  Future<List<Bill>> getBills() async {
+    try {
+      final bills = await remote.getBills();
+      final local = cache;
+      if (local is LocalRepository) {
+        await local.replaceBills(bills);
+      }
+      return bills;
+    } catch (_) {
+      return cache.getBills();
+    }
+  }
+
+  @override
+  Future<void> upsertBill(Bill bill) async {
+    await remote.upsertBill(bill);
+    await cache.upsertBill(bill);
+  }
+
+  @override
+  Future<void> deleteBill(String id) async {
+    await remote.deleteBill(id);
+    await cache.deleteBill(id);
+  }
 }

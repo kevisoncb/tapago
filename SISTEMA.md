@@ -14,7 +14,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 ## Git
 
 - `main` — produção (ainda TáPago, pacote `com.tapago.tapago_app`). Origin: `c75f224`.
-- `develop` — desenvolvimento, já toda em Pagô. Rename completo **ainda não commitado** na sessão de 9/out.
+- `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Link de teste do site: https://tapago-ae948--develop-uc128g7j.web.app (canal `develop`, vence 8/nov; republicar com `hosting:channel:deploy develop`).
 - Só merge `develop` → `main` quando estiver pronto para produção.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
 
@@ -30,7 +30,9 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 
 ## O que o app faz agora
 
-Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. WhatsApp sai do celular do usuário (wa.me), não de bot. Premium: voz, OCR e mensagem própria. R$ 39,90/mês. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
+Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. WhatsApp sai do celular do usuário (wa.me), não de bot. Premium: voz, OCR, mensagem própria e **boletos a pagar**. R$ 39,90/mês.
+
+Boletos a pagar (Premium, só na `develop`): o que o lojista deve ao fornecedor. À vista (vencimento + código opcional) ou parcelado (valor total + data da compra + prazos 15/30/45, 30/45/60, 30/60/90 ou personalizado; divide em centavos, sobra na última). Lista com "Parcela 1 de 3", atrasado em vermelho, copiar código, colar código depois, marcar/desmarcar pago, excluir. Lembrete às 9h na véspera, no dia e em atraso (canal Android "Boletos a pagar"). Entrada no dashboard ("Boletos a pagar", cadeado se não Premium). Sem Premium: vê a lista, não cria nem edita. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
 
 ## Mapa
 
@@ -41,13 +43,14 @@ Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. What
 - `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
 - `lib/screens/settings_page.dart` — PIX, banco, mensagem, caderneta, Premium, Ajuda.
 - `lib/screens/premium_page.dart` / `pix_checkout_page.dart` — voz, OCR, texto, PIX 30 dias, Play.
+- `lib/screens/bills_page.dart` / `add_bill_page.dart` — boletos a pagar. `lib/services/bill_installments.dart` — divisão de parcelas, prazos, código.
 - `lib/widgets/pago_logo.dart` — marca. `lib/utils/constants.dart` — nome, frase, links, API.
 - `site/` — landing, planos, termos, privacidade, LGPD, ajuda.
 - `functions/index.js` — webhook Asaas, PIX Premium, status, confirm Play.
 
 ## Dados
 
-Firestore: `Users`, `Debts`, `Payments`, `PremiumCharges`. Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
+Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: dono lê/apaga; criar/editar exige `is_premium` + `premium_vence_em` futuro (regras já publicadas no projeto, aditivas). Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
 
 ## Feito
 
@@ -55,7 +58,8 @@ Firestore: `Users`, `Debts`, `Payments`, `PremiumCharges`. Saldo no ledger. Sem 
 - Premium 39,90: voz, OCR no celular, texto próprio.
 - Auth e-mail/senha, Firestore, Functions, webhook Asaas. Asaas no CNPJ.
 - Ajuda no site e no app: mesmo WhatsApp, só no clique.
-- Rename total TáPago → Pagô na `develop`, apps Firebase novos `app.usepago` com configs baixadas. Testes: 17 passando.
+- Rename total TáPago → Pagô na `develop`, apps Firebase novos `app.usepago` com configs baixadas.
+- Boletos a pagar (Premium) na `develop`, com benefício na tela Premium, no site e na privacidade. Testes: 20 passando.
 
 ## Parcial
 
@@ -66,10 +70,12 @@ Firestore: `Users`, `Debts`, `Payments`, `PremiumCharges`. Saldo no ledger. Sem 
 - Ícone ainda é o check azul antigo.
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
 
+- Boletos: não testado no celular ainda (só testes de lógica e analyzer). Sem leitura de código pela câmera.
+
 ## Ideias (só discutidas)
 
 - Parcelamento a receber em 1 clique (Premium): 15/30/45 ou 30/45/60, bloco único, WhatsApp “parcela 1 de 3”.
-- Depois: a pagar (o que você deve), lembrete. Não é ERP de fornecedor.
+- Leitura do código do boleto pela câmera.
 
 ## Faltando
 
@@ -97,4 +103,4 @@ Firestore: `Users`, `Debts`, `Payments`, `PremiumCharges`. Saldo no ledger. Sem 
 
 ## Última sessão (9/out)
 
-Tudo renomeado de TáPago para Pagô (app, site, código, pacote `app.usepago`), site definido como usepago.app.
+Rename para Pagô / usepago.app. Link de teste do site da develop. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas.

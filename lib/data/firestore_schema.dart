@@ -37,9 +37,22 @@
 /// - valor: double
 /// - data: timestamp
 /// - descricao: string (Juros | Abatimento | Quitação)
+///
+/// Coleção `Bills` (boletos a pagar, Premium)
+/// - user_id: string
+/// - fornecedor: string
+/// - valor: double
+/// - data_vencimento: timestamp
+/// - codigo: string (linha digitável, opcional)
+/// - pago: boolean
+/// - pago_em: timestamp (opcional)
+/// - grupo_id: string (mesmo id nas parcelas de um boleto parcelado)
+/// - parcela, total_parcelas: integer
+/// - created_at: timestamp
 class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';
   static const payments = 'Payments';
+  static const bills = 'Bills';
   static const premiumCharges = 'PremiumCharges';
 }

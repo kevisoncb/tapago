@@ -10,6 +10,7 @@ import '../widgets/pago_logo.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
+import 'bills_page.dart';
 import 'caderneta_page.dart';
 import 'client_profile_page.dart';
 import 'premium_page.dart';
@@ -76,6 +77,8 @@ class DashboardPage extends StatelessWidget {
                             const SizedBox(height: 16),
                             const _PremiumBanner(),
                           ],
+                          const SizedBox(height: 12),
+                          const _BillsEntry(),
                           const SizedBox(height: 22),
                           Row(
                             children: [
@@ -340,6 +343,75 @@ class _PremiumBanner extends StatelessWidget {
             child: const Text('Ver Planos'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BillsEntry extends StatelessWidget {
+  const _BillsEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final premium = state.user.premiumAtivo;
+    final overdue = state.pendingBills.where((bill) => bill.isOverdue).length;
+    final subtitle = !premium
+        ? 'Premium · parcelas e aviso antes de vencer'
+        : state.pendingBills.isEmpty
+            ? 'Cadastre o boleto do fornecedor'
+            : overdue > 0
+                ? '$overdue atrasado${overdue > 1 ? 's' : ''} · ${Money.full(state.aPagarAberto)} em aberto'
+                : '${Money.full(state.aPagarNaSemana)} esta semana · ${Money.full(state.aPagarAberto)} em aberto';
+
+    return Material(
+      color: overdue > 0 ? AppColors.dangerSoft : const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const BillsPage()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.receipt_long_rounded,
+                color: overdue > 0 ? AppColors.danger : AppColors.text,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Boletos a pagar',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: overdue > 0
+                            ? AppColors.danger
+                            : AppColors.mutedDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                premium ? Icons.chevron_right_rounded : Icons.lock_outline_rounded,
+                color: AppColors.mutedDark,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -14,7 +14,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 ## Git
 
 - `main` — produção (ainda TáPago, pacote `com.tapago.tapago_app`). Origin: `c75f224`.
-- Demo do app no navegador (para ver no iPhone): https://tapago-ae948--app-demo-318amles.web.app — `flutter build web --release --dart-define=PAGO_DEMO=true` e deploy no canal `app-demo` com config temporária `{"hosting":{"public":"build/web","rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config`. Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
+- Demo do app no navegador (para ver no iPhone): https://tapago-ae948--app-demo-318amles.web.app — `flutter build web --release --dart-define=PAGO_DEMO=true` e deploy no canal `app-demo` com config temporária `{"hosting":{"public":"build/web","headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-cache"}]}],"rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config` (arquivo apagado depois). Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
 - `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Link de teste do site: https://tapago-ae948--develop-uc128g7j.web.app (canal `develop`, vence 8/nov; republicar com `hosting:channel:deploy develop`).
 - Só merge `develop` → `main` quando estiver pronto para produção.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
@@ -35,16 +35,19 @@ Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. What
 
 Boletos a pagar (Premium, só na `develop`): o que o lojista deve ao fornecedor. À vista (vencimento + código opcional) ou parcelado (valor total + data da compra + prazos 15/30/45, 30/45/60, 30/60/90 ou personalizado; divide em centavos, sobra na última). Lista com "Parcela 1 de 3", atrasado em vermelho, copiar código, colar código depois, marcar/desmarcar pago, excluir. Lembrete às 9h: 3 dias antes, véspera, no dia e todo dia em atraso (canal Android "Boletos a pagar", `billReminderKind`). Entrada no dashboard ("Boletos a pagar", cadeado se não Premium): vermelho mostra só o valor vencido, cinza o total em aberto. Tela de boletos: card "Vencido" vermelho separado, "Vence esta semana" (sem atrasados) e "Total em aberto"; aceita filtro por fornecedor. Sem Premium: vê a lista, não cria nem edita.
 
-Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com iniciais abrem o menu (`lib/widgets/pago_menu.dart`): Caderneta, Buscar, Boletos a pagar, Novo lançamento, Premium (se grátis), Configurações. Caderneta tem abas **Clientes** (quem te deve) e **Boletos** (empresas/fornecedores com aberto e vencido; toque abre os boletos daquela empresa). Configurações é só do app (conta, PIX, banco, mensagem, preferências, assinatura, ajuda); não lista mais contatos. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
+Painel (dashboard): "Saldo aberto" (tudo que falta receber), "Recebe esta semana" (vence nos próximos 7 dias, sem atrasados) e "Vencido a receber" (card vermelho só com o atrasado; azul "Nada vencido a receber" quando zero). Getters `aReceberNaSemana` e `aReceberVencido` no `AppController`.
+
+Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com iniciais abrem o menu (`lib/widgets/pago_menu.dart`): Caderneta, Buscar, Boletos a pagar, Novo lançamento, Premium (se grátis), Configurações. Caderneta tem abas **Clientes** (quem te deve) e **Boletos** (empresas/fornecedores com aberto e vencido; toque abre os boletos daquela empresa). Configurações é só do app (conta, PIX, banco, mensagem, preferências, assinatura, ajuda); não lista mais contatos. Descrições mostram o real: chave PIX cadastrada, nome do banco, biometria ligada/desligada; a prévia da mensagem usa a chave PIX do usuário. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
 
 ## Mapa
 
 - `lib/screens/auth_page.dart` — login e cadastro (aceite de termos), nome + “E aí, pagô?”.
-- `lib/screens/dashboard_page.dart` — saldo, lista, FAB, ícone WhatsApp.
+- `lib/screens/dashboard_page.dart` — saldo aberto, recebe na semana, vencido a receber, boletos, lista, FAB, ícone WhatsApp.
 - `lib/screens/add_debt_page.dart` — lançamento, voz Premium, duplicata bloqueada.
 - `lib/screens/client_profile_page.dart` — Abater, OCR, Lembrete / Cobrar hoje / Atraso.
 - `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
-- `lib/screens/settings_page.dart` — PIX, banco, mensagem, caderneta, Premium, Ajuda.
+- `lib/screens/settings_page.dart` — PIX, banco, mensagem, preferências, Premium, Ajuda.
+- `lib/widgets/pago_menu.dart` — menu do "Pagô!" / avatar.
 - `lib/screens/premium_page.dart` / `pix_checkout_page.dart` — voz, OCR, texto, PIX 30 dias, Play.
 - `lib/screens/bills_page.dart` / `add_bill_page.dart` — boletos a pagar. `lib/services/bill_installments.dart` — divisão de parcelas, prazos, código.
 - `lib/widgets/pago_logo.dart` — marca. `lib/utils/constants.dart` — nome, frase, links, API.
@@ -77,8 +80,12 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: don
 
 ## Ideias (só discutidas)
 
-- Parcelamento a receber em 1 clique (Premium): 15/30/45 ou 30/45/60, bloco único, WhatsApp “parcela 1 de 3”.
-- Leitura do código do boleto pela câmera.
+- Parcelamento a receber em 1 clique (Premium): 15/30/45 ou 30/45/60, bloco único, WhatsApp “parcela 1 de 3”. Próxima novidade, depois do lançamento.
+- Versão iPhone: depois de validar no Android (conta Apple US$ 99/ano).
+
+## Recomendação combinada (9/out)
+
+Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + validar renovação no servidor (notificações da Play); 2) no Android cobrar só pela Play, PIX recorrente (Asaas) só pelo site com cancelamento; 3) comprar e ligar `usepago.app`, trocar CTAs `mailto:`; 4) Crashlytics antes de publicar; 5) teste fechado com 5–10 lojistas reais; 6) `develop` vira a próxima produção (não publicar a `main` antiga).
 
 ## Faltando
 
@@ -106,4 +113,4 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: don
 
 ## Última sessão (9/out)
 
-Rename para Pagô / usepago.app. Link de teste do site da develop. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas.
+Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: painel sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Demo republicada.

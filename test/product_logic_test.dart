@@ -162,6 +162,10 @@ Troco: R\$ 0,00
       WhatsAppService.preview('Oi {primeiro}, paga {valor}{pix}'),
       'Oi Carlos, paga R\$ 450,00 PIX: sua-chave',
     );
+    expect(
+      WhatsAppService.preview('{valor}{pix}', chavePix: 'joao@pix.com'),
+      'R\$ 450,00 PIX: joao@pix.com',
+    );
   });
 
   test('chave PIX vai em toda cobrança do WhatsApp', () async {

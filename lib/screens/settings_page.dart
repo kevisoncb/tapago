@@ -137,7 +137,7 @@ class SettingsPage extends StatelessWidget {
                 title: 'Minha Chave PIX',
                 subtitle: user.chavePix.isEmpty
                     ? 'Toque para cadastrar'
-                    : 'Copia e cola ativada',
+                    : 'Vai junto na cobrança · ${user.chavePix}',
                 onTap: () => _editPix(context),
               ),
               const Divider(height: 1, indent: 68),
@@ -146,7 +146,7 @@ class SettingsPage extends StatelessWidget {
                 title: 'Dados Bancários',
                 subtitle: user.banco.isEmpty
                     ? 'Cadastre sua conta'
-                    : 'Copia e cola ativada',
+                    : user.banco,
                 onTap: () => _editBank(context),
               ),
             ],
@@ -181,7 +181,10 @@ class SettingsPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
             ),
             child: Text(
-              WhatsAppService.preview(user.mensagemCobranca),
+              WhatsAppService.preview(
+                user.mensagemCobranca,
+                chavePix: user.chavePix,
+              ),
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 height: 1.45,
@@ -212,7 +215,9 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.fingerprint_rounded,
                 title: 'Acesso Biométrico',
-                subtitle: 'Copia e cola ativada',
+                subtitle: user.acessoBiometrico
+                    ? 'Pede digital ou rosto ao abrir'
+                    : 'Desligado',
                 trailing: Switch.adaptive(
                   value: user.acessoBiometrico,
                   onChanged: (value) {

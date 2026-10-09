@@ -148,6 +148,8 @@ class SettingsRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           color: AppColors.mutedDark,

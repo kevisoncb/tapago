@@ -61,7 +61,7 @@ class DashboardPage extends StatelessWidget {
                               Expanded(
                                 child: _MetricCard(
                                   icon: Icons.calendar_month_rounded,
-                                  label: 'A Receber',
+                                  label: 'Recebe esta semana',
                                   value: Money.compact(state.aReceberNaSemana),
                                 ),
                               ),
@@ -69,10 +69,15 @@ class DashboardPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _MetricCard(
-                            icon: Icons.payments_outlined,
-                            label: 'Na rua',
-                            value: Money.compact(state.dinheiroNaRua),
+                            icon: state.aReceberVencido > 0
+                                ? Icons.warning_amber_rounded
+                                : Icons.check_circle_outline_rounded,
+                            label: state.aReceberVencido > 0
+                                ? 'Vencido a receber'
+                                : 'Nada vencido a receber',
+                            value: Money.compact(state.aReceberVencido),
                             compact: true,
+                            danger: state.aReceberVencido > 0,
                           ),
                           if (!state.user.isPremium) ...[
                             const SizedBox(height: 16),
@@ -235,24 +240,27 @@ class _MetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     this.compact = false,
+    this.danger = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final bool compact;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
+    final color = danger ? AppColors.danger : AppColors.primary;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(18, compact ? 14 : 18, 18, compact ? 14 : 18),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: color,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.28),
+            color: color.withValues(alpha: 0.28),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),

@@ -36,14 +36,15 @@ class WhatsAppService {
         .trim();
   }
 
-  static String preview(String customTemplate) {
+  static String preview(String customTemplate, {String chavePix = ''}) {
     final raw = customTemplate.trim().isEmpty ? defaultTemplate : customTemplate;
+    final pix = chavePix.trim().isEmpty ? 'sua-chave' : chavePix.trim();
     return raw
         .replaceAll('{nome}', 'Carlos Oliveira')
         .replaceAll('{primeiro}', 'Carlos')
         .replaceAll('{valor}', 'R\$ 450,00')
         .replaceAll('{vencimento}', '20/09/2026')
-        .replaceAll('{pix}', ' PIX: sua-chave')
+        .replaceAll('{pix}', ' PIX: $pix')
         .trim();
   }
 

@@ -85,12 +85,12 @@ class AppController extends ChangeNotifier {
         (sum, debt) => sum + saldoOf(debt),
       );
 
-  double get dinheiroNaRua => saldoAberto;
-
-  double get lucroProjetado => saldoAberto;
-
   double get aReceberNaSemana => pendingDebts
-      .where((debt) => debt.isDueThisWeek || debt.isOverdue)
+      .where((debt) => debt.isDueThisWeek)
+      .fold(0, (sum, debt) => sum + saldoOf(debt));
+
+  double get aReceberVencido => pendingDebts
+      .where((debt) => debt.isOverdue)
       .fold(0, (sum, debt) => sum + saldoOf(debt));
 
   List<Bill> get pendingBills => bills.where((bill) => !bill.pago).toList()

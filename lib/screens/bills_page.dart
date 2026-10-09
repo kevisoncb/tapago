@@ -14,14 +14,25 @@ import 'add_bill_page.dart';
 import 'premium_page.dart';
 
 class BillsPage extends StatelessWidget {
-  const BillsPage({super.key});
+  const BillsPage({super.key, this.fornecedor});
+
+  final String? fornecedor;
+
+  bool _matches(Bill bill) =>
+      fornecedor == null ||
+      bill.fornecedor.trim().toLowerCase() == fornecedor!.trim().toLowerCase();
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final premium = state.user.premiumAtivo;
-    final pending = state.pendingBills;
-    final paid = state.paidBills.take(20).toList();
+    final pending = state.pendingBills.where(_matches).toList();
+    final paid = state.paidBills.where(_matches).take(20).toList();
+    double sum(Iterable<Bill> bills) =>
+        bills.fold(0, (total, bill) => total + bill.valor);
+    final vencido = sum(pending.where((bill) => bill.isOverdue));
+    final semana = sum(pending.where((bill) => bill.isDueThisWeek));
+    final total = sum(pending);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -30,7 +41,7 @@ class BillsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Boletos a pagar'),
+        title: Text(fornecedor ?? 'Boletos a pagar'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
@@ -51,19 +62,27 @@ class BillsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 108),
         children: [
+          if (vencido > 0) ...[
+            _Total(
+              label: 'Vencido',
+              value: Money.full(vencido),
+              danger: true,
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Expanded(
                 child: _Total(
-                  label: 'A pagar',
-                  value: Money.compact(state.aPagarAberto),
+                  label: 'Vence esta semana',
+                  value: Money.compact(semana),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _Total(
-                  label: 'Esta semana',
-                  value: Money.compact(state.aPagarNaSemana),
+                  label: 'Total em aberto',
+                  value: Money.compact(total),
                 ),
               ),
             ],
@@ -103,17 +122,19 @@ class BillsPage extends StatelessWidget {
 }
 
 class _Total extends StatelessWidget {
-  const _Total({required this.label, required this.value});
+  const _Total({required this.label, required this.value, this.danger = false});
 
   final String label;
   final String value;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: AppColors.text,
+        color: danger ? AppColors.danger : AppColors.text,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(

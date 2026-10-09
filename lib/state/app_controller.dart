@@ -104,8 +104,14 @@ class AppController extends ChangeNotifier {
       pendingBills.fold(0, (sum, bill) => sum + bill.valor);
 
   double get aPagarNaSemana => pendingBills
-      .where((bill) => bill.isDueThisWeek || bill.isOverdue)
+      .where((bill) => bill.isDueThisWeek)
       .fold(0, (sum, bill) => sum + bill.valor);
+
+  List<Bill> get overdueBills =>
+      pendingBills.where((bill) => bill.isOverdue).toList();
+
+  double get aPagarAtrasado =>
+      overdueBills.fold(0, (sum, bill) => sum + bill.valor);
 
   Future<void> addBills(List<Bill> next) async {
     for (final bill in next) {

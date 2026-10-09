@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../legal/legal_docs.dart';
-import '../services/client_match.dart';
 import '../state/app_controller.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_colors.dart';
@@ -15,8 +14,6 @@ import '../utils/masks.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
 import '../widgets/pago_logo.dart';
-import 'caderneta_page.dart';
-import 'contact_history_page.dart';
 import 'legal_page.dart';
 import 'premium_page.dart';
 
@@ -130,21 +127,6 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 22),
-          const SectionLabel('CONTATOS'),
-          const SizedBox(height: 4),
-          const SectionLabel('CADERNETA'),
-          const SizedBox(height: 6),
-          Text(
-            'Todas as pessoas, pagas ou não',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.mutedDark,
-            ),
-          ),
-          const SizedBox(height: 10),
-          _ContactsCard(state: state),
           const SizedBox(height: 22),
           const SectionLabel('FINANCEIRO'),
           const SizedBox(height: 10),
@@ -659,69 +641,6 @@ class SettingsPage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _ContactsCard extends StatelessWidget {
-  const _ContactsCard({required this.state});
-
-  final AppController state;
-
-  @override
-  Widget build(BuildContext context) {
-    final contacts = groupContacts(state.debts);
-
-    if (contacts.isEmpty) {
-      return GroupCard(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-            child: Text(
-              'Nenhum contato ainda. Quando você lançar alguém, o nome fica aqui — mesmo depois de quitado.',
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColors.mutedDark,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return GroupCard(
-      children: [
-        SettingsRow(
-          icon: Icons.search_rounded,
-          title: 'Buscar na caderneta',
-          subtitle: '${contacts.length} ${contacts.length == 1 ? 'pessoa' : 'pessoas'}',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CadernetaPage()),
-            );
-          },
-        ),
-        const Divider(height: 1, indent: 68),
-        for (var i = 0; i < contacts.length; i++) ...[
-          CadernetaContactTile(
-            contact: contacts[i],
-            saldo: contacts[i].saldoAbertoOf(state.saldoOf),
-            padded: false,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ContactHistoryPage(
-                    contactKey: contacts[i].key,
-                  ),
-                ),
-              );
-            },
-          ),
-          if (i != contacts.length - 1)
-            const Divider(height: 1, indent: 68),
-        ],
-      ],
     );
   }
 }

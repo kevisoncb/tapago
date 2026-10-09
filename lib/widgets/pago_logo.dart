@@ -40,7 +40,7 @@ class PagoWordmark extends StatelessWidget {
         PagoMark(size: markSize),
         SizedBox(width: markSize * 0.28),
         Text(
-          AppConstants.appName,
+          '${AppConstants.appName}!',
           style: GoogleFonts.plusJakartaSans(
             fontSize: fontSize,
             fontWeight: FontWeight.w800,

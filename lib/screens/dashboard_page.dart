@@ -7,6 +7,7 @@ import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/pago_logo.dart';
+import '../widgets/pago_menu.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
@@ -177,7 +178,25 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const PagoWordmark(markSize: 28, fontSize: 24),
+              GestureDetector(
+                onTap: () => showPagoMenu(context),
+                behavior: HitTestBehavior.opaque,
+                child: Semantics(
+                  button: true,
+                  label: 'Menu do Pagô',
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PagoWordmark(markSize: 28, fontSize: 24),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.mutedDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -191,11 +210,7 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         GestureDetector(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            );
-          },
+          onTap: () => showPagoMenu(context),
           child: CircleAvatar(
             radius: 20,
             backgroundColor: AppColors.primary,
@@ -355,17 +370,45 @@ class _BillsEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final premium = state.user.premiumAtivo;
-    final overdue = state.pendingBills.where((bill) => bill.isOverdue).length;
-    final subtitle = !premium
-        ? 'Premium · parcelas e aviso antes de vencer'
-        : state.pendingBills.isEmpty
-            ? 'Cadastre o boleto do fornecedor'
-            : overdue > 0
-                ? '$overdue atrasado${overdue > 1 ? 's' : ''} · ${Money.full(state.aPagarAberto)} em aberto'
-                : '${Money.full(state.aPagarNaSemana)} esta semana · ${Money.full(state.aPagarAberto)} em aberto';
+    final overdue = state.overdueBills.length;
+    final mutedStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 11.5,
+      color: AppColors.mutedDark,
+      fontWeight: FontWeight.w500,
+    );
+    final Widget subtitle;
+    if (!premium) {
+      subtitle = Text('Premium · parcelas e aviso antes de vencer', style: mutedStyle);
+    } else if (state.pendingBills.isEmpty) {
+      subtitle = Text('Cadastre o boleto do fornecedor', style: mutedStyle);
+    } else if (overdue > 0) {
+      subtitle = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text:
+                  '${Money.full(state.aPagarAtrasado)} vencido${overdue > 1 ? 's' : ''}',
+              style: mutedStyle.copyWith(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            TextSpan(
+              text: ' · ${Money.full(state.aPagarAberto)} no total',
+            ),
+          ],
+        ),
+        style: mutedStyle,
+      );
+    } else {
+      subtitle = Text(
+        '${Money.full(state.aPagarNaSemana)} esta semana · ${Money.full(state.aPagarAberto)} no total',
+        style: mutedStyle,
+      );
+    }
 
     return Material(
-      color: overdue > 0 ? AppColors.dangerSoft : const Color(0xFFF8FAFC),
+      color: const Color(0xFFF8FAFC),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -392,16 +435,7 @@ class _BillsEntry extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: overdue > 0
-                            ? AppColors.danger
-                            : AppColors.mutedDark,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    subtitle,
                   ],
                 ),
               ),

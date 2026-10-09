@@ -297,7 +297,7 @@ class AppController extends ChangeNotifier {
           return 'Compra cancelada.';
         case PurchaseOutcome.unavailable:
         case PurchaseOutcome.missing:
-          if (kDebugMode && !usesFirestore) {
+          if ((kDebugMode || AppConstants.demoBuild) && !usesFirestore) {
             await activatePremium();
             return null;
           }

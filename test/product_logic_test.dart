@@ -453,19 +453,30 @@ Troco: R\$ 0,00
     expect(back.parcelaLabel, 'Parcela 2 de 3');
     expect(back.pago, isFalse);
 
+    BillReminderKind? on(int day) => billReminderKind(
+          due: bill.dataVencimento,
+          day: DateTime(2026, 10, day),
+          pago: false,
+        );
+    expect(on(7), BillReminderKind.tresDias);
+    expect(on(8), isNull);
+    expect(on(9), BillReminderKind.amanha);
+    expect(on(10), BillReminderKind.hoje);
+    expect(on(12), BillReminderKind.atraso);
+    expect(on(5), isNull);
     expect(
-      reminderKind(
+      billReminderKind(
         due: bill.dataVencimento,
-        day: DateTime(2026, 10, 9),
-        pago: bill.pago,
+        day: DateTime(2026, 10, 12),
+        pago: true,
       ),
-      ReminderKind.amanha,
+      isNull,
     );
     expect(
-      billReminderTitle(ReminderKind.amanha, [bill]),
-      'Boleto de Distribuidora Silva vence amanhã.',
+      billReminderTitle(BillReminderKind.tresDias, [bill]),
+      'Boleto de Distribuidora Silva vence em 3 dias.',
     );
-    expect(billReminderTitle(ReminderKind.atraso, [bill, bill]),
+    expect(billReminderTitle(BillReminderKind.atraso, [bill, bill]),
         '2 boletos atrasados.');
   });
 }

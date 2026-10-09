@@ -37,24 +37,53 @@ WhatsAppAction whatsAppActionForReminder(ReminderKind kind) {
   }
 }
 
-String billReminderTitle(ReminderKind kind, List<Bill> bills) {
+enum BillReminderKind { tresDias, amanha, hoje, atraso }
+
+BillReminderKind? billReminderKind({
+  required DateTime due,
+  required DateTime day,
+  required bool pago,
+}) {
+  if (pago) return null;
+  final vencimento = DateTime(due.year, due.month, due.day);
+  final start = DateTime(day.year, day.month, day.day);
+  if (vencimento.isBefore(start)) return BillReminderKind.atraso;
+  final dias = DateTime.utc(vencimento.year, vencimento.month, vencimento.day)
+      .difference(DateTime.utc(start.year, start.month, start.day))
+      .inDays;
+  switch (dias) {
+    case 0:
+      return BillReminderKind.hoje;
+    case 1:
+      return BillReminderKind.amanha;
+    case 3:
+      return BillReminderKind.tresDias;
+  }
+  return null;
+}
+
+String billReminderTitle(BillReminderKind kind, List<Bill> bills) {
   if (bills.length == 1) {
     final fornecedor = bills.first.fornecedor;
     switch (kind) {
-      case ReminderKind.amanha:
+      case BillReminderKind.tresDias:
+        return 'Boleto de $fornecedor vence em 3 dias.';
+      case BillReminderKind.amanha:
         return 'Boleto de $fornecedor vence amanhã.';
-      case ReminderKind.hoje:
+      case BillReminderKind.hoje:
         return 'Boleto de $fornecedor vence hoje.';
-      case ReminderKind.atraso:
+      case BillReminderKind.atraso:
         return 'Boleto de $fornecedor está atrasado.';
     }
   }
   switch (kind) {
-    case ReminderKind.amanha:
+    case BillReminderKind.tresDias:
+      return '${bills.length} boletos vencem em 3 dias.';
+    case BillReminderKind.amanha:
       return '${bills.length} boletos vencem amanhã.';
-    case ReminderKind.hoje:
+    case BillReminderKind.hoje:
       return '${bills.length} boletos vencem hoje.';
-    case ReminderKind.atraso:
+    case BillReminderKind.atraso:
       return '${bills.length} boletos atrasados.';
   }
 }
@@ -217,11 +246,11 @@ class ReminderService {
         slot++;
       }
 
-      for (final kind in ReminderKind.values) {
+      for (final kind in BillReminderKind.values) {
         final group = bills
             .where(
               (bill) =>
-                  reminderKind(
+                  billReminderKind(
                     due: bill.dataVencimento,
                     day: day,
                     pago: bill.pago,

@@ -24,4 +24,5 @@ class AppConstants {
   static const helpUrl =
       'https://wa.me/$supportWhatsApp?text=Oi%2C%20vim%20pelo%20Pag%C3%B4%20e%20quero%20tirar%20uma%20d%C3%BAvida.';
   static const demoUserId = 'user_joao_dinamico';
+  static const demoBuild = bool.fromEnvironment('PAGO_DEMO');
 }

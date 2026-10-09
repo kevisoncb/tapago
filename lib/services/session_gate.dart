@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../data/seed_data.dart';
 import '../models/models.dart';
+import '../utils/constants.dart';
 import 'app_repository.dart';
 import 'auth_messages.dart';
 import 'firebase_bootstrap.dart';
 import 'local_account_store.dart';
+import 'local_repository.dart';
 import 'repository_factory.dart';
 
 class SessionGate extends ChangeNotifier {
@@ -49,6 +52,8 @@ class SessionGate extends ChangeNotifier {
     final session = await _accounts.current();
     if (session != null) {
       await _openLocal(session);
+    } else if (AppConstants.demoBuild) {
+      await _openDemo();
     }
     booting = false;
     notifyListeners();
@@ -222,6 +227,26 @@ class SessionGate extends ChangeNotifier {
       firebaseReady: false,
     );
     userId = session.id;
+  }
+
+  Future<void> _openDemo() async {
+    final demo = LocalRepository(userId: AppConstants.demoUserId);
+    await demo.init();
+    final current = await demo.getCurrentUser();
+    if (current.email.isEmpty) {
+      final now = DateTime.now();
+      await demo.saveUser(
+        SeedData.user().copyWith(
+          isPremium: true,
+          premiumVenceEm: now.add(const Duration(days: 30)),
+        ),
+      );
+      await demo.replaceDebts(SeedData.debts());
+      await demo.replacePayments(SeedData.payments());
+      await demo.replaceBills(SeedData.bills(now));
+    }
+    repository = demo;
+    userId = AppConstants.demoUserId;
   }
 
   @override

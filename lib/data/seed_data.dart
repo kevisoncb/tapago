@@ -78,6 +78,44 @@ class SeedData {
     ];
   }
 
+  static List<Bill> bills(DateTime today) {
+    const uid = AppConstants.demoUserId;
+    DateTime day(int offset) =>
+        DateTime(today.year, today.month, today.day + offset);
+    return [
+      for (final (index, offset) in [-1, 29, 59].indexed)
+        Bill(
+          id: 'bill_silva_${index + 1}',
+          userId: uid,
+          fornecedor: 'Distribuidora Silva',
+          valor: index == 2 ? 333.34 : 333.33,
+          dataVencimento: day(offset),
+          grupoId: 'grupo_silva',
+          parcela: index + 1,
+          totalParcelas: 3,
+        ),
+      Bill(
+        id: 'bill_atacadao',
+        userId: uid,
+        fornecedor: 'Atacadão Bebidas',
+        valor: 686.67,
+        dataVencimento: day(3),
+        codigo: '23793381286000000000300000000400184340000068667',
+        grupoId: 'grupo_atacadao',
+      ),
+      Bill(
+        id: 'bill_energia',
+        userId: uid,
+        fornecedor: 'Conta de luz',
+        valor: 212.40,
+        dataVencimento: day(-5),
+        pago: true,
+        pagoEm: day(-6),
+        grupoId: 'grupo_energia',
+      ),
+    ];
+  }
+
   static List<Payment> payments() {
     const uid = AppConstants.demoUserId;
     return [

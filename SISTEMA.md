@@ -14,6 +14,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 ## Git
 
 - `main` — produção (ainda TáPago, pacote `com.tapago.tapago_app`). Origin: `c75f224`.
+- Demo do app no navegador (para ver no iPhone): https://tapago-ae948--app-demo-318amles.web.app — `flutter build web --release --dart-define=PAGO_DEMO=true` e deploy no canal `app-demo` com config temporária `{"hosting":{"public":"build/web","rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config`. Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
 - `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Link de teste do site: https://tapago-ae948--develop-uc128g7j.web.app (canal `develop`, vence 8/nov; republicar com `hosting:channel:deploy develop`).
 - Só merge `develop` → `main` quando estiver pronto para produção.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
@@ -32,7 +33,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 
 Caderneta digital de fiado, venda a prazo e empréstimo. Grátis ilimitado. WhatsApp sai do celular do usuário (wa.me), não de bot. Premium: voz, OCR, mensagem própria e **boletos a pagar**. R$ 39,90/mês.
 
-Boletos a pagar (Premium, só na `develop`): o que o lojista deve ao fornecedor. À vista (vencimento + código opcional) ou parcelado (valor total + data da compra + prazos 15/30/45, 30/45/60, 30/60/90 ou personalizado; divide em centavos, sobra na última). Lista com "Parcela 1 de 3", atrasado em vermelho, copiar código, colar código depois, marcar/desmarcar pago, excluir. Lembrete às 9h na véspera, no dia e em atraso (canal Android "Boletos a pagar"). Entrada no dashboard ("Boletos a pagar", cadeado se não Premium). Sem Premium: vê a lista, não cria nem edita. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
+Boletos a pagar (Premium, só na `develop`): o que o lojista deve ao fornecedor. À vista (vencimento + código opcional) ou parcelado (valor total + data da compra + prazos 15/30/45, 30/45/60, 30/60/90 ou personalizado; divide em centavos, sobra na última). Lista com "Parcela 1 de 3", atrasado em vermelho, copiar código, colar código depois, marcar/desmarcar pago, excluir. Lembrete às 9h: 3 dias antes, véspera, no dia e todo dia em atraso (canal Android "Boletos a pagar", `billReminderKind`). Entrada no dashboard ("Boletos a pagar", cadeado se não Premium). Sem Premium: vê a lista, não cria nem edita. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
 
 ## Mapa
 
@@ -64,7 +65,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: don
 ## Parcial
 
 - `main` e site ao vivo ainda TáPago.
-- PIX Premium: 30 dias. `confirmPlayPurchase` só Auth.
+- PIX Premium: 30 dias, não renova sozinho (sem assinatura Asaas). Play já é assinatura recorrente no código (`buyNonConsumable` + oferta de assinatura); `confirmPlayPurchase` só Auth e dá 30 dias, sem checar renovação na Google (falta validar no servidor / notificações da Play).
 - Play: documento, SDK, keystore, AAB — à noite, no Android Studio.
 - CTAs do site ainda `mailto:` (`ola@usepago.app`).
 - Ícone ainda é o check azul antigo.

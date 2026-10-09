@@ -49,10 +49,15 @@
 /// - grupo_id: string (mesmo id nas parcelas de um boleto parcelado)
 /// - parcela, total_parcelas: integer
 /// - created_at: timestamp
+///
+/// Coleção `Presence` (doc id = uid; só o painel admin lê)
+/// - last_seen_at: timestamp (servidor)
+/// - plataforma: string (android, iOS, web...)
 class FirestoreSchema {
   static const users = 'Users';
   static const debts = 'Debts';
   static const payments = 'Payments';
   static const bills = 'Bills';
   static const premiumCharges = 'PremiumCharges';
+  static const presence = 'Presence';
 }

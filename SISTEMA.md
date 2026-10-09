@@ -39,6 +39,16 @@ Painel (dashboard): "Saldo aberto" (tudo que falta receber), "Recebe esta semana
 
 Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com iniciais abrem o menu (`lib/widgets/pago_menu.dart`): Caderneta, Buscar, Boletos a pagar, Novo lançamento, Premium (se grátis), Configurações. Caderneta tem abas **Clientes** (quem te deve) e **Boletos** (empresas/fornecedores com aberto e vencido; toque abre os boletos daquela empresa). Configurações é só do app (conta, PIX, banco, mensagem, preferências, assinatura, ajuda); não lista mais contatos. Descrições mostram o real: chave PIX cadastrada, nome do banco, biometria ligada/desligada; a prévia da mensagem usa a chave PIX do usuário. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
 
+## Painel do administrador
+
+- Endereço: https://pago-admin.web.app (site Hosting separado `pago-admin`; não vai no app). Conta admin: `pago@administrador.com` (senha só com o dono; trocar pelo botão "Trocar senha" do painel).
+- Quem é admin: `ADMIN_EMAILS` em `functions/.env` (gitignored, separado por vírgula). A conta já foi criada para ninguém pegar o e-mail antes.
+- Mostra: online agora (sinal nos últimos 5 min), ativos 24h/7d/30d, cadastros e novos 7d, gráfico de cadastros 14 dias, Premium ativos (pagantes × cortesia), receita estimada (pagantes × 39,90), Premium vencendo em 7 dias. Lista com nome, e-mail, telefone, cadastro, último acesso, plataforma, plano/origem (Play, PIX, cortesia) e números de uso (lançamentos, pagamentos, boletos). Filtros e busca. Admins ficam fora das contagens.
+- Ações: dar 7/30/90/365 dias (soma se já for Premium; grava `premium_transaction_id = admin_<dias>d_<ts>`; o app desliga sozinho pela data), tirar Premium, excluir conta (apaga Debts, Payments, Bills, PremiumCharges, Users, Presence e o login; pede digitar EXCLUIR; admin não pode ser excluído).
+- Não mostra a caderneta (clientes e valores) das pessoas: só contagens.
+- Código: `admin/` (HTML/CSS/JS com Firebase Auth web via CDN, app web "Default Web App"), `functions/admin.js` (`adminApi`, chamado direto em `https://southamerica-east1-tapago-ae948.cloudfunctions.net/adminApi`). Publicar painel: `firebase deploy --only hosting --config firebase.admin.json`.
+- Online: `lib/services/presence_service.dart` grava `Presence/{uid}` ao entrar e a cada 5 min com o app aberto (só quando usa Firebase). Só funciona com a versão do app que tem isso (develop em diante).
+
 ## Mapa
 
 - `lib/screens/auth_page.dart` — login e cadastro (aceite de termos), nome + “E aí, pagô?”.
@@ -52,11 +62,12 @@ Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com inici
 - `lib/screens/bills_page.dart` / `add_bill_page.dart` — boletos a pagar. `lib/services/bill_installments.dart` — divisão de parcelas, prazos, código.
 - `lib/widgets/pago_logo.dart` — marca. `lib/utils/constants.dart` — nome, frase, links, API.
 - `site/` — landing, planos, termos, privacidade, LGPD, ajuda.
-- `functions/index.js` — webhook Asaas, PIX Premium, status, confirm Play.
+- `functions/index.js` — webhook Asaas, PIX Premium, status, confirm Play. `functions/admin.js` — API do painel admin.
+- `admin/` — painel do administrador (site `pago-admin`).
 
 ## Dados
 
-Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: dono lê/apaga; criar/editar exige `is_premium` + `premium_vence_em` futuro (regras já publicadas no projeto, aditivas). Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
+Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (sinal de uso; dono só grava `last_seen_at` = hora do servidor e `plataforma`; ninguém lê pelo app). Regras publicadas. `Bills`: dono lê/apaga; criar/editar exige `is_premium` + `premium_vence_em` futuro (regras já publicadas no projeto, aditivas). Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
 
 ## Feito
 
@@ -100,7 +111,9 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Projeto `tapago-ae948`, Blaze. Hosting padrão: https://tapago-ae948.web.app (domínio customizado futuro: usepago.app).
 - Apps: Android `app.usepago` (`1:1077428127080:android:53dca34d493288510042dd`) e iOS/macOS `app.usepago` (`1:1077428127080:ios:577755df013cd6380042dd`). Apps antigos `com.tapago...` continuam registrados enquanto a `main` usar.
-- Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`.
+- Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`, `adminApi`.
+- Hosting sites: `tapago-ae948` (site/landing) e `pago-admin` (painel admin).
+- Web app do Firebase: "Default Web App" `1:1077428127080:web:e82621d06da4bf5c0042dd` (usado só pelo painel).
 - Webhook: `https://tapago-ae948.web.app/api/webhooks/asaas`
 - Auth: e-mail/senha. Asaas: CNPJ.
 
@@ -110,7 +123,8 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 2. Play: documento, SDK, keystore, AAB, ficha Pagô (noite).
 3. Decidir quando a `develop` vai para a `main`.
 4. Testar PIX.
+5. Trocar a senha provisória do painel admin ("Trocar senha").
 
 ## Última sessão (9/out)
 
-Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: painel sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Demo republicada.
+Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: dashboard sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Painel do administrador web (`pago-admin.web.app`) com `adminApi`, `Presence` e regras publicadas; testado dar/somar/tirar Premium, excluir e bloqueio de não-admin (403).

@@ -6,6 +6,8 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+exports.adminApi = require("./admin").adminApi;
+
 const asaasKeyParam = defineString("ASAAS_API_KEY");
 const webhookTokenParam = defineString("ASAAS_WEBHOOK_TOKEN");
 const asaasBaseParam = defineString("ASAAS_BASE_URL", {

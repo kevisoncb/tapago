@@ -51,6 +51,10 @@ service cloud.firestore {
     //
     // Collection: PremiumCharges
     // Written only by Admin SDK (webhook / Functions). Clients: deny.
+    //
+    // Collection: Presence (doc id = uid)
+    //   - last_seen_at: server timestamp, plataforma: string
+    // Owner writes its own heartbeat; only the admin panel (Admin SDK) reads.
     // ===============================================================
 
     function isAuthenticated() {
@@ -280,6 +284,14 @@ service cloud.firestore {
 
     match /PremiumCharges/{chargeId} {
       allow read, write: if false;
+    }
+
+    match /Presence/{userId} {
+      allow read, delete: if false;
+      allow create, update: if isOwner(userId)
+        && hasOnlyAllowedFields(['last_seen_at', 'plataforma'])
+        && request.resource.data.last_seen_at == request.time
+        && optionalString(request.resource.data, 'plataforma', 20);
     }
 
     match /{document=**} {

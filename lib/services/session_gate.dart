@@ -11,6 +11,7 @@ import 'auth_messages.dart';
 import 'firebase_bootstrap.dart';
 import 'local_account_store.dart';
 import 'local_repository.dart';
+import 'presence_service.dart';
 import 'repository_factory.dart';
 
 class SessionGate extends ChangeNotifier {
@@ -163,6 +164,7 @@ class SessionGate extends ChangeNotifier {
 
   Future<void> _onFirebaseUser(User? user) async {
     if (user == null) {
+      PresenceService.instance.stop();
       repository = null;
       userId = null;
       booting = false;
@@ -195,6 +197,7 @@ class SessionGate extends ChangeNotifier {
       );
       userId = user.uid;
       bootError = null;
+      PresenceService.instance.start(user.uid);
     } catch (error, stack) {
       repository = null;
       userId = null;

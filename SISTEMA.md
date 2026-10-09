@@ -112,7 +112,8 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 - Projeto `tapago-ae948`, Blaze. Hosting padrão: https://tapago-ae948.web.app (domínio customizado futuro: usepago.app).
 - Apps: Android `app.usepago` (`1:1077428127080:android:53dca34d493288510042dd`) e iOS/macOS `app.usepago` (`1:1077428127080:ios:577755df013cd6380042dd`). Apps antigos `com.tapago...` continuam registrados enquanto a `main` usar.
 - Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`, `adminApi`.
-- Hosting sites: `tapago-ae948` (site/landing) e `pago-admin` (painel admin).
+- Hosting sites: `tapago-ae948` (produção antiga TáPago + API/webhook), `usepago` (site Pagô da develop no ar: https://usepago.web.app — `pago.web.app` é de outro projeto) e `pago-admin` (painel admin).
+- Publicar o site Pagô: `firebase deploy --only hosting --config firebase.usepago.json`. Quando comprar `usepago.app`, conectar o domínio no site `usepago`.
 - Web app do Firebase: "Default Web App" `1:1077428127080:web:e82621d06da4bf5c0042dd` (usado só pelo painel).
 - Webhook: `https://tapago-ae948.web.app/api/webhooks/asaas`
 - Auth: e-mail/senha. Asaas: CNPJ.
@@ -127,4 +128,4 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 ## Última sessão (9/out)
 
-Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: dashboard sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Painel do administrador web (`pago-admin.web.app`) com `adminApi`, `Presence` e regras publicadas; testado dar/somar/tirar Premium, excluir e bloqueio de não-admin (403).
+Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: dashboard sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Painel do administrador web (`pago-admin.web.app`) com `adminApi`, `Presence` e regras publicadas; testado dar/somar/tirar Premium, excluir e bloqueio de não-admin (403). Site Pagô no ar em https://usepago.web.app; celular de exemplo do site igual ao app (Pagô!, Recebe esta semana, Vencido a receber).

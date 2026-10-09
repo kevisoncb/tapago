@@ -476,6 +476,10 @@ h2 {
   padding: 12px;
 }
 
+.money-row.danger {
+  background: #ef4444;
+}
+
 .metrics span,
 .money-row span {
   font-size: 11px;

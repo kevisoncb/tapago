@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20261006d" />
+    <link rel="stylesheet" href="./styles.css?v=20261009b" />
     <link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg" />
     <link rel="apple-touch-icon" href="./assets/pago-icon.jpg" />
   </head>
@@ -28,6 +28,7 @@
         <a href="#uso">Na prática</a>
         <a href="#voz">Voz</a>
         <a href="#recibos">Recibos</a>
+        <a href="#boletos">Boletos</a>
         <a href="#avisos">Avisos</a>
         <a href="#preco">Premium</a>
         <a href="./ajuda.html">Ajuda</a>
@@ -311,10 +312,63 @@
         </div>
       </section>
 
+      <section id="boletos" class="bills">
+        <div class="bills-card" aria-label="Boletos a pagar no app">
+          <div class="bills-totals">
+            <article><span>A pagar</span><b>R$ 3.270</b></article>
+            <article><span>Esta semana</span><b>R$ 1.020</b></article>
+          </div>
+          <div class="bill bill-late">
+            <div>
+              <strong>Distribuidora Silva</strong>
+              <small>Parcela 1 de 3 · Venceu ontem</small>
+            </div>
+            <b>R$ 333,33</b>
+          </div>
+          <div class="bill">
+            <div>
+              <strong>Atacadão Bebidas</strong>
+              <small>Vence sexta</small>
+            </div>
+            <b>R$ 686,67</b>
+            <span class="bill-copy">Copiar código</span>
+          </div>
+          <div class="bill">
+            <div>
+              <strong>Distribuidora Silva</strong>
+              <small>Parcela 2 de 3 · 30 dias</small>
+            </div>
+            <b>R$ 333,33</b>
+          </div>
+          <div class="bill-terms" aria-hidden="true">
+            <em>15/30/45</em>
+            <em class="on">30/60/90</em>
+            <em>30/45/60</em>
+            <em>Outro</em>
+          </div>
+          <span class="pill pill-light">Somente no Premium</span>
+        </div>
+        <div class="bills-copy">
+          <p class="eyebrow">Premium</p>
+          <h2>Quem te deve, e o que você deve. No mesmo app.</h2>
+          <p>
+            Cadastre o boleto do fornecedor à vista ou parcelado em 15/30/45,
+            30/60/90 ou nos seus prazos. O Pagô divide o valor, mostra
+            “parcela 1 de 3” e avisa na véspera e no dia do vencimento.
+          </p>
+          <ul class="bills-list">
+            <li>Cola o código do boleto e copia na hora de pagar</li>
+            <li>Atrasado fica em vermelho, pago sai da lista</li>
+            <li>Total a pagar na semana, ao lado do que você tem a receber</li>
+          </ul>
+        </div>
+      </section>
+
       <section id="avisos" class="notifs">
         <div class="section-head">
           <p class="eyebrow">Lembretes no celular</p>
           <h2>O prazo chega até você. Antes e no dia.</h2>
+          <p>Do cliente que te deve e, no Premium, do boleto que você tem que pagar.</p>
         </div>
         <div class="lock">
           <p class="lock-time">03:05</p>
@@ -345,6 +399,16 @@
               <span>Agora não</span>
               <span class="yes">Enviar cobrança</span>
             </div>
+          </article>
+          <article class="push">
+            <header>
+              <span class="push-app">
+                <img src="./assets/pago-icon.jpg" width="18" height="18" alt="" />
+                Pagô
+              </span>
+              <time>agora</time>
+            </header>
+            <p>Boleto de Distribuidora Silva vence amanhã. Total R$ 333,33.</p>
           </article>
         </div>
       </section>
@@ -377,7 +441,7 @@
             >
           </article>
           <article class="plan featured">
-            <p class="badge">Voz e recibos, quando a mão cansar</p>
+            <p class="badge">Voz, recibos e boletos, quando a mão cansar</p>
             <h3>Premium</h3>
             <p class="plan-price">
               <strong>R$ 39,90</strong>

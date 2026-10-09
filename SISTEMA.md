@@ -59,7 +59,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`. `Bills`: don
 - Auth e-mail/senha, Firestore, Functions, webhook Asaas. Asaas no CNPJ.
 - Ajuda no site e no app: mesmo WhatsApp, só no clique.
 - Rename total TáPago → Pagô na `develop`, apps Firebase novos `app.usepago` com configs baixadas.
-- Boletos a pagar (Premium) na `develop`, com benefício na tela Premium, no site e na privacidade. Testes: 20 passando.
+- Boletos a pagar (Premium) na `develop`, com benefício na tela Premium e na privacidade. No site: seção própria `#boletos` (mock da lista com parcelas, código, prazos), link “Boletos” no menu, notificação de boleto em Avisos e item no plano Premium. Testes: 20 passando.
 
 ## Parcial
 

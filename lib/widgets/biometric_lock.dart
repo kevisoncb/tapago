@@ -59,7 +59,7 @@ class _BiometricLockState extends State<BiometricLock>
   Future<void> _ask() async {
     if (_asking || !mounted) return;
     _asking = true;
-    final ok = await _biometrics.authenticate();
+    final ok = !await _biometrics.canLock || await _biometrics.authenticate();
     _asking = false;
     if (!mounted) return;
     setState(() => _unlocked = ok);

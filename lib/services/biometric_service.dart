@@ -22,6 +22,17 @@ class BiometricService {
     }
   }
 
+  /// Sem digital, rosto nem senha de tela o bloqueio não tem como ser aberto.
+  Future<bool> get canLock async {
+    if (!_supportedPlatform) return false;
+    try {
+      return await _auth.isDeviceSupported();
+    } catch (error) {
+      debugPrint('Bloqueio indisponível: $error');
+      return false;
+    }
+  }
+
   Future<bool> authenticate() async {
     if (!_supportedPlatform) return false;
     try {

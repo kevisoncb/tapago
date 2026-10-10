@@ -234,6 +234,29 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
   }
 });
 
+const RECENT_LOGIN_SECONDS = 5 * 60;
+
+exports.deleteMyAccount = onRequest(httpOptions, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Use POST" });
+    return;
+  }
+
+  try {
+    const user = await requireUser(req);
+    if (Date.now() / 1000 - Number(user.auth_time || 0) > RECENT_LOGIN_SECONDS) {
+      res.status(401).json({ message: "Confirme sua senha de novo para excluir a conta." });
+      return;
+    }
+    const result = await adminModule.deleteOwnAccount(user);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(error.status || 500).json({
+      message: error.message || "Não foi possível excluir a conta.",
+    });
+  }
+});
+
 const ALERT_TYPES = {
   CANCELADA: "cancelou a renovação",
   SUSPENSA: "teve o pagamento recusado (assinatura suspensa)",

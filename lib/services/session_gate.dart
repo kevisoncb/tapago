@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/seed_data.dart';
 import '../models/models.dart';
 import '../utils/constants.dart';
 import 'app_repository.dart';
+import 'asaas_client.dart';
 import 'auth_messages.dart';
 import 'firebase_bootstrap.dart';
 import 'local_account_store.dart';
@@ -160,6 +162,45 @@ class SessionGate extends ChangeNotifier {
     repository = null;
     userId = null;
     notifyListeners();
+  }
+
+  /// Apaga a conta e os dados (no servidor e no aparelho). A sessão continua
+  /// aberta: quem chama deve sair em seguida.
+  Future<String?> deleteAccount({required String password}) async {
+    final id = userId;
+    if (id == null) return 'Entre na conta de novo.';
+    if (password.isEmpty) return 'Digite sua senha.';
+
+    if (_firebaseReady) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.email == null) return 'Entre na conta de novo.';
+      try {
+        await user.reauthenticateWithCredential(
+          EmailAuthProvider.credential(email: user.email!, password: password),
+        );
+        await user.getIdToken(true);
+      } on FirebaseAuthException catch (error) {
+        return error.code == 'invalid-credential' || error.code == 'wrong-password'
+            ? 'Senha incorreta.'
+            : authErrorMessage(error.code);
+      }
+      try {
+        await AsaasClient().deleteMyAccount();
+      } on AsaasException catch (error) {
+        return error.message;
+      } catch (_) {
+        return 'Sem conexão para excluir a conta.';
+      }
+    } else {
+      final error = await _accounts.delete(id: id, password: password);
+      if (error != null) return error;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in prefs.getKeys().where((key) => key.startsWith('pago_${id}_'))) {
+      await prefs.remove(key);
+    }
+    return null;
   }
 
   Future<void> _onFirebaseUser(User? user) async {

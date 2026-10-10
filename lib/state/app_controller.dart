@@ -318,6 +318,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    await _reminders?.sync(enabled: false, debts: const []);
     await _onSignOut?.call();
   }
 

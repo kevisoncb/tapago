@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../legal/legal_docs.dart';
 import '../state/app_controller.dart';
+import '../services/session_gate.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
@@ -356,14 +357,27 @@ class SettingsPage extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () {
-                showPagoSnack(context, 'Sessão encerrada neste dispositivo.');
                 Navigator.of(context).popUntil((route) => route.isFirst);
+                context.read<AppController>().signOut();
               },
               child: Text(
                 'Sair da Conta',
                 style: GoogleFonts.plusJakartaSans(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: TextButton(
+              onPressed: () => _deleteAccount(context),
+              child: Text(
+                'Excluir minha conta',
+                style: GoogleFonts.plusJakartaSans(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
               ),
             ),
@@ -382,6 +396,118 @@ class SettingsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final state = context.read<AppController>();
+    final gate = context.read<SessionGate>();
+    final password = TextEditingController();
+    String? error;
+    var busy = false;
+    final deleted = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheet) {
+            Future<void> confirm() async {
+              setSheet(() {
+                busy = true;
+                error = null;
+              });
+              final result = await gate.deleteAccount(password: password.text);
+              if (!sheetContext.mounted) return;
+              if (result == null) {
+                Navigator.pop(sheetContext, true);
+                return;
+              }
+              setSheet(() {
+                busy = false;
+                error = result;
+              });
+            }
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Excluir minha conta',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Apaga para sempre sua conta, clientes, lançamentos, pagamentos e boletos. Não dá para desfazer.'
+                    '${state.user.premiumAtivo ? '\n\nO Premium é cobrado pela Google Play: cancele a assinatura em Play Store → Pagamentos e assinaturas, senão a cobrança continua.' : ''}',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.mutedDark,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    label: 'Sua senha',
+                    hint: 'Confirme com a senha da conta',
+                    icon: Icons.lock_outline_rounded,
+                    controller: password,
+                    obscureText: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      error!,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: busy ? null : confirm,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        busy ? 'Excluindo...' : 'Excluir para sempre',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (deleted != true || !context.mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    await state.signOut();
   }
 
   Future<void> _editPix(BuildContext context) async {

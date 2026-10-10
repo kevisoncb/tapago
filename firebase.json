@@ -89,6 +89,13 @@
         }
       },
       {
+        "source": "/api/account/delete",
+        "function": {
+          "functionId": "deleteMyAccount",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "/api/webhooks/asaas",
         "function": {
           "functionId": "asaasWebhook",

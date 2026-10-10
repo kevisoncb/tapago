@@ -111,6 +111,20 @@ class LocalAccountStore {
     await prefs.remove(_sessionKey);
   }
 
+  Future<String?> delete({required String id, required String password}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accounts = _read(prefs);
+    final account = accounts.where((item) => item.id == id).firstOrNull;
+    if (account == null ||
+        hashPassword(password, account.salt) != account.passwordHash) {
+      return 'Senha incorreta.';
+    }
+    accounts.removeWhere((item) => item.id == id);
+    await _write(prefs, accounts);
+    await prefs.remove(_sessionKey);
+    return null;
+  }
+
   List<LocalAccount> _read(SharedPreferences prefs) {
     final raw = prefs.getString(_accountsKey);
     if (raw == null || raw.isEmpty) return [];

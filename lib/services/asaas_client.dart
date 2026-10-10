@@ -94,6 +94,18 @@ class AsaasClient {
     }
   }
 
+  Future<void> deleteMyAccount() async {
+    final response = await _http.post(
+      Uri.parse('$_base/account/delete'),
+      headers: await _headers(),
+      body: '{}',
+    );
+    if (response.statusCode >= 400) {
+      final data = _decode(response);
+      throw AsaasException(_message(data) ?? 'Não foi possível excluir a conta.');
+    }
+  }
+
   Future<Map<String, String>> _headers() async {
     final headers = {'content-type': 'application/json'};
     try {

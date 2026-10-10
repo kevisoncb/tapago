@@ -40,6 +40,7 @@ const ACTION_LABELS = {
   premium: "deu Premium",
   tirar_premium: "tirou o Premium",
   excluir: "excluiu a conta",
+  excluiu_a_propria_conta: "excluiu a própria conta pelo app",
   anotacao: "anotou",
   chamado: "marcou como chamado",
   "2fa_ativado": "ligou o segundo fator",

@@ -43,7 +43,7 @@ class LegalDocs {
     LegalSection(
       '2. Cadastro e conta',
       'Você se responsabiliza pela veracidade dos dados informados, pela guarda da senha e pelo uso da conta. Não compartilhe o acesso. Avise em kevison.brandes@outlook.com se suspeitar de uso indevido.\n\n'
-          'Podemos recusar, suspender ou encerrar contas usadas em fraude, abuso, violação destes termos ou da lei. A exclusão da conta e dos dados da caderneta pode ser pedida pelo mesmo e-mail, observado o prazo e as retenções legais (por exemplo, comprovante da assinatura).',
+          'Podemos recusar, suspender ou encerrar contas usadas em fraude, abuso, violação destes termos ou da lei. Você pode excluir a conta e os dados da caderneta em Configurações → Excluir minha conta ou pedir pelo mesmo e-mail, observado o prazo e as retenções legais (por exemplo, comprovante da assinatura).',
     ),
     LegalSection(
       '3. O serviço',
@@ -117,7 +117,7 @@ class LegalDocs {
     ),
     LegalSection(
       '6. Retenção e exclusão',
-      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Você pode pedir correção ou exclusão em kevison.brandes@outlook.com. Backups podem levar um período técnico para sumir por completo.',
+      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Para excluir a conta e os dados na hora: Configurações → Excluir minha conta (ou usepago.web.app/excluir-conta). Correção ou exclusão também podem ser pedidas em kevison.brandes@outlook.com. Backups podem levar um período técnico para sumir por completo.',
     ),
     LegalSection(
       '7. Direitos do titular (art. 18)',

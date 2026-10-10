@@ -621,6 +621,13 @@ async function deleteAccount(uid) {
   return { ok: true, documentos: removed };
 }
 
+async function deleteOwnAccount(user) {
+  const target = await targetOf(user.uid);
+  const result = await deleteAccount(user.uid);
+  await logAction(user, "excluiu_a_propria_conta", target, `${result.documentos} documentos apagados`);
+  return result;
+}
+
 async function deleteWhere(query) {
   let total = 0;
   for (;;) {
@@ -692,4 +699,4 @@ function httpError(status, message) {
   return error;
 }
 
-module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, _test: { attentionCounts, startOfMonth, dayId } };
+module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId } };

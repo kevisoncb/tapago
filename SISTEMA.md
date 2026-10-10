@@ -27,7 +27,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 - Pacote nativo: **`app.usepago`** (Android applicationId/namespace e `MainActivity` em `kotlin/app/usepago`, bundle iOS/macOS, Linux).
 - Única sobra de “tapago”: o ID do projeto Firebase `tapago-ae948` (não pode ser renomeado). A API (`apiBase`) e o webhook continuam em `tapago-ae948.web.app`, que nunca muda.
 - Links do app (termos, privacidade, LGPD) apontam para `https://usepago.web.app` (`AppConstants.siteOrigin`), que já está no ar. Trocar para `https://usepago.app` quando comprar e conectar o domínio.
-- E-mail de contato: `ola@usepago.app` (criar depois de comprar).
+- E-mail de contato (LGPD, exclusão, CTAs do site): `kevison.brandes@outlook.com` (pessoal do dono, vale para a Play). Trocar por `ola@usepago.app` quando o domínio e o e-mail existirem.
 - Domínios livres em 9/out: `usepago.app` (escolhido), `usepago.com.br`, `eaipago.app`, `eaipago.com.br`, `pagoapp.app`, `meupago.app`. Já registrados: `pago.app`, `pago.com`, `pago.com.br`, `pagou.app`, `pagou.com.br`.
 
 ## O que o app faz agora
@@ -84,12 +84,13 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 - `main` e site ao vivo ainda TáPago.
 - PIX Premium: 30 dias, não renova sozinho (sem assinatura Asaas). Play já é assinatura recorrente no código (`buyNonConsumable` + oferta de assinatura); `confirmPlayPurchase` só Auth e dá 30 dias, sem checar renovação na Google (falta validar no servidor / notificações da Play).
 - Play: documento, SDK, keystore, AAB — à noite, no Android Studio.
-- CTAs do site ainda `mailto:` (`ola@usepago.app`).
+- CTAs do site ainda `mailto:` (e-mail pessoal do dono).
 - Ícone ainda é o check azul antigo.
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
 
-- Boletos: compila e abre no emulador Android (`Medium_Phone_API_37.0`, `flutter run -d emulator-5554`); fluxo ainda não testado à mão. Sem leitura de código pela câmera.
-- `android/app/build.gradle.kts` precisa de `import java.util.Properties` / `java.io.FileInputStream` no topo: com `java.util...` inline o Gradle 9 não compila. `/android/build/` no `.gitignore`.
+- Boletos: compila e abre no emulador Android (`Medium_Phone_API_37.0`); fluxo ainda não testado à mão. Sem leitura de código pela câmera.
+- Emulador neste PC (16 GB): a imagem API 37 Play Store trava ("system isn't responding") se o Gradle (`java`, ~2,5 GB) e um `flutter run` debug ficam ligados. Para testar: `flutter build apk --release`, matar `java`, ligar o emulador com `-no-snapshot -gpu host`, animações em 0 e `adb install -r build\app\outputs\flutter-apk\app-release.apk`.
+- `android/app/build.gradle.kts`: `import java.util.Properties` / `java.io.FileInputStream` no topo (inline não compila no Gradle 9); release usa `proguard-rules.pro` com `-dontwarn` dos idiomas não usados do ML Kit (chinês, japonês, coreano, devanágari) — sem isso o R8 barra o APK/AAB release. `/android/build/` no `.gitignore`.
 
 ## Ideias (só discutidas)
 
@@ -102,7 +103,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 ## Faltando
 
-- Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app`.
+- Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
 - Publicar na Play: documento, SDK, keystore, AAB.
 - Deploy Hosting depois do merge na `main`.
@@ -130,7 +131,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 ## Última sessão (10/out)
 
-PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e rodou a `develop` no emulador (login Pagô abre). 20 testes passando.
+PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e o R8 do release (ML Kit). Links legais do app em `usepago.web.app`; e-mail de contato trocado para o pessoal do dono no app, termos e site (site `usepago` republicado). Painel admin conferido: no ar, igual ao repo, API exige login (401). Versão release roda no emulador sem travar. 20 testes passando.
 
 ## Sessão anterior (9/out)
 

@@ -9,7 +9,7 @@ class LegalSection {
 
 class LegalDocs {
   static const updatedAt = '6 de outubro de 2026';
-  static const contact = 'ola@usepago.app';
+  static const contact = 'kevison.brandes@outlook.com';
 
   static String titleOf(LegalDoc doc) {
     switch (doc) {
@@ -42,7 +42,7 @@ class LegalDocs {
     ),
     LegalSection(
       '2. Cadastro e conta',
-      'Você se responsabiliza pela veracidade dos dados informados, pela guarda da senha e pelo uso da conta. Não compartilhe o acesso. Avise em ola@usepago.app se suspeitar de uso indevido.\n\n'
+      'Você se responsabiliza pela veracidade dos dados informados, pela guarda da senha e pelo uso da conta. Não compartilhe o acesso. Avise em kevison.brandes@outlook.com se suspeitar de uso indevido.\n\n'
           'Podemos recusar, suspender ou encerrar contas usadas em fraude, abuso, violação destes termos ou da lei. A exclusão da conta e dos dados da caderneta pode ser pedida pelo mesmo e-mail, observado o prazo e as retenções legais (por exemplo, comprovante da assinatura).',
     ),
     LegalSection(
@@ -76,12 +76,12 @@ class LegalDocs {
     ),
     LegalSection(
       '9. Alterações',
-      'Podemos atualizar estes Termos. A data no topo indica a versão vigente. Uso continuado após a publicação no app ou em usepago.app vale como aceite da nova versão, salvo quando a lei exigir consentimento específico.',
+      'Podemos atualizar estes Termos. A data no topo indica a versão vigente. Uso continuado após a publicação no app ou em usepago.web.app vale como aceite da nova versão, salvo quando a lei exigir consentimento específico.',
     ),
     LegalSection(
       '10. Foro e contato',
       'Aplica-se a legislação brasileira. Fica eleito o foro do domicílio do usuário, quando consumidor, ou o foro da comarca da sede do prestador, quando a lei permitir.\n\n'
-          'Dúvidas, pedidos de exclusão e encarregado de dados: ola@usepago.app.',
+          'Dúvidas, pedidos de exclusão e encarregado de dados: kevison.brandes@outlook.com.',
     ),
   ];
 
@@ -89,7 +89,7 @@ class LegalDocs {
     LegalSection(
       '1. Controlador e contato',
       'O Pagô é o controlador dos dados da sua conta (cadastro, assinatura, uso do app). Dos dados dos clientes que você informa (nome, telefone, valores), você é o controlador e o Pagô atua como operador, nos termos da LGPD.\n\n'
-          'Encarregado / canal LGPD: ola@usepago.app. Pedidos de titular serão respondidos no prazo legal.',
+          'Encarregado / canal LGPD: kevison.brandes@outlook.com. Pedidos de titular serão respondidos no prazo legal.',
     ),
     LegalSection(
       '2. Dados que tratamos',
@@ -117,7 +117,7 @@ class LegalDocs {
     ),
     LegalSection(
       '6. Retenção e exclusão',
-      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Você pode pedir correção ou exclusão em ola@usepago.app. Backups podem levar um período técnico para sumir por completo.',
+      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Você pode pedir correção ou exclusão em kevison.brandes@outlook.com. Backups podem levar um período técnico para sumir por completo.',
     ),
     LegalSection(
       '7. Direitos do titular (art. 18)',
@@ -148,7 +148,7 @@ class LegalDocs {
     ),
     LegalSection(
       'Direitos e prazos',
-      'Acesso, correção, exclusão, portabilidade e revogação pelo e-mail ola@usepago.app. Responderemos no prazo da LGPD, salvo retenção legal. Autoridade nacional: ANPD.',
+      'Acesso, correção, exclusão, portabilidade e revogação pelo e-mail kevison.brandes@outlook.com. Responderemos no prazo da LGPD, salvo retenção legal. Autoridade nacional: ANPD.',
     ),
   ];
 }

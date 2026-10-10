@@ -5,7 +5,7 @@ class AppConstants {
   static const logoAsset = 'assets/brand/pago-icon.jpg';
   static const premiumPrice = 39.90;
   static const premiumPriceLabel = r'R$ 39,90';
-  static const siteOrigin = 'https://usepago.app';
+  static const siteOrigin = 'https://usepago.web.app';
   static const checkoutUrl =
       'https://play.google.com/store/apps/details?id=app.usepago';
   static const premiumProductId = 'pago_premium_monthly';

@@ -26,7 +26,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 - Código todo renomeado: pacote Dart `pago_app`, classes `PagoApp`, `PagoMark`, `PagoWordmark`, `showPagoSnack`; arquivos `assets/brand/pago-*` e `site/assets/pago-*`; Functions `pago-functions`; chaves locais `pago_*`; produto Play `pago_premium_monthly`; define `PAGO_API_BASE`.
 - Pacote nativo: **`app.usepago`** (Android applicationId/namespace e `MainActivity` em `kotlin/app/usepago`, bundle iOS/macOS, Linux).
 - Única sobra de “tapago”: o ID do projeto Firebase `tapago-ae948` (não pode ser renomeado). A API (`apiBase`) e o webhook continuam em `tapago-ae948.web.app`, que nunca muda.
-- Links do app (termos, privacidade, LGPD) apontam para `https://usepago.app` (`AppConstants.siteOrigin`) — só abrem depois de comprar e conectar o domínio.
+- Links do app (termos, privacidade, LGPD) apontam para `https://usepago.web.app` (`AppConstants.siteOrigin`), que já está no ar. Trocar para `https://usepago.app` quando comprar e conectar o domínio.
 - E-mail de contato: `ola@usepago.app` (criar depois de comprar).
 - Domínios livres em 9/out: `usepago.app` (escolhido), `usepago.com.br`, `eaipago.app`, `eaipago.com.br`, `pagoapp.app`, `meupago.app`. Já registrados: `pago.app`, `pago.com`, `pago.com.br`, `pagou.app`, `pagou.com.br`.
 

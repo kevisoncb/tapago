@@ -14,11 +14,13 @@ class PurchaseUpdate {
     required this.outcome,
     this.message,
     this.transactionId,
+    this.purchaseToken,
   });
 
   final PurchaseOutcome outcome;
   final String? message;
   final String? transactionId;
+  final String? purchaseToken;
 
   static const pending = PurchaseUpdate(outcome: PurchaseOutcome.pending);
   static const unavailable = PurchaseUpdate(
@@ -63,7 +65,8 @@ class BillingService {
     _started = false;
   }
 
-  Future<PurchaseUpdate> buy() => _startStoreFlow(_store.buyNonConsumable);
+  Future<PurchaseUpdate> buy({String? userId}) =>
+      _startStoreFlow(_store.buyNonConsumable, userId: userId);
 
   Future<PurchaseUpdate> restore() async {
     final ready = await _prepare();
@@ -80,8 +83,9 @@ class BillingService {
   }
 
   Future<PurchaseUpdate> _startStoreFlow(
-    Future<bool> Function({required PurchaseParam purchaseParam}) buy,
-  ) async {
+    Future<bool> Function({required PurchaseParam purchaseParam}) buy, {
+    String? userId,
+  }) async {
     final ready = await _prepare();
     if (ready != null) return ready;
     try {
@@ -90,7 +94,10 @@ class BillingService {
       });
       if (response.productDetails.isEmpty) return PurchaseUpdate.missing;
       final started = await buy(
-        purchaseParam: purchase.buildPurchaseParam(response.productDetails.first),
+        purchaseParam: purchase.buildPurchaseParam(
+          response.productDetails.first,
+          userId: userId,
+        ),
       );
       if (!started) {
         return const PurchaseUpdate(
@@ -138,6 +145,7 @@ class BillingService {
             PurchaseUpdate(
               outcome: PurchaseOutcome.purchased,
               transactionId: _transactionId(purchase),
+              purchaseToken: _purchaseToken(purchase),
             ),
           );
         case PurchaseStatus.restored:
@@ -148,6 +156,7 @@ class BillingService {
             PurchaseUpdate(
               outcome: PurchaseOutcome.restored,
               transactionId: _transactionId(purchase),
+              purchaseToken: _purchaseToken(purchase),
             ),
           );
         case PurchaseStatus.canceled:
@@ -169,5 +178,10 @@ class BillingService {
     final token = purchase.verificationData.serverVerificationData;
     if (token.isEmpty) return null;
     return token.length > 80 ? token.substring(0, 80) : token;
+  }
+
+  String? _purchaseToken(PurchaseDetails purchase) {
+    final token = purchase.verificationData.serverVerificationData;
+    return token.isEmpty ? null : token;
   }
 }

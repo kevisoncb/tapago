@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
-PurchaseParam buildPurchaseParam(ProductDetails details) {
+PurchaseParam buildPurchaseParam(ProductDetails details, {String? userId}) {
   if (!Platform.isAndroid || details is! GooglePlayProductDetails) {
-    return PurchaseParam(productDetails: details);
+    return PurchaseParam(productDetails: details, applicationUserName: userId);
   }
   final offers = details.productDetails.subscriptionOfferDetails;
   final index = details.subscriptionIndex;
@@ -19,6 +19,7 @@ PurchaseParam buildPurchaseParam(ProductDetails details) {
   }
   return GooglePlayPurchaseParam(
     productDetails: details,
+    applicationUserName: userId,
     offerToken: token,
   );
 }

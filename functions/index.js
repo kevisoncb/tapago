@@ -1,12 +1,18 @@
 const crypto = require("crypto");
 
 const { onRequest } = require("firebase-functions/v2/https");
+const { onMessagePublished } = require("firebase-functions/v2/pubsub");
 const { defineString } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-exports.adminApi = require("./admin").adminApi;
+const play = require("./play");
+const { sendEmail, escapeHtml } = require("./alerts");
+const adminModule = require("./admin");
+
+exports.adminApi = adminModule.adminApi;
+exports.adminDailyDigest = adminModule.adminDailyDigest;
 
 const asaasKeyParam = defineString("ASAAS_API_KEY");
 const webhookTokenParam = defineString("ASAAS_WEBHOOK_TOKEN");
@@ -185,15 +191,117 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
 
   try {
     const user = await requireUser(req);
-    const transactionId = String(req.body?.transactionId || "").trim();
-    await grantPremium(user.uid, transactionId || `play_${Date.now()}`);
-    res.status(200).json({ ok: true });
+    const transactionId = String(req.body?.transactionId || "").trim().slice(0, 120);
+    const purchaseToken = String(req.body?.purchaseToken || "").trim();
+    if (!purchaseToken) {
+      res.status(400).json({ message: "Atualize o app para confirmar a assinatura." });
+      return;
+    }
+
+    let summary;
+    try {
+      summary = await play.fetchSubscription(purchaseToken);
+    } catch (error) {
+      console.warn("API da Play indisponível; liberando 30 dias sem conferir.", error.message);
+      await play.linkUnverified(user.uid, purchaseToken, transactionId);
+      await grantPremium(user.uid, transactionId || `play_${Date.now()}`);
+      const fallback = { orderId: transactionId, price: PREMIUM_VALUE, test: false };
+      if (await play.logPlayEvent(user.uid, "COMPRA", fallback)) await alertNewSubscriber(user, fallback);
+      res.status(200).json({ ok: true, verificada: false });
+      return;
+    }
+
+    if (summary.uid && summary.uid !== user.uid) {
+      res.status(403).json({ message: "Esta assinatura pertence a outra conta do Pagô." });
+      return;
+    }
+    if (!play.isActive(summary)) {
+      res.status(402).json({ message: "A Google Play não mostra esta assinatura como ativa." });
+      return;
+    }
+    await play.applySubscription(user.uid, purchaseToken, summary);
+    const known = summary.orderId
+      ? await admin.firestore().collection("PlayEvents").where("orderId", "==", summary.orderId).limit(1).get()
+      : { empty: true };
+    if (known.empty && (await play.logPlayEvent(user.uid, "COMPRA", summary))) {
+      await alertNewSubscriber(user, summary);
+    }
+    res.status(200).json({ ok: true, verificada: true });
   } catch (error) {
     res.status(error.status || 401).json({
       message: error.message || "Não foi possível confirmar a compra.",
     });
   }
 });
+
+const ALERT_TYPES = {
+  CANCELADA: "cancelou a renovação",
+  SUSPENSA: "teve o pagamento recusado (assinatura suspensa)",
+  PERIODO_DE_CARENCIA: "teve o pagamento recusado (em carência)",
+  ESTORNADA: "teve a compra estornada",
+  EXPIRADA: "perdeu o Premium (assinatura expirou)",
+};
+
+exports.playNotifications = onMessagePublished(
+  { topic: "play-billing", region: REGION },
+  async (event) => {
+    const data = event.data?.message?.json || {};
+    if (data.testNotification) {
+      console.log("Aviso de teste da Play recebido.");
+      return;
+    }
+    const notification = data.subscriptionNotification;
+    if (!notification?.purchaseToken) return;
+    const type =
+      play.NOTIFICATION_TYPES[notification.notificationType] || `TIPO_${notification.notificationType}`;
+
+    let summary;
+    try {
+      summary = await play.fetchSubscription(notification.purchaseToken);
+    } catch (error) {
+      console.error("Não foi possível consultar a assinatura na Play.", type, error.message);
+      return;
+    }
+    const uid = await play.uidForToken(notification.purchaseToken, summary);
+    if (uid) await play.applySubscription(uid, notification.purchaseToken, summary);
+    const created = await play.logPlayEvent(uid, type, summary);
+    if (!created) return;
+
+    const person = uid ? await describeUser(uid) : null;
+    if (type === "COMPRA" && person) {
+      await alertNewSubscriber(person, summary);
+    } else if (ALERT_TYPES[type]) {
+      await sendEmail(`Pagô: ${person?.nome || "assinante"} ${ALERT_TYPES[type]}`, [
+        `<b>${escapeHtml(person?.nome || "Assinante sem conta ligada")}</b> ${ALERT_TYPES[type]}.`,
+        person?.email ? `E-mail: ${escapeHtml(person.email)}` : "",
+        summary.expiry ? `Premium vale até ${new Date(summary.expiry).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : "",
+        summary.test ? "Compra de teste (conta de teste de licença)." : "",
+      ].filter(Boolean));
+    }
+  },
+);
+
+async function describeUser(uid) {
+  const [record, profile] = await Promise.all([
+    admin.auth().getUser(uid).catch(() => null),
+    admin.firestore().collection("Users").doc(uid).get(),
+  ]);
+  return {
+    uid,
+    nome: profile.data()?.nome || record?.displayName || "",
+    email: record?.email || profile.data()?.email || "",
+  };
+}
+
+async function alertNewSubscriber(user, summary) {
+  const person = user.nome !== undefined ? user : await describeUser(user.uid);
+  await sendEmail(`Pagô: nova assinatura de ${person.nome || person.email || "alguém"}`, [
+    `<b>${escapeHtml(person.nome || "Sem nome")}</b> assinou o Premium.`,
+    person.email ? `E-mail: ${escapeHtml(person.email)}` : "",
+    `Valor: R$ ${Number(summary.price || PREMIUM_VALUE).toFixed(2).replace(".", ",")} por mês.`,
+    summary.test ? "Compra de teste (conta de teste de licença)." : "",
+  ].filter(Boolean));
+}
 
 async function requireUser(req) {
   const header = req.get("authorization") || "";

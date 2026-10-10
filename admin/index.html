@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="admin.css?v=3" />
+    <link rel="stylesheet" href="admin.css?v=4" />
   </head>
   <body>
     <main id="login" class="login" hidden>
@@ -29,57 +29,145 @@
       </div>
     </main>
 
+    <main id="twofa" class="login" hidden>
+      <div class="login-card">
+        <div class="brand"><img src="pago-mark.svg" alt="" /><span>Pagô!</span><em>Admin</em></div>
+        <p class="muted">Digite o código de 6 números do aplicativo autenticador.</p>
+        <form id="twofa-form">
+          <label>Código<input id="twofa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required /></label>
+          <button type="submit" class="btn primary" id="twofa-btn">Confirmar</button>
+          <button type="button" class="btn ghost" id="twofa-logout">Sair</button>
+          <p id="twofa-error" class="error" role="alert"></p>
+        </form>
+      </div>
+    </main>
+
     <div id="app" hidden>
       <header class="top">
         <div class="brand"><img src="pago-mark.svg" alt="" /><span>Pagô!</span><em>Admin</em></div>
         <div class="top-actions">
           <span id="updated" class="muted small"></span>
           <button class="btn ghost" id="refresh" title="Atualizar">Atualizar</button>
+          <button class="btn ghost" id="export">Exportar planilha</button>
+          <button class="btn ghost" id="security-btn">Segurança</button>
           <button class="btn ghost" id="password-btn">Trocar senha</button>
           <button class="btn ghost" id="logout">Sair</button>
         </div>
       </header>
 
-      <section class="stats" id="stats"></section>
+      <div id="banner"></div>
 
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Precisa de atenção</h2>
-          <span class="muted small">Chame no WhatsApp e marque "Já chamei" para sair da fila por 7 dias.</span>
-        </div>
-        <div class="chips" id="focus-tabs"></div>
-        <p class="muted small focus-why" id="focus-why"></p>
-        <div id="focus" class="users"></div>
-      </section>
+      <nav class="tabs" id="tabs">
+        <button data-tab="geral" class="tab active">Visão geral</button>
+        <button data-tab="pessoas" class="tab">Pessoas</button>
+        <button data-tab="registro" class="tab">Registro</button>
+      </nav>
 
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Cadastros nos últimos 14 dias</h2>
-        </div>
-        <div class="chart" id="chart"></div>
-      </section>
+      <div data-page="geral">
+        <section class="stats" id="stats"></section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Pessoas <span id="count" class="muted"></span></h2>
-          <input id="search" type="search" placeholder="Buscar nome, e-mail ou telefone" />
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Precisa de atenção</h2>
+            <span class="muted small">Chame no WhatsApp e marque "Já chamei" para sair da fila por 7 dias.</span>
+          </div>
+          <div class="chips" id="focus-tabs"></div>
+          <p class="muted small focus-why" id="focus-why"></p>
+          <div id="focus" class="users"></div>
+        </section>
+
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Receita da Google Play</h2></div>
+            <div id="revenue"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Mês a mês</h2></div>
+            <div id="monthly"></div>
+          </section>
         </div>
-        <div class="chips" id="filters">
-          <button data-filter="all" class="chip active">Todos</button>
-          <button data-filter="online" class="chip">Online</button>
-          <button data-filter="premium" class="chip">Premium</button>
-          <button data-filter="free" class="chip">Grátis</button>
-          <button data-filter="expiring" class="chip">Vence em 7 dias</button>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Funil</h2>
+            <div class="chips tight" id="funnel-range">
+              <button data-range="all" class="chip active">Todos</button>
+              <button data-range="30" class="chip">Cadastros dos últimos 30 dias</button>
+            </div>
+          </div>
+          <div id="funnel" class="funnel"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Retenção por semana de cadastro</h2>
+            <span class="muted small">Quem voltou ao app 7 e 30 dias depois de criar a conta.</span>
+          </div>
+          <div id="retention"></div>
+        </section>
+
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Cadastros nos últimos 14 dias</h2></div>
+            <div class="chart" id="chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Últimos acontecimentos</h2></div>
+            <div id="feed" class="feed"></div>
+          </section>
         </div>
-        <div id="users" class="users"></div>
-      </section>
+      </div>
+
+      <div data-page="pessoas" hidden>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Pessoas <span id="count" class="muted"></span></h2>
+            <input id="search" type="search" placeholder="Buscar nome, e-mail ou telefone" />
+          </div>
+          <div class="chips" id="filters">
+            <button data-filter="all" class="chip active">Todos</button>
+            <button data-filter="online" class="chip">Online</button>
+            <button data-filter="premium" class="chip">Premium</button>
+            <button data-filter="free" class="chip">Grátis</button>
+            <button data-filter="expiring" class="chip">Vence em 7 dias</button>
+          </div>
+          <div id="users" class="users"></div>
+        </section>
+      </div>
+
+      <div data-page="registro" hidden>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Registro de ações do painel</h2>
+            <span class="muted small">Tudo o que foi feito por aqui: Premium dado ou tirado, exclusões, anotações, contatos.</span>
+          </div>
+          <div id="log" class="feed"></div>
+        </section>
+      </div>
+
       <p class="foot muted small">
         A caderneta das pessoas (nomes e valores dos clientes delas) não aparece aqui. Só os números de uso.
         Contas de administrador ficam fora das contagens.
       </p>
     </div>
 
+    <div id="drawer" class="drawer" hidden>
+      <div class="drawer-backdrop" data-close></div>
+      <aside class="drawer-body" role="dialog" aria-modal="true">
+        <button class="btn ghost drawer-close" data-close>Fechar</button>
+        <div id="drawer-content"></div>
+      </aside>
+    </div>
+
+    <div id="modal" class="drawer" hidden>
+      <div class="drawer-backdrop" data-close></div>
+      <aside class="modal-body" role="dialog" aria-modal="true">
+        <button class="btn ghost drawer-close" data-close>Fechar</button>
+        <div id="modal-content"></div>
+      </aside>
+    </div>
+
     <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="admin.js?v=3"></script>
+    <script type="module" src="admin.js?v=4"></script>
   </body>
 </html>

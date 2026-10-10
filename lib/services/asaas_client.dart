@@ -72,13 +72,18 @@ class AsaasClient {
     return data['status'] as String? ?? 'PENDING';
   }
 
-  Future<void> confirmPlayPurchase({String? transactionId}) async {
+  Future<void> confirmPlayPurchase({
+    String? transactionId,
+    String? purchaseToken,
+  }) async {
     final response = await _http.post(
       Uri.parse('$_base/play/confirm'),
       headers: await _headers(),
       body: jsonEncode({
         if (transactionId != null && transactionId.isNotEmpty)
           'transactionId': transactionId,
+        if (purchaseToken != null && purchaseToken.isNotEmpty)
+          'purchaseToken': purchaseToken,
       }),
     );
     if (response.statusCode >= 400) {

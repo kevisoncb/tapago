@@ -260,10 +260,6 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> activatePremium() async {
-    if (usesFirestore) {
-      await _grantFromStore();
-      return;
-    }
     final next = user.copyWith(
       isPremium: true,
       premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
@@ -276,11 +272,11 @@ class AppController extends ChangeNotifier {
     billingMessage = null;
     notifyListeners();
     try {
-      final update = await _billing?.buy() ?? PurchaseUpdate.unavailable;
+      final update = await _billing?.buy(userId: user.id) ?? PurchaseUpdate.unavailable;
       switch (update.outcome) {
         case PurchaseOutcome.purchased:
         case PurchaseOutcome.restored:
-          await _grantFromStore(transactionId: update.transactionId);
+          await _grantFromStore(update);
           return null;
         case PurchaseOutcome.pending:
           return 'A loja está confirmando o pagamento.';
@@ -311,7 +307,7 @@ class AppController extends ChangeNotifier {
     final update = await _billing?.restore();
     if (update?.outcome == PurchaseOutcome.restored ||
         update?.outcome == PurchaseOutcome.purchased) {
-      await _grantFromStore(transactionId: update?.transactionId);
+      await _grantFromStore(update!);
       return null;
     }
     return update?.message ?? 'Nada para restaurar neste aparelho.';
@@ -327,7 +323,7 @@ class AppController extends ChangeNotifier {
     if (update.outcome == PurchaseOutcome.purchased ||
         update.outcome == PurchaseOutcome.restored) {
       try {
-        await _grantFromStore(transactionId: update.transactionId);
+        await _grantFromStore(update);
         billingMessage = null;
       } on AsaasException catch (error) {
         billingMessage = error.message;
@@ -341,9 +337,12 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  Future<void> _grantFromStore({String? transactionId}) async {
+  Future<void> _grantFromStore(PurchaseUpdate update) async {
     if (usesFirestore) {
-      await AsaasClient().confirmPlayPurchase(transactionId: transactionId);
+      await AsaasClient().confirmPlayPurchase(
+        transactionId: update.transactionId,
+        purchaseToken: update.purchaseToken,
+      );
       user = await _repository.getCurrentUser();
       notifyListeners();
       return;
@@ -351,7 +350,7 @@ class AppController extends ChangeNotifier {
     final next = user.copyWith(
       isPremium: true,
       premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
-      premiumTransactionId: transactionId,
+      premiumTransactionId: update.transactionId,
     );
     await saveUser(next);
   }

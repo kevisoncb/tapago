@@ -1,5 +1,5 @@
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-PurchaseParam buildPurchaseParam(ProductDetails details) {
-  return PurchaseParam(productDetails: details);
+PurchaseParam buildPurchaseParam(ProductDetails details, {String? userId}) {
+  return PurchaseParam(productDetails: details, applicationUserName: userId);
 }

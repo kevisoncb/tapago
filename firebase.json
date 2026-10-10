@@ -44,8 +44,7 @@
     }
   },
   "hosting": {
-    "public": "site",
-    "cleanUrls": true,
+    "public": "hosting-redirect",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -57,13 +56,15 @@
         "headers": [
           { "key": "Cache-Control", "value": "no-cache, max-age=0" }
         ]
-      },
-      {
-        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|css|js)",
-        "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=604800" }
-        ]
       }
+    ],
+    "redirects": [
+      { "source": "/termos{,.html}", "destination": "https://usepago.web.app/termos", "type": 301 },
+      { "source": "/privacidade{,.html}", "destination": "https://usepago.web.app/privacidade", "type": 301 },
+      { "source": "/lgpd{,.html}", "destination": "https://usepago.web.app/lgpd", "type": 301 },
+      { "source": "/ajuda{,.html}", "destination": "https://usepago.web.app/ajuda", "type": 301 },
+      { "regex": "^/(?:a|ap|api)?$", "destination": "https://usepago.web.app/", "type": 301 },
+      { "regex": "^/(?:[^a]|a[^p]|ap[^i]|api[^/]).*$", "destination": "https://usepago.web.app/", "type": 301 }
     ],
     "rewrites": [
       {

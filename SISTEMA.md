@@ -14,8 +14,8 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 ## Git
 
 - `main` — produção (ainda TáPago, pacote `com.tapago.tapago_app`). Origin: `c75f224`.
-- Demo do app no navegador (para ver no iPhone): https://tapago-ae948--app-demo-318amles.web.app — `flutter build web --release --dart-define=PAGO_DEMO=true` e deploy no canal `app-demo` com config temporária `{"hosting":{"public":"build/web","headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-cache"}]}],"rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config` (arquivo apagado depois). Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
-- `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Link de teste do site: https://tapago-ae948--develop-uc128g7j.web.app (canal `develop`, vence 8/nov; republicar com `hosting:channel:deploy develop`).
+- Demo do app no navegador (para ver no iPhone): https://usepago--app-demo-xn9oi95x.web.app (canal `app-demo` do site `usepago`, vence 9/nov) — `flutter build web --release --dart-define=PAGO_DEMO=true` e `firebase hosting:channel:deploy app-demo --expires 30d` com config temporária `{"hosting":{"site":"usepago","public":"build/web","headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-cache"}]}],"rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config` (arquivo apagado depois). Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
+- `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Site de teste é o próprio https://usepago.web.app (canais antigos `develop` e `app-demo` do site `tapago-ae948` foram apagados em 10/out).
 - Só merge `develop` → `main` quando estiver pronto para produção.
 - `dev` e `producao` (criadas num PC em 8/out) estão **abandonadas**: o mesmo trabalho (Pagô, boletos, parcelas) foi feito melhor na `develop`. Não usar.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
@@ -25,7 +25,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 - Nome visível: Pagô (app, ícone, web, site, termos, privacidade, LGPD, ajuda). Frase “E aí, pagô?” no login do app e no site.
 - Código todo renomeado: pacote Dart `pago_app`, classes `PagoApp`, `PagoMark`, `PagoWordmark`, `showPagoSnack`; arquivos `assets/brand/pago-*` e `site/assets/pago-*`; Functions `pago-functions`; chaves locais `pago_*`; produto Play `pago_premium_monthly`; define `PAGO_API_BASE`.
 - Pacote nativo: **`app.usepago`** (Android applicationId/namespace e `MainActivity` em `kotlin/app/usepago`, bundle iOS/macOS, Linux).
-- Única sobra de “tapago”: o ID do projeto Firebase `tapago-ae948` (não pode ser renomeado). A API (`apiBase`) e o webhook continuam em `tapago-ae948.web.app`, que nunca muda.
+- Única sobra de “tapago”: o ID do projeto Firebase `tapago-ae948` (não pode ser renomeado). A API (`apiBase`) e o webhook continuam em `tapago-ae948.web.app/api/...`, que nunca muda; o resto desse endereço só redireciona (301) para `usepago.web.app`.
 - Links do app (termos, privacidade, LGPD) apontam para `https://usepago.web.app` (`AppConstants.siteOrigin`), que já está no ar. Trocar para `https://usepago.app` quando comprar e conectar o domínio.
 - E-mail de contato (LGPD, exclusão, CTAs do site): `kevison.brandes@outlook.com` (pessoal do dono, vale para a Play). Trocar por `ola@usepago.app` quando o domínio e o e-mail existirem.
 - Domínios livres em 9/out: `usepago.app` (escolhido), `usepago.com.br`, `eaipago.app`, `eaipago.com.br`, `pagoapp.app`, `meupago.app`. Já registrados: `pago.app`, `pago.com`, `pago.com.br`, `pagou.app`, `pagou.com.br`.
@@ -81,7 +81,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 
 ## Parcial
 
-- `main` e site ao vivo ainda TáPago.
+- `main` ainda TáPago (código). Na internet não sobra nada TáPago: `tapago-ae948.web.app` redireciona para `usepago.web.app`.
 - PIX Premium: 30 dias, não renova sozinho (sem assinatura Asaas). Play já é assinatura recorrente no código (`buyNonConsumable` + oferta de assinatura); `confirmPlayPurchase` só Auth e dá 30 dias, sem checar renovação na Google (falta validar no servidor / notificações da Play).
 - Play: documento, SDK, keystore, AAB — à noite, no Android Studio.
 - CTAs do site ainda `mailto:` (e-mail pessoal do dono).
@@ -106,16 +106,16 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 - Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
 - Publicar na Play: documento, SDK, keystore, AAB.
-- Deploy Hosting depois do merge na `main`.
+- Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
 - Teste PIX e2e.
 - Bot WhatsApp: **futuro, não implementar**.
 
 ## Firebase / Console
 
-- Projeto `tapago-ae948`, Blaze. Hosting padrão: https://tapago-ae948.web.app (domínio customizado futuro: usepago.app).
+- Projeto `tapago-ae948`, Blaze. Hosting padrão https://tapago-ae948.web.app (e `.firebaseapp.com`): só API + redirecionamento. `firebase.json` publica a pasta `hosting-redirect/` com `redirects` 301 para `usepago.web.app` (termos, privacidade, LGPD, ajuda vão para a mesma página; o resto para a home) e mantém as rewrites `/api/**` para as Functions. Publicar: `firebase deploy --only hosting` (sem functions). **Nunca publicar o hosting a partir da `main` antiga**: traria o site TáPago de volta.
 - Apps: Android `app.usepago` (`1:1077428127080:android:53dca34d493288510042dd`) e iOS/macOS `app.usepago` (`1:1077428127080:ios:577755df013cd6380042dd`). Apps antigos `com.tapago...` continuam registrados enquanto a `main` usar.
 - Functions: `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`, `adminApi`.
-- Hosting sites: `tapago-ae948` (produção antiga TáPago + API/webhook), `usepago` (site Pagô da develop no ar: https://usepago.web.app — `pago.web.app` é de outro projeto) e `pago-admin` (painel admin).
+- Hosting sites: `tapago-ae948` (API/webhook + redirecionamento para o Pagô; nenhum canal de preview), `usepago` (site Pagô da develop no ar: https://usepago.web.app — `pago.web.app` é de outro projeto) e `pago-admin` (painel admin).
 - Publicar o site Pagô: `firebase deploy --only hosting --config firebase.usepago.json`. Quando comprar `usepago.app`, conectar o domínio no site `usepago`.
 - Web app do Firebase: "Default Web App" `1:1077428127080:web:e82621d06da4bf5c0042dd` (usado só pelo painel).
 - Webhook: `https://tapago-ae948.web.app/api/webhooks/asaas`

@@ -101,6 +101,25 @@ body {
   color: var(--muted);
 }
 
+.btn.whats {
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+}
+
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.focus-why {
+  margin: 4px 0 0;
+}
+
+.user.called {
+  opacity: 0.6;
+}
+
 /* Login */
 .login {
   min-height: 100vh;

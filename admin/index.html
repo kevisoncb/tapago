@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="admin.css?v=2" />
+    <link rel="stylesheet" href="admin.css?v=3" />
   </head>
   <body>
     <main id="login" class="login" hidden>
@@ -44,6 +44,16 @@
 
       <section class="panel">
         <div class="panel-head">
+          <h2>Precisa de atenção</h2>
+          <span class="muted small">Chame no WhatsApp e marque "Já chamei" para sair da fila por 7 dias.</span>
+        </div>
+        <div class="chips" id="focus-tabs"></div>
+        <p class="muted small focus-why" id="focus-why"></p>
+        <div id="focus" class="users"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
           <h2>Cadastros nos últimos 14 dias</h2>
         </div>
         <div class="chart" id="chart"></div>
@@ -70,6 +80,6 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="admin.js?v=2"></script>
+    <script type="module" src="admin.js?v=3"></script>
   </body>
 </html>

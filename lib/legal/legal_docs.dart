@@ -58,7 +58,7 @@ class LegalDocs {
     ),
     LegalSection(
       '5. Assinatura Premium',
-      'O Premium, quando disponível, custa R\$ 39,90 por mês. Na Google Play a renovação segue até o cancelamento. No PIX via Asaas o pagamento confirma 30 dias de acesso, sem renovação automática.\n\n'
+      'O Premium, quando disponível, custa R\$ 39,90 por mês. A assinatura é feita pela Google Play, renova a cada mês e pode ser cancelada a qualquer momento na própria Google Play.\n\n'
           'O cancelamento da loja vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos da loja seguem as regras da Google Play. Preços podem mudar com aviso prévio no app ou no site.',
     ),
     LegalSection(
@@ -108,7 +108,7 @@ class LegalDocs {
     ),
     LegalSection(
       '4. Compartilhamento',
-      'Firebase/Google (autenticação e banco), Google Play (assinatura no Android), Asaas (PIX da assinatura, quando usado) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
+      'Firebase/Google (autenticação e banco), Google Play (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
           'Não vendemos dados. Autoridade pública só mediante ordem legal.',
     ),
     LegalSection(

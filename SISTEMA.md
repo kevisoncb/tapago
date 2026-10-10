@@ -59,7 +59,7 @@ Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com inici
 - `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
 - `lib/screens/settings_page.dart` — PIX, banco, mensagem, preferências, Premium, Ajuda.
 - `lib/widgets/pago_menu.dart` — menu do "Pagô!" / avatar.
-- `lib/screens/premium_page.dart` / `pix_checkout_page.dart` — voz, OCR, texto, PIX 30 dias, Play.
+- `lib/screens/premium_page.dart` — benefícios e botão único "Assinar Premium" (assinatura Google Play), "Restaurar". Sem PIX no app.
 - `lib/screens/bills_page.dart` / `add_bill_page.dart` — boletos a pagar. `lib/services/bill_installments.dart` — divisão de parcelas, prazos, código.
 - `lib/widgets/pago_logo.dart` — marca. `lib/utils/constants.dart` — nome, frase, links, API.
 - `site/` — landing, planos, termos, privacidade, LGPD, ajuda.
@@ -82,7 +82,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 ## Parcial
 
 - `main` ainda TáPago (código). Na internet não sobra nada TáPago: `tapago-ae948.web.app` redireciona para `usepago.web.app`.
-- PIX Premium: 30 dias, não renova sozinho (sem assinatura Asaas). Play já é assinatura recorrente no código (`buyNonConsumable` + oferta de assinatura); `confirmPlayPurchase` só Auth e dá 30 dias, sem checar renovação na Google (falta validar no servidor / notificações da Play).
+- Premium só pela Google Play (assinatura `pago_premium_monthly`, cobrada na conta Google do usuário). PIX saiu do app e do site; o Asaas fica só como conta bancária que recebe o repasse da Google (cadastrar os dados bancários do Asaas no perfil de pagamentos da Play Console). As Functions `createPremiumPix`/`premiumPixStatus` e o webhook continuam publicados, sem uso pelo app. `confirmPlayPurchase` só Auth e dá 30 dias, sem checar renovação na Google (falta validar no servidor / notificações da Play).
 - Play: documento, SDK, keystore, AAB — à noite, no Android Studio.
 - CTAs do site ainda `mailto:` (e-mail pessoal do dono).
 - Ícone ainda é o check azul antigo.
@@ -99,7 +99,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 
 ## Recomendação combinada (9/out)
 
-Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + validar renovação no servidor (notificações da Play); 2) no Android cobrar só pela Play, PIX recorrente (Asaas) só pelo site com cancelamento; 3) comprar e ligar `usepago.app`, trocar CTAs `mailto:`; 4) Crashlytics antes de publicar; 5) teste fechado com 5–10 lojistas reais; 6) `develop` vira a próxima produção (não publicar a `main` antiga).
+Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + validar renovação no servidor (notificações da Play); 2) cobrar só pela Play (feito: PIX removido); 3) comprar e ligar `usepago.app`, trocar CTAs `mailto:`; 4) Crashlytics antes de publicar; 5) teste fechado com 5–10 lojistas reais; 6) `develop` vira a próxima produção (não publicar a `main` antiga).
 
 ## Faltando
 
@@ -107,7 +107,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
 - Publicar na Play: documento, SDK, keystore, AAB.
 - Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
-- Teste PIX e2e.
+- Criar a assinatura `pago_premium_monthly` (R$ 39,90/mês) na Play Console e testar com conta de teste de licença.
 - Bot WhatsApp: **futuro, não implementar**.
 
 ## Firebase / Console
@@ -126,12 +126,12 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 1. Comprar `usepago.app` / `usepago.com.br`.
 2. Play: documento, SDK, keystore, AAB, ficha Pagô (noite).
 3. Decidir quando a `develop` vai para a `main`.
-4. Testar PIX.
+4. Play Console: perfil de pagamentos com a conta bancária do Asaas (CNPJ) para receber o repasse da Google.
 5. Trocar a senha provisória do painel admin ("Trocar senha").
 
 ## Última sessão (10/out)
 
-PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e o R8 do release (ML Kit). Links legais do app em `usepago.web.app`; e-mail de contato trocado para o pessoal do dono no app, termos e site (site `usepago` republicado). Painel admin conferido: no ar, igual ao repo, API exige login (401). Versão release roda no emulador sem travar. 20 testes passando.
+PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e o R8 do release (ML Kit). Links legais do app em `usepago.web.app`; e-mail de contato trocado para o pessoal do dono no app, termos e site (site `usepago` republicado). Painel admin conferido: no ar, igual ao repo, API exige login (401). Versão release roda no emulador sem travar. Premium agora só pela Google Play: tela Premium com um botão "Assinar Premium", tela de checkout PIX apagada, termos/privacidade/site sem PIX. 20 testes passando.
 
 ## Sessão anterior (9/out)
 

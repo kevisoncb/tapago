@@ -271,21 +271,6 @@ class AppController extends ChangeNotifier {
     await saveUser(next);
   }
 
-  Future<void> grantConfirmedPix(String paymentId) async {
-    user = await _repository.getCurrentUser();
-    notifyListeners();
-    if (user.premiumAtivo) return;
-    if (!usesFirestore) {
-      await saveUser(
-        user.copyWith(
-          isPremium: true,
-          premiumVenceEm: DateTime.now().add(const Duration(days: 30)),
-          premiumTransactionId: paymentId,
-        ),
-      );
-    }
-  }
-
   Future<String?> subscribePremium() async {
     billingBusy = true;
     billingMessage = null;

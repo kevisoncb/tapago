@@ -3,12 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../services/asaas_client.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
 import '../widgets/common.dart';
-import 'pix_checkout_page.dart';
 
 class PremiumPage extends StatelessWidget {
   const PremiumPage({super.key});
@@ -305,7 +303,7 @@ class _PriceCard extends StatelessWidget {
               const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
               const SizedBox(width: 6),
               Text(
-                'PIX libera 30 dias. Play cancela quando quiser',
+                'Cancele quando quiser na Google Play',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -315,31 +313,12 @@ class _PriceCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           PrimaryButton(
-            label: 'Pagar com PIX',
-            onPressed: () => _openPix(context),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: OutlinedButton(
-              onPressed: context.watch<AppController>().billingBusy
-                  ? null
-                  : () => _subscribe(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: Text(
-                context.watch<AppController>().billingBusy
-                    ? 'Aguardando a carteira...'
-                    : 'Cartão da carteira',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-              ),
-            ),
+            label: context.watch<AppController>().billingBusy
+                ? 'Aguardando a Google Play...'
+                : 'Assinar Premium',
+            onPressed: context.watch<AppController>().billingBusy
+                ? null
+                : () => _subscribe(context),
           ),
           if (context.watch<AppController>().billingMessage != null) ...[
             const SizedBox(height: 10),
@@ -355,7 +334,7 @@ class _PriceCard extends StatelessWidget {
           ],
           const SizedBox(height: 10),
           Text(
-            'PIX pelo Asaas ou cartão já salvo na carteira do telefone. O Premium só entra depois da confirmação.',
+            'Assinatura mensal pela Google Play, com o pagamento que já está na sua conta Google. Renova sozinha até você cancelar.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11.5,
@@ -365,21 +344,6 @@ class _PriceCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _openPix(BuildContext context) async {
-    final client = AsaasClient();
-    if (!client.isConfigured) {
-      showPagoSnack(
-        context,
-        'O PIX do Asaas ainda não está ligado. Crie a conta e suba o servidor com a chave.',
-      );
-      return;
-    }
-    final paid = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => PixCheckoutPage(client: client)),
-    );
-    if (paid == true && context.mounted) Navigator.of(context).pop();
   }
 
   Future<void> _subscribe(BuildContext context) async {

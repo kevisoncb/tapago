@@ -26,6 +26,13 @@ class CachedRepository implements AppRepository {
   }
 
   @override
+  Stream<AppUser>? watchCurrentUser() =>
+      remote.watchCurrentUser()?.asyncMap((user) async {
+        await cache.saveUser(user);
+        return user;
+      });
+
+  @override
   Future<void> saveUser(AppUser user) async {
     await remote.saveUser(user);
     await cache.saveUser(user);

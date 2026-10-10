@@ -63,6 +63,13 @@ class FirestoreRepository implements AppRepository {
   }
 
   @override
+  Stream<AppUser> watchCurrentUser() => _users
+      .doc(_userId)
+      .snapshots()
+      .where((snap) => snap.exists)
+      .map((snap) => AppUser.fromMap(snap.data() ?? {}, id: _userId));
+
+  @override
   Future<void> saveUser(AppUser user) async {
     await _users.doc(user.id).set({
       'email': user.email,

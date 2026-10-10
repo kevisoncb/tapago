@@ -76,6 +76,8 @@ Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com inici
 
 ## Dados
 
+Conta ao vivo: com Firebase, o app escuta `Users/{uid}` em tempo real (`watchCurrentUser` no repositório; `AppController._watchUser` depois do `load`). Premium dado ou tirado pelo painel (ou pela Play no servidor) aparece na hora, sem reabrir o app; lembretes de boleto são refeitos quando o Premium muda.
+
 Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (sinal de uso; dono só grava `last_seen_at` = hora do servidor e `plataforma`; ninguém lê pelo app). Só servidor (regra geral nega o app): `PlaySubscriptions` (id = hash do token da compra; uid, estado, vence, pedido, valor, conferida), `PlayEvents` (id = pedido para cobranças, evita contar duas vezes; tipo COMPRA/RENOVADA/CANCELADA/...), `AdminStats` (foto diária), `AdminLog`, `AdminNotes`, `AdminContacts`, `AdminSecurity`. Regras publicadas. `Bills`: dono lê/apaga; criar/editar exige `is_premium` + `premium_vence_em` futuro (regras já publicadas no projeto, aditivas). Saldo no ledger. Sem bot WhatsApp. Sem offline-first.
 
 ## Feito

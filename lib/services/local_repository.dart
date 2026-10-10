@@ -26,6 +26,9 @@ class LocalRepository implements AppRepository {
   }
 
   @override
+  Stream<AppUser>? watchCurrentUser() => null;
+
+  @override
   Future<AppUser> getCurrentUser() async {
     final raw = _prefs.getString(_userKey);
     if (raw == null) {

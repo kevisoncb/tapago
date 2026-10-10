@@ -7,6 +7,9 @@ abstract class AppRepository {
 
   Future<AppUser> getCurrentUser();
 
+  /// Null when the source has no live updates (local storage).
+  Stream<AppUser>? watchCurrentUser();
+
   Future<void> saveUser(AppUser user);
 
   Future<List<Debt>> getDebts();

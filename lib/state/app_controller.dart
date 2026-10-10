@@ -1,3 +1,5 @@
+﻿import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,6 +31,7 @@ class AppController extends ChangeNotifier {
   final ReminderService? _reminders;
   final BiometricService? _biometrics;
   final _uuid = const Uuid();
+  StreamSubscription<AppUser>? _userSubscription;
 
   AppUser user = AppUser(
     id: AppConstants.demoUserId,
@@ -163,6 +166,7 @@ class AppController extends ChangeNotifier {
       _billing?.onUpdate = _onPurchase;
       await _billing?.start();
       await _syncReminders();
+      _watchUser();
     } catch (error) {
       errorMessage = 'Não foi possível carregar os dados.';
       debugPrint('$error');
@@ -373,8 +377,22 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  void _watchUser() {
+    _userSubscription?.cancel();
+    _userSubscription = _repository.watchCurrentUser()?.listen(
+      (next) {
+        final premiumChanged = next.premiumAtivo != user.premiumAtivo;
+        user = next;
+        notifyListeners();
+        if (premiumChanged) _syncReminders();
+      },
+      onError: (Object error) => debugPrint('Conta ao vivo: $error'),
+    );
+  }
+
   @override
   void dispose() {
+    _userSubscription?.cancel();
     _billing?.onUpdate = null;
     super.dispose();
   }

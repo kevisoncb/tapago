@@ -17,6 +17,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 - Demo do app no navegador (para ver no iPhone): https://tapago-ae948--app-demo-318amles.web.app — `flutter build web --release --dart-define=PAGO_DEMO=true` e deploy no canal `app-demo` com config temporária `{"hosting":{"public":"build/web","headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-cache"}]}],"rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config` (arquivo apagado depois). Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
 - `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Link de teste do site: https://tapago-ae948--develop-uc128g7j.web.app (canal `develop`, vence 8/nov; republicar com `hosting:channel:deploy develop`).
 - Só merge `develop` → `main` quando estiver pronto para produção.
+- `dev` e `producao` (criadas num PC em 8/out) estão **abandonadas**: o mesmo trabalho (Pagô, boletos, parcelas) foi feito melhor na `develop`. Não usar.
 - Segredos Asaas só em `.env` e `functions/.env` (gitignored).
 
 ## Marca, pacote e domínio
@@ -87,7 +88,8 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 - Ícone ainda é o check azul antigo.
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
 
-- Boletos: não testado no celular ainda (só testes de lógica e analyzer). Sem leitura de código pela câmera.
+- Boletos: compila e abre no emulador Android (`Medium_Phone_API_37.0`, `flutter run -d emulator-5554`); fluxo ainda não testado à mão. Sem leitura de código pela câmera.
+- `android/app/build.gradle.kts` precisa de `import java.util.Properties` / `java.io.FileInputStream` no topo: com `java.util...` inline o Gradle 9 não compila. `/android/build/` no `.gitignore`.
 
 ## Ideias (só discutidas)
 
@@ -126,6 +128,10 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 4. Testar PIX.
 5. Trocar a senha provisória do painel admin ("Trocar senha").
 
-## Última sessão (9/out)
+## Última sessão (10/out)
+
+PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e rodou a `develop` no emulador (login Pagô abre). 20 testes passando.
+
+## Sessão anterior (9/out)
 
 Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: dashboard sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Painel do administrador web (`pago-admin.web.app`) com `adminApi`, `Presence` e regras publicadas; testado dar/somar/tirar Premium, excluir e bloqueio de não-admin (403). Site Pagô no ar em https://usepago.web.app; celular de exemplo do site igual ao app (Pagô!, Recebe esta semana, Vencido a receber).

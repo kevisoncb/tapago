@@ -91,9 +91,9 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 
 ## Parcial
 
-- `main` ainda TáPago (código). Na internet não sobra nada TáPago: `tapago-ae948.web.app` redireciona para `usepago.web.app`.
+- `main` = `develop` desde 10/out (Pagô, `f0fb629`). Na internet não sobra nada TáPago: `tapago-ae948.web.app` redireciona para `usepago.web.app`.
 - Premium só pela Google Play (assinatura `pago_premium_monthly`, cobrada na conta Google do usuário). PIX saiu do app e do site; o Asaas fica só como conta bancária que recebe o repasse da Google (cadastrar os dados bancários do Asaas no perfil de pagamentos da Play Console). As Functions `createPremiumPix`/`premiumPixStatus` e o webhook continuam publicados, sem uso pelo app. Compra: o app manda o uid como `applicationUserName` (vira `obfuscatedExternalAccountId`) e envia o token da compra para `confirmPlayPurchase`, que consulta a assinatura na Android Publisher API (`subscriptionsv2`), recusa se for de outra conta ou inativa e grava a validade real. Sem token: 400 (fechou o furo de qualquer um ganhar 30 dias). **Se a API da Google ainda não tiver acesso, libera 30 dias sem conferir** e marca `verificada: false`. Renovação/cancelamento: `playNotifications` (Pub/Sub, tópico `play-billing`, já criado no deploy) atualiza `Users` e `PlayEvents`. Falta ligar do lado da Google (ver Pendências).
-- Play: documento, SDK, keystore, AAB — à noite, no Android Studio.
+- Play: chave de upload criada (`android/app/upload-keystore.jks`, alias `upload`, senhas em `android/key.properties`; os dois gitignored, cópia na Área de Trabalho em `Pago-Play`). AAB `2.4.0+24` gerado da `main` e assinado: `build\app\outputs\bundle\release\app-release.aab` (cópia `Pago-Play\pago-2.4.0-24.aab`). Gerar AAB: `flutter build appbundle --release` (precisa do NDK `28.2.13676358`, instalado via `cmdline-tools\latest\bin\sdkmanager`). Cada envio novo: subir o número depois do `+` em `pubspec.yaml`.
 - CTAs do site ainda `mailto:` (e-mail pessoal do dono).
 - Ícone ainda é o check azul antigo.
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
@@ -115,7 +115,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
-- Publicar na Play: documento, SDK, keystore, AAB.
+- Publicar na Play: conta de desenvolvedor (documento), ficha, formulários, subir o AAB no teste interno; conta pessoal nova precisa de teste fechado com 12 pessoas por 14 dias antes da produção.
 - Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
 - Criar a assinatura `pago_premium_monthly` (R$ 39,90/mês) na Play Console e testar com conta de teste de licença.
 - Bot WhatsApp: **futuro, não implementar**.
@@ -134,8 +134,8 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 ## Pendências do dono
 
 1. Comprar `usepago.app` / `usepago.com.br`.
-2. Play: documento, SDK, keystore, AAB, ficha Pagô (noite).
-3. Decidir quando a `develop` vai para a `main`.
+2. Play: conta de desenvolvedor com documento, ficha Pagô, formulários e subir `Pago-Play\pago-2.4.0-24.aab`. Guardar cópia da chave de upload (`upload-keystore.jks` + `key.properties`) fora do PC.
+3. Próximas idas da `develop` para a `main` quando testar.
 4. Play Console: perfil de pagamentos com a conta bancária do Asaas (CNPJ) para receber o repasse da Google.
 5. Trocar a senha provisória do painel admin ("Trocar senha") e ligar o segundo fator (botão "Segurança").
 6. Resumo e alertas por e-mail: criar conta grátis no resend.com com kevison.brandes@outlook.com, gerar API key, colocar em `RESEND_API_KEY` no `functions/.env` e publicar as functions.

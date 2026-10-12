@@ -1,7 +1,7 @@
 name: pago_app
 description: Pagô — caderneta de fiado, a prazo e empréstimo.
 publish_to: "none"
-version: 2.4.0+24
+version: 2.4.0+25
 
 environment:
   sdk: ^3.13.5
@@ -31,6 +31,7 @@ dependencies:
   timezone: ^0.10.1
   url_launcher: ^6.3.2
   uuid: ^4.5.1
+  firebase_crashlytics: ^5.4.0
 
 dev_dependencies:
   flutter_test:

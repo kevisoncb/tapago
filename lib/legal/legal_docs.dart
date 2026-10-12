@@ -108,7 +108,7 @@ class LegalDocs {
     ),
     LegalSection(
       '4. Compartilhamento',
-      'Firebase/Google (autenticação e banco), Google Play (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
+      'Firebase/Google (autenticação, banco e relatório de travamentos: modelo do aparelho, versão do sistema e do app, sem os dados da caderneta), Google Play (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
           'Não vendemos dados. Autoridade pública só mediante ordem legal.',
     ),
     LegalSection(

@@ -10,6 +10,7 @@ import '../utils/constants.dart';
 import 'app_repository.dart';
 import 'asaas_client.dart';
 import 'auth_messages.dart';
+import 'crash_reporter.dart';
 import 'firebase_bootstrap.dart';
 import 'local_account_store.dart';
 import 'local_repository.dart';
@@ -204,6 +205,7 @@ class SessionGate extends ChangeNotifier {
   }
 
   Future<void> _onFirebaseUser(User? user) async {
+    unawaited(CrashReporter.setUser(user?.uid));
     if (user == null) {
       PresenceService.instance.stop();
       repository = null;

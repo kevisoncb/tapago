@@ -13,7 +13,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 
 ## Git
 
-- `main` — produção (ainda TáPago, pacote `com.tapago.tapago_app`). Origin: `c75f224`.
+- `main` — produção (Pagô, pacote `app.usepago`). Recebe a `develop` por fast-forward quando o dono testa.
 - Demo do app no navegador (para ver no iPhone): https://usepago--app-demo-xn9oi95x.web.app (canal `app-demo` do site `usepago`, vence 9/nov) — `flutter build web --release --dart-define=PAGO_DEMO=true` e `firebase hosting:channel:deploy app-demo --expires 30d` com config temporária `{"hosting":{"site":"usepago","public":"build/web","headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-cache"}]}],"rewrites":[{"source":"**","destination":"/index.html"}]}}` via `--config` (arquivo apagado depois). Com `PAGO_DEMO` (só nessa build): abre logado no João com Premium e dados de exemplo (`SeedData`), dados só no navegador. App normal não usa essa flag.
 - `develop` — desenvolvimento, toda em Pagô + boletos a pagar. Site de teste é o próprio https://usepago.web.app (canais antigos `develop` e `app-demo` do site `tapago-ae948` foram apagados em 10/out).
 - Só merge `develop` → `main` quando estiver pronto para produção.
@@ -40,6 +40,12 @@ Painel (dashboard): "Saldo aberto" (tudo que falta receber), "Recebe esta semana
 
 Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com iniciais abrem o menu (`lib/widgets/pago_menu.dart`): Caderneta, Buscar, Boletos a pagar, Novo lançamento, Premium (se grátis), Configurações. Caderneta tem abas **Clientes** (quem te deve) e **Boletos** (empresas/fornecedores com aberto e vencido; toque abre os boletos daquela empresa). Configurações é só do app (conta, PIX, banco, mensagem, preferências, assinatura, ajuda); não lista mais contatos. Descrições mostram o real: chave PIX cadastrada, nome do banco, biometria ligada/desligada (bloqueio em `lib/widgets/biometric_lock.dart`; `MainActivity` é `FlutterFragmentActivity`, exigido pelo `local_auth`; celular sem digital/rosto/senha de tela não fica bloqueado); a prévia da mensagem usa a chave PIX do usuário. Ajuda: no site (`/ajuda` + menu) e no app (Configurações → Ajuda) o botão abre o WhatsApp de suporte, sem número na tela.
 
+Conta: "Sair da Conta" desloga de verdade (`AppController.signOut` cancela os lembretes e chama `SessionGate.signOut`). **"Excluir minha conta"** (vermelho, no fim das Configurações; exigência da Play): pede a senha, reautentica no Firebase, chama `POST /api/account/delete` (Function `deleteMyAccount`, exige login feito há menos de 5 min) que reaproveita a exclusão do painel (apaga Debts, Payments, Bills, PremiumCharges, AdminNotes, AdminContacts, Users, Presence e o login; registra "excluiu a própria conta pelo app" no `AdminLog`), limpa as chaves `pago_{uid}_*` do aparelho e sai. Assinante vê aviso para cancelar na Play. Página pública https://usepago.web.app/excluir-conta (`site/excluir-conta.html`), citada na privacidade, ajuda e termos.
+
+Relatório de travamentos: Firebase Crashlytics (`lib/services/crash_reporter.dart`, ligado no `FirebaseBootstrap`, só Android/iOS em release; grava o uid). Plugin Gradle `com.google.firebase.crashlytics` 3.0.6. Citado na privacidade.
+
+Ícone: check branco com pontinho sobre azul `#2F6BFF` (desenho do `assets/brand/pago-icon.jpg`). Ícone adaptativo do Android com o símbolo dentro da zona segura (sem quadrado dentro do círculo); `assets/brand/pago-icon.png` 1024. Gerados por script `sharp` (fora do repo).
+
 ## Painel do administrador
 
 - Endereço: https://pago-admin.web.app (site Hosting separado `pago-admin`; não vai no app). Conta admin: `pago@administrador.com` (senha só com o dono; trocar pelo botão "Trocar senha" do painel).
@@ -65,7 +71,8 @@ Navegação: "Pagô!" (wordmark com exclamação e setinha) e o avatar com inici
 - `lib/screens/add_debt_page.dart` — lançamento, voz Premium, duplicata bloqueada.
 - `lib/screens/client_profile_page.dart` — Abater, OCR, Lembrete / Cobrar hoje / Atraso.
 - `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
-- `lib/screens/settings_page.dart` — PIX, banco, mensagem, preferências, Premium, Ajuda.
+- `lib/screens/settings_page.dart` — PIX, banco, mensagem, preferências, Premium, Ajuda, Sair, Excluir minha conta.
+- `lib/services/session_gate.dart` — login, cadastro, sair, `deleteAccount`. `lib/services/crash_reporter.dart` — Crashlytics.
 - `lib/widgets/pago_menu.dart` — menu do "Pagô!" / avatar.
 - `lib/screens/premium_page.dart` — benefícios e botão único "Assinar Premium" (assinatura Google Play), "Restaurar". Sem PIX no app.
 - `lib/screens/bills_page.dart` / `add_bill_page.dart` — boletos a pagar. `lib/services/bill_installments.dart` — divisão de parcelas, prazos, código.
@@ -93,9 +100,11 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 
 - `main` = `develop` desde 10/out (Pagô, `f0fb629`). Na internet não sobra nada TáPago: `tapago-ae948.web.app` redireciona para `usepago.web.app`.
 - Premium só pela Google Play (assinatura `pago_premium_monthly`, cobrada na conta Google do usuário). PIX saiu do app e do site; o Asaas fica só como conta bancária que recebe o repasse da Google (cadastrar os dados bancários do Asaas no perfil de pagamentos da Play Console). As Functions `createPremiumPix`/`premiumPixStatus` e o webhook continuam publicados, sem uso pelo app. Compra: o app manda o uid como `applicationUserName` (vira `obfuscatedExternalAccountId`) e envia o token da compra para `confirmPlayPurchase`, que consulta a assinatura na Android Publisher API (`subscriptionsv2`), recusa se for de outra conta ou inativa e grava a validade real. Sem token: 400 (fechou o furo de qualquer um ganhar 30 dias). **Se a API da Google ainda não tiver acesso, libera 30 dias sem conferir** e marca `verificada: false`. Renovação/cancelamento: `playNotifications` (Pub/Sub, tópico `play-billing`, já criado no deploy) atualiza `Users` e `PlayEvents`. Falta ligar do lado da Google (ver Pendências).
-- Play: chave de upload criada (`android/app/upload-keystore.jks`, alias `upload`, senhas em `android/key.properties`; os dois gitignored, cópia na Área de Trabalho em `Pago-Play`). AAB `2.4.0+24` gerado da `main` e assinado: `build\app\outputs\bundle\release\app-release.aab` (cópia `Pago-Play\pago-2.4.0-24.aab`). Gerar AAB: `flutter build appbundle --release` (precisa do NDK `28.2.13676358`, instalado via `cmdline-tools\latest\bin\sdkmanager`). Cada envio novo: subir o número depois do `+` em `pubspec.yaml`.
+- Play: conta de desenvolvedor **aprovada em 12/out**. Chave de upload (`android/app/upload-keystore.jks`, alias `upload`, senhas em `android/key.properties`; os dois gitignored, cópia na Área de Trabalho em `Pago-Play`). AAB atual **`2.4.0+25`** (com excluir conta, Crashlytics e ícone novo), assinado: `Pago-Play\pago-2.4.0-25.aab`. Material da loja em `Pago-Play\loja`: `icone-512.png`, `destaque-1024x500.png`, `prints\1..4` (1200×2400, conta do revisor) e `textos-play-console.md` (ficha, acesso ao app, segurança dos dados, classificação, público, app financeiro, URLs). Gerar AAB: `flutter build appbundle --release` (precisa do NDK `28.2.13676358`, instalado via `cmdline-tools\latest\bin\sdkmanager`). Cada envio novo: subir o número depois do `+` em `pubspec.yaml`.
+- Conta do revisor do Google: `revisao.google@usepago.app` ("Mercadinho Revisão", senha no `textos-play-console.md`, fora do git), Premium até out/2027 dado pelo painel, 7 clientes, 3 pagamentos e 5 boletos de exemplo. Não excluir nem tirar o Premium enquanto o app estiver em revisão.
+- Flutter SDK em `C:\Users\kevis\flutter` (PATH do usuário e `android/local.properties`). Saiu de `AppData\Local\Temp\flutter` porque a limpeza automática do Windows apagou arquivos dele.
+- Emulador: o app instalado agora é assinado com a chave de upload; um APK assinado com a chave de debug não instala por cima (precisa desinstalar).
 - CTAs do site ainda `mailto:` (e-mail pessoal do dono).
-- Ícone ainda é o check azul antigo.
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
 
 - Boletos: compila e abre no emulador Android (`Medium_Phone_API_37.0`); fluxo ainda não testado à mão. Sem leitura de código pela câmera.
@@ -115,7 +124,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
-- Publicar na Play: conta de desenvolvedor (documento), ficha, formulários, subir o AAB no teste interno; conta pessoal nova precisa de teste fechado com 12 pessoas por 14 dias antes da produção.
+- Publicar na Play: criar o app, ficha, formulários (tudo em `Pago-Play\loja\textos-play-console.md`), subir o AAB 25 no teste interno; conta pessoal nova precisa de teste fechado com 12 pessoas por 14 dias antes da produção.
 - Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
 - Criar a assinatura `pago_premium_monthly` (R$ 39,90/mês) na Play Console e testar com conta de teste de licença.
 - Bot WhatsApp: **futuro, não implementar**.
@@ -124,7 +133,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Projeto `tapago-ae948`, Blaze. Hosting padrão https://tapago-ae948.web.app (e `.firebaseapp.com`): só API + redirecionamento. `firebase.json` publica a pasta `hosting-redirect/` com `redirects` 301 para `usepago.web.app` (termos, privacidade, LGPD, ajuda vão para a mesma página; o resto para a home) e mantém as rewrites `/api/**` para as Functions. Publicar: `firebase deploy --only hosting` (sem functions). **Nunca publicar o hosting a partir da `main` antiga**: traria o site TáPago de volta.
 - Apps: Android `app.usepago` (`1:1077428127080:android:53dca34d493288510042dd`) e iOS/macOS `app.usepago` (`1:1077428127080:ios:577755df013cd6380042dd`). Apps antigos `com.tapago...` continuam registrados enquanto a `main` usar.
-- Functions (southamerica-east1): `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`, `playNotifications` (Pub/Sub `play-billing`), `adminApi`, `adminDailyDigest` (agendada 8h). Publicar: `firebase deploy --only functions --project tapago-ae948 --force`.
+- Functions (southamerica-east1): `asaasWebhook`, `createPremiumPix`, `premiumPixStatus`, `confirmPlayPurchase`, `deleteMyAccount` (rewrite `/api/account/delete` no `firebase.json`), `playNotifications` (Pub/Sub `play-billing`), `adminApi`, `adminDailyDigest` (agendada 8h). Publicar: `firebase deploy --only functions --project tapago-ae948 --force`.
 - Hosting sites: `tapago-ae948` (API/webhook + redirecionamento para o Pagô; nenhum canal de preview), `usepago` (site Pagô da develop no ar: https://usepago.web.app — `pago.web.app` é de outro projeto) e `pago-admin` (painel admin).
 - Publicar o site Pagô: `firebase deploy --only hosting --config firebase.usepago.json`. Quando comprar `usepago.app`, conectar o domínio no site `usepago`.
 - Web app do Firebase: "Default Web App" `1:1077428127080:web:e82621d06da4bf5c0042dd` (usado só pelo painel).
@@ -134,17 +143,13 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 ## Pendências do dono
 
 1. Comprar `usepago.app` / `usepago.com.br`.
-2. Play: conta de desenvolvedor com documento, ficha Pagô, formulários e subir `Pago-Play\pago-2.4.0-24.aab`. Guardar cópia da chave de upload (`upload-keystore.jks` + `key.properties`) fora do PC.
+2. Play Console: criar o app "Pagô", preencher ficha e formulários com `Pago-Play\loja\textos-play-console.md`, subir `Pago-Play\pago-2.4.0-25.aab` no teste interno; juntar 12 testadores (conta pessoal). Guardar cópia da chave de upload (`upload-keystore.jks` + `key.properties`) fora do PC.
 3. Próximas idas da `develop` para a `main` quando testar.
 4. Play Console: perfil de pagamentos com a conta bancária do Asaas (CNPJ) para receber o repasse da Google.
 5. Trocar a senha provisória do painel admin ("Trocar senha") e ligar o segundo fator (botão "Segurança").
 6. Resumo e alertas por e-mail: criar conta grátis no resend.com com kevison.brandes@outlook.com, gerar API key, colocar em `RESEND_API_KEY` no `functions/.env` e publicar as functions.
 7. Receita real da Play (depois do app publicado): no Google Cloud do projeto, ativar a "Google Play Android Developer API"; na Play Console → Usuários e permissões, convidar a conta de serviço das Functions (`1077428127080-compute@developer.gserviceaccount.com`) com permissão de ver dados financeiros e gerenciar pedidos/assinaturas; na Play Console → Monetização → Notificações em tempo real, tópico `projects/tapago-ae948/topics/play-billing`, e no Pub/Sub dar ao `google-play-developer-notifications@system.gserviceaccount.com` o papel de Publicador nesse tópico. Depois "Enviar notificação de teste".
 
-## Última sessão (10/out)
+## Última sessão (10–12/out)
 
-PC 2 puxou o GitHub, passou a trabalhar na `develop` (descartou a `dev`), corrigiu o Gradle e o R8 do release (ML Kit). Links legais do app em `usepago.web.app`; e-mail de contato trocado para o pessoal do dono no app, termos e site (site `usepago` republicado). Painel admin conferido: no ar, igual ao repo, API exige login (401). Versão release roda no emulador sem travar. Premium agora só pela Google Play: tela Premium com um botão "Assinar Premium", tela de checkout PIX apagada, termos/privacidade/site sem PIX. Painel admin completo: abas, Precisa de atenção, receita real da Play, mês a mês, funil, retenção, ficha com anotações, registro de ações, planilha, segundo fator, resumo diário e alertas por e-mail (desligados até a chave do Resend). App manda o token da compra e o servidor confere na Google. Testado na API e no navegador com uma conta admin temporária (apagada depois, junto com os registros de teste). 20 testes passando.
-
-## Sessão anterior (9/out)
-
-Rename para Pagô / usepago.app. Boletos a pagar (Premium) com parcelas, código e lembrete; regras `Bills` publicadas. Menu no "Pagô!", Caderneta com abas, Configurações só do app. Acabamento: dashboard sem cards repetidos ("Na rua" saiu, entrou "Vencido a receber"), descrições corretas nas Configurações. Painel do administrador web (`pago-admin.web.app`) com `adminApi`, `Presence` e regras publicadas; testado dar/somar/tirar Premium, excluir e bloqueio de não-admin (403). Site Pagô no ar em https://usepago.web.app; celular de exemplo do site igual ao app (Pagô!, Recebe esta semana, Vencido a receber).
+Preparação para a Play: excluir conta no app + Function + página no site (testado: API sem login 401, com login apaga perfil e login; senha errada no app mostra "Senha incorreta."), "Sair da Conta" consertado, Crashlytics, ícone adaptativo refeito, versão 25, conta do revisor com dados, prints, ícone 512, destaque e textos da loja. Biometria consertada (`FlutterFragmentActivity`) e Premium do painel aparecendo na hora no app (escuta `Users/{uid}`). Flutter movido para `C:\Users\kevis\flutter`. 20 testes passando.

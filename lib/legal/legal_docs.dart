@@ -58,8 +58,8 @@ class LegalDocs {
     ),
     LegalSection(
       '5. Assinatura Premium',
-      'O Premium, quando disponível, custa R\$ 39,90 por mês. A assinatura é feita pela Google Play, renova a cada mês e pode ser cancelada a qualquer momento na própria Google Play.\n\n'
-          'O cancelamento da loja vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos da loja seguem as regras da Google Play. Preços podem mudar com aviso prévio no app ou no site.',
+      'O Premium, quando disponível, custa R\$ 39,90 por mês. A assinatura é feita pela loja do seu aparelho (Google Play no Android, App Store no iPhone), renova automaticamente a cada mês e pode ser cancelada a qualquer momento na própria loja, até 24 horas antes do fim do período.\n\n'
+          'O cancelamento vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos seguem as regras da loja em que a assinatura foi feita. Quem assinou numa loja pode restaurar a assinatura no app pelo botão "Restaurar Compras". Preços podem mudar com aviso prévio no app ou no site.',
     ),
     LegalSection(
       '6. Propriedade intelectual',
@@ -108,7 +108,7 @@ class LegalDocs {
     ),
     LegalSection(
       '4. Compartilhamento',
-      'Firebase/Google (autenticação, banco e relatório de travamentos: modelo do aparelho, versão do sistema e do app, sem os dados da caderneta), Google Play (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
+      'Firebase/Google (autenticação, banco e relatório de travamentos: modelo do aparelho, versão do sistema e do app, sem os dados da caderneta), Google Play e App Store (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
           'Não vendemos dados. Autoridade pública só mediante ordem legal.',
     ),
     LegalSection(

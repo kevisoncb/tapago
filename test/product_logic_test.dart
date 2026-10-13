@@ -10,6 +10,7 @@ import 'package:pago_app/services/pix_status.dart';
 import 'package:pago_app/services/password_hash.dart';
 import 'package:pago_app/services/receipt_amount.dart';
 import 'package:pago_app/services/reminder_service.dart';
+import 'package:pago_app/services/store_ids.dart';
 import 'package:pago_app/services/tracking_service.dart';
 import 'package:pago_app/services/trust_score.dart';
 import 'package:pago_app/services/voice_debt_parser.dart';
@@ -485,6 +486,31 @@ Troco: R\$ 0,00
     );
     expect(billReminderTitle(BillReminderKind.atraso, [bill, bill]),
         '2 boletos atrasados.');
+  });
+
+  test('produto, conta e aviso de renovação por loja', () {
+    expect(StoreKind.googlePlay.premiumProductId, 'pago_premium_monthly');
+    expect(StoreKind.appStore.premiumProductId, 'pago_premium_monthly_ios');
+    expect(isPremiumProductId('pago_premium_monthly_ios'), isTrue);
+    expect(isPremiumProductId('outro'), isFalse);
+
+    final token = appAccountTokenFor('xpAcinvGjbfUeh34ayiTm2ytarb2');
+    expect(
+      RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+          .hasMatch(token),
+      isTrue,
+    );
+    expect(appAccountTokenFor('xpAcinvGjbfUeh34ayiTm2ytarb2'), token);
+    expect(appAccountTokenFor('outro-uid'), isNot(token));
+
+    final notice = premiumRenewalNotice(StoreKind.appStore, r'R$ 39,90');
+    expect(notice, contains('renovação automática'));
+    expect(notice, contains('24 horas'));
+    expect(notice, contains('Ajustes → seu nome → Assinaturas'));
+    expect(
+      premiumRenewalNotice(StoreKind.googlePlay, r'R$ 39,90'),
+      contains('Play Store → Pagamentos e assinaturas'),
+    );
   });
 
   test('pedido de rastreio fica desligado sem PAGO_ATT', () async {

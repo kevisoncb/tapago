@@ -9,6 +9,7 @@ class AppConstants {
   static const checkoutUrl =
       'https://play.google.com/store/apps/details?id=app.usepago';
   static const premiumProductId = 'pago_premium_monthly';
+  static const premiumProductIdIos = 'pago_premium_monthly_ios';
   static const apiBase = String.fromEnvironment(
     'PAGO_API_BASE',
     defaultValue: 'https://tapago-ae948.web.app/api',

@@ -10,6 +10,7 @@ import '../services/billing_service.dart';
 import '../services/biometric_service.dart';
 import '../services/debt_balance.dart';
 import '../services/reminder_service.dart';
+import '../services/store_ids.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 
@@ -46,7 +47,11 @@ class AppController extends ChangeNotifier {
   bool loading = true;
   String? errorMessage;
   bool billingBusy = false;
+  bool restoringPurchases = false;
   String? billingMessage;
+  String? storePriceLabel;
+
+  StoreKind get store => _billing?.store ?? StoreKind.googlePlay;
 
   bool get usesFirestore => _repository.usesFirestore;
 
@@ -276,7 +281,8 @@ class AppController extends ChangeNotifier {
     billingMessage = null;
     notifyListeners();
     try {
-      final update = await _billing?.buy(userId: user.id) ?? PurchaseUpdate.unavailable;
+      final update =
+          await _billing?.buy(userId: user.id) ?? PurchaseUpdate.unavailable(store);
       switch (update.outcome) {
         case PurchaseOutcome.purchased:
         case PurchaseOutcome.restored:
@@ -286,6 +292,8 @@ class AppController extends ChangeNotifier {
           return 'A loja está confirmando o pagamento.';
         case PurchaseOutcome.canceled:
           return 'Compra cancelada.';
+        case PurchaseOutcome.nothingToRestore:
+          return update.message;
         case PurchaseOutcome.unavailable:
         case PurchaseOutcome.missing:
           if ((kDebugMode || AppConstants.demoBuild) && !usesFirestore) {
@@ -306,15 +314,35 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  /// Botão "Restaurar Compras": recupera a assinatura da conta da loja sem
+  /// comprar de novo (troca de aparelho, reinstalação).
   Future<String?> restorePremium() async {
-    if (user.premiumAtivo) return null;
-    final update = await _billing?.restore();
-    if (update?.outcome == PurchaseOutcome.restored ||
-        update?.outcome == PurchaseOutcome.purchased) {
-      await _grantFromStore(update!);
-      return null;
+    restoringPurchases = true;
+    billingMessage = null;
+    notifyListeners();
+    try {
+      final update = await _billing?.restorePurchases() ??
+          PurchaseUpdate.unavailable(store);
+      if (update.outcome == PurchaseOutcome.restored ||
+          update.outcome == PurchaseOutcome.purchased) {
+        await _grantFromStore(update);
+        return null;
+      }
+      if (user.premiumAtivo) return null;
+      return update.message ?? 'Nada para restaurar nesta conta.';
+    } on AsaasException catch (error) {
+      return error.message;
+    } finally {
+      restoringPurchases = false;
+      notifyListeners();
     }
-    return update?.message ?? 'Nada para restaurar neste aparelho.';
+  }
+
+  Future<void> loadStorePrice() async {
+    final label = await _billing?.priceLabel();
+    if (label == null || label == storePriceLabel) return;
+    storePriceLabel = label;
+    notifyListeners();
   }
 
   Future<void> signOut() async {
@@ -344,10 +372,18 @@ class AppController extends ChangeNotifier {
 
   Future<void> _grantFromStore(PurchaseUpdate update) async {
     if (usesFirestore) {
-      await AsaasClient().confirmPlayPurchase(
-        transactionId: update.transactionId,
-        purchaseToken: update.purchaseToken,
-      );
+      final api = AsaasClient();
+      if (update.store == StoreKind.appStore) {
+        await api.confirmApplePurchase(
+          transactionId: update.transactionId,
+          signedTransaction: update.purchaseToken,
+        );
+      } else {
+        await api.confirmPlayPurchase(
+          transactionId: update.transactionId,
+          purchaseToken: update.purchaseToken,
+        );
+      }
       user = await _repository.getCurrentUser();
       notifyListeners();
       return;

@@ -94,6 +94,30 @@ class AsaasClient {
     }
   }
 
+  /// App Store (StoreKit 2): o servidor confere a transação assinada (JWS)
+  /// com a Apple e o `appAccountToken` da conta.
+  Future<void> confirmApplePurchase({
+    String? transactionId,
+    String? signedTransaction,
+  }) async {
+    final response = await _http.post(
+      Uri.parse('$_base/apple/confirm'),
+      headers: await _headers(),
+      body: jsonEncode({
+        if (transactionId != null && transactionId.isNotEmpty)
+          'transactionId': transactionId,
+        if (signedTransaction != null && signedTransaction.isNotEmpty)
+          'signedTransaction': signedTransaction,
+      }),
+    );
+    if (response.statusCode >= 400) {
+      final data = _decode(response);
+      throw AsaasException(
+        _message(data) ?? 'Não foi possível confirmar a compra na App Store.',
+      );
+    }
+  }
+
   Future<void> deleteMyAccount() async {
     final response = await _http.post(
       Uri.parse('$_base/account/delete'),

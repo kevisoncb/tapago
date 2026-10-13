@@ -3,13 +3,27 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/store_ids.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
 import '../widgets/common.dart';
 
-class PremiumPage extends StatelessWidget {
+class PremiumPage extends StatefulWidget {
   const PremiumPage({super.key});
+
+  @override
+  State<PremiumPage> createState() => _PremiumPageState();
+}
+
+class _PremiumPageState extends State<PremiumPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AppController>().loadStorePrice();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,34 +95,29 @@ class PremiumPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         const _PriceCard(),
+                        const SizedBox(height: 12),
+                        const _RestoreButton(),
                         const SizedBox(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 6,
                           children: [
                             _FooterLink(
                               label: 'Termos de Uso',
-                              onTap: () => _open(context, AppConstants.termsUrl),
+                              onTap: () => openLegalUrl(context, AppConstants.termsUrl),
+                            ),
+                            Text(
+                              '·',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: AppColors.mutedDark,
+                              ),
                             ),
                             _FooterLink(
-                              label: 'Privacidade',
+                              label: 'Política de Privacidade',
                               onTap: () =>
-                                  _open(context, AppConstants.privacyUrl),
-                            ),
-                            _FooterLink(
-                              label: 'Restaurar',
-                              onTap: () async {
-                                final message = await context
-                                    .read<AppController>()
-                                    .restorePremium();
-                                if (!context.mounted) return;
-                                if (message != null) {
-                                  showPagoSnack(context, message);
-                                  return;
-                                }
-                                if (context.read<AppController>().user.premiumAtivo) {
-                                  showPagoSnack(context, 'Assinatura restaurada.');
-                                }
-                              },
+                                  openLegalUrl(context, AppConstants.privacyUrl),
                             ),
                           ],
                         ),
@@ -124,11 +133,61 @@ class PremiumPage extends StatelessWidget {
     );
   }
 
-  static Future<void> _open(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      showPagoSnack(context, 'Não foi possível abrir o link.');
+}
+
+Future<void> openLegalUrl(BuildContext context, String url) async {
+  final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  if (!ok && context.mounted) {
+    showPagoSnack(context, 'Não foi possível abrir o link.');
+  }
+}
+
+class _RestoreButton extends StatelessWidget {
+  const _RestoreButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final busy = state.restoringPurchases;
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: busy || state.billingBusy ? null : () => _restore(context),
+        icon: busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.restore_rounded, size: 20),
+        label: Text(
+          busy ? 'Procurando sua assinatura...' : 'Restaurar Compras',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primaryMuted, width: 1.4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restore(BuildContext context) async {
+    final state = context.read<AppController>();
+    final message = await state.restorePremium();
+    if (!context.mounted) return;
+    if (message != null) {
+      showPagoSnack(context, message);
+      return;
+    }
+    if (state.user.premiumAtivo) {
+      showPagoSnack(context, 'Assinatura restaurada. Premium ativo.');
+      Navigator.of(context).pop();
     }
   }
 }
@@ -257,6 +316,9 @@ class _PriceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final store = state.store;
+    final price = state.storePriceLabel ?? AppConstants.premiumPriceLabel;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
@@ -274,6 +336,15 @@ class _PriceCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          Text(
+            'Pagô Premium · Assinatura mensal',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.mutedDark,
+            ),
+          ),
+          const SizedBox(height: 6),
           RichText(
             text: TextSpan(
               style: GoogleFonts.plusJakartaSans(
@@ -282,7 +353,7 @@ class _PriceCard extends StatelessWidget {
               ),
               children: [
                 TextSpan(
-                  text: AppConstants.premiumPriceLabel,
+                  text: price,
                   style: const TextStyle(fontSize: 34),
                 ),
                 TextSpan(
@@ -303,7 +374,7 @@ class _PriceCard extends StatelessWidget {
               const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
               const SizedBox(width: 6),
               Text(
-                'Cancele quando quiser na Google Play',
+                store.cancelHint,
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -313,17 +384,17 @@ class _PriceCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           PrimaryButton(
-            label: context.watch<AppController>().billingBusy
-                ? 'Aguardando a Google Play...'
+            label: state.billingBusy
+                ? 'Aguardando a ${store.label}...'
                 : 'Assinar Premium',
-            onPressed: context.watch<AppController>().billingBusy
+            onPressed: state.billingBusy || state.restoringPurchases
                 ? null
                 : () => _subscribe(context),
           ),
-          if (context.watch<AppController>().billingMessage != null) ...[
+          if (state.billingMessage != null) ...[
             const SizedBox(height: 10),
             Text(
-              context.watch<AppController>().billingMessage!,
+              state.billingMessage!,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12.5,
@@ -334,7 +405,7 @@ class _PriceCard extends StatelessWidget {
           ],
           const SizedBox(height: 10),
           Text(
-            'Assinatura mensal pela Google Play, com o pagamento que já está na sua conta Google. Renova sozinha até você cancelar.',
+            premiumRenewalNotice(store, price),
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11.5,

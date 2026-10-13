@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../legal/legal_docs.dart';
 import '../state/app_controller.dart';
 import '../services/session_gate.dart';
+import '../services/store_ids.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
@@ -452,7 +453,7 @@ class SettingsPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Apaga para sempre sua conta, clientes, lançamentos, pagamentos e boletos. Não dá para desfazer.'
-                    '${state.user.premiumAtivo ? '\n\nO Premium é cobrado pela Google Play: cancele a assinatura em Play Store → Pagamentos e assinaturas, senão a cobrança continua.' : ''}',
+                    '${state.user.premiumAtivo ? '\n\nO Premium é cobrado pela ${state.store.label}: cancele a assinatura em ${state.store.manageHint}, senão a cobrança continua.' : ''}',
                     style: GoogleFonts.plusJakartaSans(
                       color: AppColors.mutedDark,
                       fontWeight: FontWeight.w500,

@@ -16,6 +16,7 @@ import 'local_account_store.dart';
 import 'local_repository.dart';
 import 'presence_service.dart';
 import 'repository_factory.dart';
+import 'tracking_service.dart';
 
 class SessionGate extends ChangeNotifier {
   SessionGate({LocalAccountStore? accounts})
@@ -241,6 +242,7 @@ class SessionGate extends ChangeNotifier {
       userId = user.uid;
       bootError = null;
       PresenceService.instance.start(user.uid);
+      unawaited(TrackingService.instance.requestIfNeeded());
     } catch (error, stack) {
       repository = null;
       userId = null;

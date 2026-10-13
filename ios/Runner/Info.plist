@@ -9,7 +9,11 @@
 	<key>CFBundleDisplayName</key>
 	<string>Pagô</string>
 	<key>NSCameraUsageDescription</key>
-	<string>O Pagô usa a câmera para ler comprovantes com OCR.</string>
+	<string>O Pagô usa a câmera para fotografar comprovantes e ler o valor pago, abatendo o saldo do cliente.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>O Pagô usa o Face ID para proteger sua caderneta: só você abre o app e vê os valores dos seus clientes.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Com a sua permissão, o Pagô usa um identificador do aparelho para mostrar anúncios e ofertas do Pagô mais relevantes para você e medir quais campanhas trouxeram você até aqui. Seus clientes e valores da caderneta nunca são compartilhados.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>O Pagô acessa suas fotos para anexar comprovantes de pagamento.</string>
 	<key>NSMicrophoneUsageDescription</key>

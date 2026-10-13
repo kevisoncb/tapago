@@ -46,6 +46,8 @@ Relatório de travamentos: Firebase Crashlytics (`lib/services/crash_reporter.da
 
 Ícone: check branco com pontinho sobre azul `#2F6BFF` (desenho do `assets/brand/pago-icon.jpg`). Ícone adaptativo do Android com o símbolo dentro da zona segura (sem quadrado dentro do círculo); `assets/brand/pago-icon.png` 1024. Gerados por script `sharp` (fora do repo).
 
+iPhone (preparação, sem conta Apple ainda; será conta **Individual**, sem D-U-N-S/CNPJ): plano em 3 fases, cada uma só com autorização do dono. **Fase 1 feita (em revisão, não commitada)**: `ios/Runner/Info.plist` com `NSFaceIDUsageDescription`, `NSUserTrackingUsageDescription` (ATT) e texto da câmera sem jargão; `lib/services/tracking_service.dart` (`TrackingService.instance.requestIfNeeded()`, pacote `app_tracking_transparency`), chamado depois do login no `SessionGate`, mas **desligado** por `AppConstants.trackingEnabled` (`--dart-define=PAGO_ATT=true`): só ligar quando houver SDK de anúncio/atribuição e a ficha da App Store e a privacidade declararem rastreamento, senão a Apple reprova. Fase 2 (IAP StoreKit `pago_premium_monthly_ios`, Restaurar Compras, links de Termos/Privacidade no paywall) e Fase 3 (`confirmApplePurchase` e `appleNotifications` em `functions/apple.js`) aguardam. iOS não compila neste PC (Windows); precisa de Mac na nuvem (Codemagic/GitHub Actions).
+
 ## Painel do administrador
 
 - Endereço: https://pago-admin.web.app (site Hosting separado `pago-admin`; não vai no app). Conta admin: `pago@administrador.com` (senha só com o dono; trocar pelo botão "Trocar senha" do painel).

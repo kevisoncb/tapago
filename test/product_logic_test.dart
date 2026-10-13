@@ -1,3 +1,4 @@
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pago_app/models/models.dart';
@@ -9,9 +10,11 @@ import 'package:pago_app/services/pix_status.dart';
 import 'package:pago_app/services/password_hash.dart';
 import 'package:pago_app/services/receipt_amount.dart';
 import 'package:pago_app/services/reminder_service.dart';
+import 'package:pago_app/services/tracking_service.dart';
 import 'package:pago_app/services/trust_score.dart';
 import 'package:pago_app/services/voice_debt_parser.dart';
 import 'package:pago_app/services/whatsapp_service.dart';
+import 'package:pago_app/utils/constants.dart';
 import 'package:pago_app/utils/formatters.dart';
 import 'package:pago_app/utils/masks.dart';
 import 'package:pago_app/utils/premium_access.dart';
@@ -482,5 +485,11 @@ Troco: R\$ 0,00
     );
     expect(billReminderTitle(BillReminderKind.atraso, [bill, bill]),
         '2 boletos atrasados.');
+  });
+
+  test('pedido de rastreio fica desligado sem PAGO_ATT', () async {
+    expect(AppConstants.trackingEnabled, isFalse);
+    expect(await TrackingService.instance.status(), TrackingStatus.notSupported);
+    expect(await TrackingService.instance.requestIfNeeded(), isFalse);
   });
 }

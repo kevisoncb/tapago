@@ -502,6 +502,8 @@ Troco: R\$ 0,00
     );
     expect(appAccountTokenFor('xpAcinvGjbfUeh34ayiTm2ytarb2'), token);
     expect(appAccountTokenFor('outro-uid'), isNot(token));
+    // Mesmo valor de accountTokenFor('abc') em functions/apple.js.
+    expect(appAccountTokenFor('abc'), 'b755f6e6-62f9-5eec-9ee3-7564068888e7');
 
     final notice = premiumRenewalNotice(StoreKind.appStore, r'R$ 39,90');
     expect(notice, contains('renovação automática'));

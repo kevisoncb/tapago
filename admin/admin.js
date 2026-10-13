@@ -549,7 +549,7 @@ function recentlyExpired(user, now) {
 }
 
 function originLabel(user) {
-  return { admin: "cortesia", pix: "PIX", play: "Play" }[user.premiumOrigem] || "";
+  return { admin: "cortesia", pix: "PIX", play: "Play", apple: "App Store" }[user.premiumOrigem] || "";
 }
 
 function daysText(ms) {

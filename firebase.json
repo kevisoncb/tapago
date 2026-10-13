@@ -89,6 +89,20 @@
         }
       },
       {
+        "source": "/api/apple/confirm",
+        "function": {
+          "functionId": "confirmApplePurchase",
+          "region": "southamerica-east1"
+        }
+      },
+      {
+        "source": "/api/apple/notifications",
+        "function": {
+          "functionId": "appleNotifications",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "/api/account/delete",
         "function": {
           "functionId": "deleteMyAccount",

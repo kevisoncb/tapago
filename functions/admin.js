@@ -645,6 +645,7 @@ function premiumOrigin(transactionId) {
   if (!id) return "";
   if (id.startsWith("admin_")) return "admin";
   if (id.startsWith("pay_")) return "pix";
+  if (id.startsWith("apple_")) return "apple";
   return "play";
 }
 

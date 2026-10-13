@@ -8,6 +8,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 const play = require("./play");
+const apple = require("./apple");
 const { sendEmail, escapeHtml } = require("./alerts");
 const adminModule = require("./admin");
 
@@ -234,6 +235,66 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
   }
 });
 
+exports.confirmApplePurchase = onRequest(httpOptions, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Use POST" });
+    return;
+  }
+
+  try {
+    const user = await requireUser(req);
+    const { summary, created } = await apple.confirmPurchase(user.uid, {
+      transactionId: String(req.body?.transactionId || "").trim().slice(0, 64),
+      signedTransaction: String(req.body?.signedTransaction || "").trim(),
+    });
+    if (created) await alertNewSubscriber(user, summary);
+    res.status(200).json({ ok: true, verificada: true, venceEm: summary.expiry });
+  } catch (error) {
+    if (!error.status) console.error("Falha ao confirmar compra da Apple.", error);
+    res.status(error.status || 502).json({
+      message: error.status ? error.message : "Não foi possível falar com a App Store. Tente de novo.",
+    });
+  }
+});
+
+exports.appleNotifications = onRequest({ region: REGION, invoker: "public" }, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Use POST");
+    return;
+  }
+
+  let result;
+  try {
+    result = await apple.handleNotification(req.body?.signedPayload);
+  } catch (error) {
+    console.error("Notificação da Apple recusada.", error.message, error.cause?.message || "");
+    res.status(error.status || 500).json({ ok: false });
+    return;
+  }
+
+  try {
+    if (result.created) await alertAppleEvent(result);
+  } catch (error) {
+    console.error("Alerta da Apple não enviado.", error.message);
+  }
+  res.status(200).json({ ok: true });
+});
+
+async function alertAppleEvent(result) {
+  const person = result.uid ? await describeUser(result.uid) : null;
+  if (result.tipo === "COMPRA" && person) {
+    await alertNewSubscriber(person, result.summary);
+    return;
+  }
+  if (!ALERT_TYPES[result.tipo]) return;
+  await sendEmail(`Pagô (iPhone): ${person?.nome || "assinante"} ${ALERT_TYPES[result.tipo]}`, [
+    `<b>${escapeHtml(person?.nome || "Assinante sem conta ligada")}</b> ${ALERT_TYPES[result.tipo]}.`,
+    person?.email ? `E-mail: ${escapeHtml(person.email)}` : "",
+    result.summary.expiry ? `Premium vale até ${new Date(result.summary.expiry).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : "",
+    result.summary.test ? "Compra de teste (Sandbox da Apple)." : "",
+  ].filter(Boolean));
+}
+
 const RECENT_LOGIN_SECONDS = 5 * 60;
 
 exports.deleteMyAccount = onRequest(httpOptions, async (req, res) => {
@@ -263,6 +324,7 @@ const ALERT_TYPES = {
   PERIODO_DE_CARENCIA: "teve o pagamento recusado (em carência)",
   ESTORNADA: "teve a compra estornada",
   EXPIRADA: "perdeu o Premium (assinatura expirou)",
+  REVOGADA: "perdeu o Premium (compra revogada pela Apple)",
 };
 
 exports.playNotifications = onMessagePublished(

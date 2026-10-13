@@ -9,6 +9,7 @@ admin.initializeApp();
 
 const play = require("./play");
 const apple = require("./apple");
+const mmp = require("./mmp_s2s");
 const { sendEmail, escapeHtml } = require("./alerts");
 const adminModule = require("./admin");
 
@@ -192,6 +193,7 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
 
   try {
     const user = await requireUser(req);
+    await mmp.rememberDevice(user.uid, "android", req.body?.mmpId);
     const transactionId = String(req.body?.transactionId || "").trim().slice(0, 120);
     const purchaseToken = String(req.body?.purchaseToken || "").trim();
     if (!purchaseToken) {
@@ -206,7 +208,7 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
       console.warn("API da Play indisponível; liberando 30 dias sem conferir.", error.message);
       await play.linkUnverified(user.uid, purchaseToken, transactionId);
       await grantPremium(user.uid, transactionId || `play_${Date.now()}`);
-      const fallback = { orderId: transactionId, price: PREMIUM_VALUE, test: false };
+      const fallback = { orderId: transactionId, price: PREMIUM_VALUE, test: false, unverified: true };
       if (await play.logPlayEvent(user.uid, "COMPRA", fallback)) await alertNewSubscriber(user, fallback);
       res.status(200).json({ ok: true, verificada: false });
       return;
@@ -243,6 +245,7 @@ exports.confirmApplePurchase = onRequest(httpOptions, async (req, res) => {
 
   try {
     const user = await requireUser(req);
+    await mmp.rememberDevice(user.uid, "ios", req.body?.mmpId);
     const { summary, created } = await apple.confirmPurchase(user.uid, {
       transactionId: String(req.body?.transactionId || "").trim().slice(0, 64),
       signedTransaction: String(req.body?.signedTransaction || "").trim(),

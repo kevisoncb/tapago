@@ -14,6 +14,7 @@ import 'crash_reporter.dart';
 import 'firebase_bootstrap.dart';
 import 'local_account_store.dart';
 import 'local_repository.dart';
+import 'mmp_service.dart';
 import 'presence_service.dart';
 import 'repository_factory.dart';
 import 'tracking_service.dart';
@@ -242,7 +243,7 @@ class SessionGate extends ChangeNotifier {
       userId = user.uid;
       bootError = null;
       PresenceService.instance.start(user.uid);
-      unawaited(TrackingService.instance.requestIfNeeded());
+      unawaited(_startAttribution(user.uid));
     } catch (error, stack) {
       repository = null;
       userId = null;
@@ -252,6 +253,16 @@ class SessionGate extends ChangeNotifier {
     }
     booting = false;
     notifyListeners();
+  }
+
+  /// ATT primeiro: o MMP só inicia (e só manda a instalação) com o status
+  /// do consentimento já decidido.
+  Future<void> _startAttribution(String uid) async {
+    final trackingAuthorized = await TrackingService.instance.requestIfNeeded();
+    await MmpService.instance.init(
+      userId: uid,
+      trackingAuthorized: trackingAuthorized,
+    );
   }
 
   Future<void> _openLocal(

@@ -13,6 +13,8 @@ const {
   VerificationException,
 } = require("@apple/app-store-server-library");
 
+const mmp = require("./mmp_s2s");
+
 const PRODUCT_ID = "pago_premium_monthly_ios";
 const DEFAULT_BUNDLE_ID = "app.usepago";
 const DEFAULT_PRICE = 39.9;
@@ -345,6 +347,17 @@ async function logAppleEvent(uid, type, summary) {
       teste: summary.test === true,
       em: admin.firestore.FieldValue.serverTimestamp(),
     });
+    if (charge) {
+      await mmp.logServerRevenue({
+        uid,
+        platform: "ios",
+        transactionId: summary.transactionId,
+        type,
+        revenue: mmp.netRevenue(summary.price),
+        currency: summary.currency,
+        test: summary.test,
+      });
+    }
     return true;
   } catch (error) {
     if (error.code === 6) return false;

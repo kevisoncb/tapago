@@ -617,6 +617,7 @@ async function deleteAccount(uid) {
   await db().collection("Users").doc(uid).delete();
   await db().collection("Presence").doc(uid).delete();
   await db().collection("AdminContacts").doc(uid).delete();
+  await db().collection("MmpIds").doc(uid).delete();
   if (record) await admin.auth().deleteUser(uid);
   return { ok: true, documentos: removed };
 }

@@ -9,6 +9,7 @@ import '../services/asaas_client.dart';
 import '../services/billing_service.dart';
 import '../services/biometric_service.dart';
 import '../services/debt_balance.dart';
+import '../services/mmp_service.dart';
 import '../services/reminder_service.dart';
 import '../services/store_ids.dart';
 import '../utils/constants.dart';
@@ -373,16 +374,25 @@ class AppController extends ChangeNotifier {
   Future<void> _grantFromStore(PurchaseUpdate update) async {
     if (usesFirestore) {
       final api = AsaasClient();
+      final mmpId = MmpService.instance.appsFlyerId;
       if (update.store == StoreKind.appStore) {
         await api.confirmApplePurchase(
           transactionId: update.transactionId,
           signedTransaction: update.purchaseToken,
+          mmpId: mmpId,
         );
       } else {
         await api.confirmPlayPurchase(
           transactionId: update.transactionId,
           purchaseToken: update.purchaseToken,
+          mmpId: mmpId,
         );
+      }
+      if (update.outcome == PurchaseOutcome.purchased) {
+        unawaited(MmpService.instance.logFrontendPurchase(
+          _billing?.price ?? AppConstants.premiumPrice,
+          _billing?.currency ?? 'BRL',
+        ));
       }
       user = await _repository.getCurrentUser();
       notifyListeners();

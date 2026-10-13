@@ -67,12 +67,16 @@ class BillingService {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Future<void> Function(PurchaseUpdate update)? onUpdate;
   Completer<PurchaseUpdate>? _restoring;
-  String? _priceLabel;
+  ProductDetails? _product;
   var _started = false;
 
   StoreKind get store => purchase.currentStore();
 
   String get productId => store.premiumProductId;
+
+  double? get price => _product?.rawPrice;
+
+  String? get currency => _product?.currencyCode;
 
   Future<void> start() async {
     if (_started) return;
@@ -99,12 +103,12 @@ class BillingService {
 
   /// Preço como a loja mostra (moeda e impostos do país da conta).
   Future<String?> priceLabel() async {
-    if (_priceLabel != null) return _priceLabel;
+    if (_product != null) return _product!.price;
     if (await _prepare() != null) return null;
     try {
       final response = await _store.queryProductDetails({productId});
       if (response.productDetails.isEmpty) return null;
-      return _priceLabel = response.productDetails.first.price;
+      return (_product = response.productDetails.first).price;
     } catch (error) {
       debugPrint('Preço da loja indisponível: $error');
       return null;
@@ -117,9 +121,10 @@ class BillingService {
     try {
       final response = await _store.queryProductDetails({productId});
       if (response.productDetails.isEmpty) return PurchaseUpdate.missing(store);
+      _product = response.productDetails.first;
       final started = await _store.buyNonConsumable(
         purchaseParam: purchase.buildPurchaseParam(
-          response.productDetails.first,
+          _product!,
           userId: userId,
         ),
       );

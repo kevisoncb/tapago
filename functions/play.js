@@ -3,6 +3,8 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { GoogleAuth } = require("google-auth-library");
 
+const mmp = require("./mmp_s2s");
+
 const PACKAGE_NAME = "app.usepago";
 const PRODUCT_ID = "pago_premium_monthly";
 const DEFAULT_PRICE = 39.9;
@@ -130,6 +132,16 @@ async function logPlayEvent(uid, type, summary) {
       teste: summary.test === true,
       em: admin.firestore.FieldValue.serverTimestamp(),
     });
+    if (charge && !summary.unverified) {
+      await mmp.logServerRevenue({
+        uid,
+        platform: "android",
+        transactionId: summary.orderId,
+        type,
+        revenue: mmp.netRevenue(summary.price),
+        test: summary.test,
+      });
+    }
     return true;
   } catch (error) {
     if (error.code === 6) return false;

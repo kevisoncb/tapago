@@ -75,6 +75,7 @@ class AsaasClient {
   Future<void> confirmPlayPurchase({
     String? transactionId,
     String? purchaseToken,
+    String? mmpId,
   }) async {
     final response = await _http.post(
       Uri.parse('$_base/play/confirm'),
@@ -84,6 +85,7 @@ class AsaasClient {
           'transactionId': transactionId,
         if (purchaseToken != null && purchaseToken.isNotEmpty)
           'purchaseToken': purchaseToken,
+        if (mmpId != null && mmpId.isNotEmpty) 'mmpId': mmpId,
       }),
     );
     if (response.statusCode >= 400) {
@@ -99,6 +101,7 @@ class AsaasClient {
   Future<void> confirmApplePurchase({
     String? transactionId,
     String? signedTransaction,
+    String? mmpId,
   }) async {
     final response = await _http.post(
       Uri.parse('$_base/apple/confirm'),
@@ -108,6 +111,7 @@ class AsaasClient {
           'transactionId': transactionId,
         if (signedTransaction != null && signedTransaction.isNotEmpty)
           'signedTransaction': signedTransaction,
+        if (mmpId != null && mmpId.isNotEmpty) 'mmpId': mmpId,
       }),
     );
     if (response.statusCode >= 400) {

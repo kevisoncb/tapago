@@ -132,7 +132,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
-- Play (12/out): app criado, ficha e formulários preenchidos (categoria Empresa; tags Empresa, Finanças, Produtividade, Bloco de notas, Agenda), AAB 25 no **teste interno** (instalado pela loja e testado no emulador) e no **teste fechado Alpha** (publicado). Produção bloqueada até ter **12 testadores aceitos por 14 dias** (hoje 0). A proteção automática da Play bloqueia APK instalado fora da loja ("Get this app from Play").
+- Play (14/out): app criado, ficha e formulários preenchidos (categoria Empresa; tags Empresa, Finanças, Produtividade, Bloco de notas, Agenda), AAB 25 no **teste interno** e no **teste fechado Alpha**. Dono contratou empresa com **13 testadores** no teste fechado (conta o prazo de 14 dias da Play). Produção ainda bloqueada até completar esses 14 dias e "Solicitar a produção". A proteção automática da Play bloqueia APK instalado fora da loja ("Get this app from Play"). **Google Cloud (14/out):** API "Google Play Android Developer API" (`androidpublisher.googleapis.com`) **ligada** no projeto `tapago-ae948`; tópico Pub/Sub `play-billing` existe; `google-play-developer-notifications@system.gserviceaccount.com` é **publicador** nesse tópico. Functions `confirmPlayPurchase` e `playNotifications` já publicadas (conta de serviço `1077428127080-compute@developer.gserviceaccount.com`). Ainda falta no Play Console: criar a assinatura, perfil de pagamentos, convidar essa conta de serviço, colar o tópico nas notificações em tempo real e cadastrar testadores de licença. Sem o convite da conta de serviço, a Function **libera 30 dias sem conferir**.
 - Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
 - Criar a assinatura `pago_premium_monthly` (R$ 39,90/mês) na Play Console e testar com conta de teste de licença.
 - Bot WhatsApp: **futuro, não implementar**.
@@ -151,16 +151,20 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 ## Pendências do dono
 
 1. Comprar `usepago.app` / `usepago.com.br`.
-2. Play Console: juntar 12+ testadores Android (Gmail) no teste fechado Alpha, mandar o link de inscrição e manter 14 dias seguidos; depois "Solicitar a produção" e responder as perguntas sobre o teste. Guardar cópia da chave de upload (`upload-keystore.jks` + `key.properties`) fora do PC.
-3. Próximas idas da `develop` para a `main` quando testar.
-4. Play Console: perfil de pagamentos com a conta bancária do Asaas (CNPJ) para receber o repasse da Google.
+2. Play Console (testadores): empresa com 13 pessoas já no teste fechado. Manter o app instalado 14 dias seguidos; depois "Solicitar a produção". Guardar cópia da chave de upload (`upload-keystore.jks` + `key.properties`) fora do PC. Cadastrar os Gmails da empresa em **Configuração → Licenças de teste** para a Play **não cobrar de verdade** durante o teste.
+3. Próximas idas da `develop` para a `main` quando testar (a correção do telefone repetido ainda não está no AAB 25).
+4. Play Console (cobrar): perfil de pagamentos com a conta bancária do Asaas (CNPJ); criar assinatura `pago_premium_monthly` (R$ 39,90/mês, renovação automática); **Usuários e permissões** (ou Configuração → Acesso à API) convidar `1077428127080-compute@developer.gserviceaccount.com` com permissão de ver dados financeiros e gerenciar pedidos/assinaturas; Monetização → Notificações em tempo real, tópico `projects/tapago-ae948/topics/play-billing`; "Enviar notificação de teste".
 5. Trocar a senha provisória do painel admin ("Trocar senha") e ligar o segundo fator (botão "Segurança").
 6. Resumo e alertas por e-mail: criar conta grátis no resend.com com kevison.brandes@outlook.com, gerar API key, colocar em `RESEND_API_KEY` no `functions/.env` e publicar as functions.
 7. Quando tiver a conta Apple Individual: criar o app `app.usepago` e a assinatura `pago_premium_monthly_ios` (R$ 39,90/mês, grupo de assinatura); em Usuários e acesso → Integrações → Compra dentro do app gerar a chave (.p8, baixa uma vez só) e anotar Key ID e Issuer ID; pôr `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_APP_ID` em `functions/.env`; publicar functions + hosting padrão (rewrites); em Informações do app → Notificações do servidor da App Store colar a URL `/api/apple/notifications` (Versão 2) em Produção e Sandbox e "Solicitar notificação de teste".
 8. Tráfego pago: criar conta na AppsFlyer, cadastrar o app Android (`app.usepago`), pegar a Dev key e o S2S token; atualizar privacidade e Segurança dos dados (ID de publicidade), tirar a linha `AD_ID` do manifesto, preencher `MMP_*` no `functions/.env`, publicar as functions e gerar o AAB com `--dart-define=PAGO_AF_DEV_KEY=...`.
-9. Receita real da Play (depois do app publicado): no Google Cloud do projeto, ativar a "Google Play Android Developer API"; na Play Console → Usuários e permissões, convidar a conta de serviço das Functions (`1077428127080-compute@developer.gserviceaccount.com`) com permissão de ver dados financeiros e gerenciar pedidos/assinaturas; na Play Console → Monetização → Notificações em tempo real, tópico `projects/tapago-ae948/topics/play-billing`, e no Pub/Sub dar ao `google-play-developer-notifications@system.gserviceaccount.com` o papel de Publicador nesse tópico. Depois "Enviar notificação de teste".
+9. Receita real da Play: lado Google Cloud **feito** (14/out). Falta só o item 4 no Play Console.
 
-## Última sessão (13/out)
+## Última sessão (14/out)
+
+Testadores: dono contratou empresa com 13 pessoas no teste fechado da Play. Google Cloud da cobrança: API Android Publisher ligada, tópico `play-billing` com a Google como publicadora. Assinatura, perfil de pagamentos e convite da conta de serviço **só no Play Console** (o login da CLI não tem o escopo da Play). Functions de cobrança já estavam no ar.
+
+## Sessão anterior (13/out)
 
 iPhone fases 1, 2 e 3 na develop (commits `30e7e9b`, `3544488`, `cef5a37`) e Fases 4, 5 e 6 (AppsFlyer, receita S2S e funil, desligadas). O commit `e69e63e` ("Fase 6", outro PC) só continha cache do `.firebase/`, sem código; a Fase 6 de verdade veio depois. Correção do aviso de telefone repetido (sem nome, sem abrir perfil) em `1b6fbfc`; demo web `app-demo` republicada com ela. Conta `testador@usepago.app` com Premium para os testadores. Fase 3 validada localmente: `index.js` carrega, JWS falso recusado (400), corpo vazio 400, UUID v5 igual no Node, no pacote `uuid` e no Dart; 22 testes Flutter. Functions da Apple ainda não publicadas (aguardam revisão do dono). npm portátil (`%TEMP%\tapago-node`) estava quebrado pela limpeza do Windows; reparado regravando o pacote `npm` 11.19.0.
 

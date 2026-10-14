@@ -75,7 +75,7 @@ Atribuição e tráfego pago (Fases 4 e 5, 13/out, na develop, **desligado** at�
 
 - `lib/screens/auth_page.dart` — login e cadastro (aceite de termos), nome + “E aí, pagô?”.
 - `lib/screens/dashboard_page.dart` — saldo aberto, recebe na semana, vencido a receber, boletos, lista, FAB, ícone WhatsApp.
-- `lib/screens/add_debt_page.dart` — lançamento, voz Premium, duplicata bloqueada.
+- `lib/screens/add_debt_page.dart` — lançamento, voz Premium, duplicata bloqueada. WhatsApp já usado por outro contato: só avisa "Este número de WhatsApp já está sendo usado por outra pessoa. Use outro número." (`phoneTakenMessage`), **sem nome e sem abrir o perfil** (14/out). Mesmo nome com telefone diferente ainda cita o nome digitado e abre o contato. A checagem só olha os clientes da própria conta (`Debts` filtrado por `user_id`).
 - `lib/screens/client_profile_page.dart` — Abater, OCR, Lembrete / Cobrar hoje / Atraso.
 - `lib/screens/caderneta_page.dart` / `contact_history_page.dart` — pessoas e histórico.
 - `lib/screens/settings_page.dart` — PIX, banco, mensagem, preferências, Premium, Ajuda, Sair, Excluir minha conta.

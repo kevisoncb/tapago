@@ -215,7 +215,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       showPagoSnack(
         context,
         blocked.phoneTaken
-            ? 'Este WhatsApp já é de ${blocked.debt.nome}. Abra a caderneta dele.'
+            ? phoneTakenMessage
             : '${blocked.debt.nome} já está na caderneta. Abra o contato.',
       );
       return;
@@ -532,6 +532,10 @@ class _VoiceBanner extends StatelessWidget {
   }
 }
 
+/// Nunca cita o nome do dono do número nem leva ao perfil dele.
+const phoneTakenMessage =
+    'Este número de WhatsApp já está sendo usado por outra pessoa. Use outro número.';
+
 class _ExistingClientHint extends StatelessWidget {
   const _ExistingClientHint({
     required this.nome,
@@ -570,8 +574,10 @@ class _ExistingClientHint extends StatelessWidget {
     if (hit == null) return const SizedBox.shrink();
 
     final blocking = blocked != null;
+    // Número de outra pessoa: só avisa. Sem nome e sem abrir o perfil.
+    final canOpen = !hit.phoneTaken;
     final text = hit.phoneTaken
-        ? 'Este WhatsApp já é de ${hit.debt.nome}. Não dá para cadastrar outra pessoa com o mesmo número.'
+        ? phoneTakenMessage
         : hit.confirmed
             ? '${hit.debt.nome} já está na caderneta. Abra o contato para um novo lançamento.'
             : 'Já existe ${hit.debt.nome}. Confira se o telefone é outro.';
@@ -583,15 +589,17 @@ class _ExistingClientHint extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ContactHistoryPage(
-                  contactKey: contactKeyOf(hit.debt),
-                ),
-              ),
-            );
-          },
+          onTap: !canOpen
+              ? null
+              : () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ContactHistoryPage(
+                        contactKey: contactKeyOf(hit.debt),
+                      ),
+                    ),
+                  );
+                },
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
@@ -606,7 +614,7 @@ class _ExistingClientHint extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '$text Toque para abrir.',
+                    canOpen ? '$text Toque para abrir.' : text,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,

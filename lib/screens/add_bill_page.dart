@@ -150,7 +150,7 @@ class _AddBillPageState extends State<AddBillPage> {
 
     setState(() => _saving = true);
     try {
-      await state.addBills(bills);
+      await state.createBills(bills);
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (_) {

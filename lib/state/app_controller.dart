@@ -122,6 +122,14 @@ class AppController extends ChangeNotifier {
   double get aPagarAtrasado =>
       overdueBills.fold(0, (sum, bill) => sum + bill.valor);
 
+  /// Boleto novo (uma ou várias parcelas): salva e conta um único evento de
+  /// funil. `addBills` também serve para marcar pago e colar código, que não
+  /// são criação.
+  Future<void> createBills(List<Bill> next) async {
+    await addBills(next);
+    unawaited(MmpService.instance.logBillCreated());
+  }
+
   Future<void> addBills(List<Bill> next) async {
     for (final bill in next) {
       await _repository.upsertBill(bill);

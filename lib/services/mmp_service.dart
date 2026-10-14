@@ -10,6 +10,10 @@ import 'package:flutter/foundation.dart';
 ///   --dart-define=PAGO_AF_APPLE_APP_ID=...    (só iOS: Apple ID numérico do app, sem "id")
 /// Antes de ligar: privacidade do site/app e "Segurança dos dados" da Play
 /// (e a ficha da App Store) precisam citar a AppsFlyer.
+///
+/// Fluxo: [init] roda na primeira abertura do app (`main.dart`), depois do ATT,
+/// mesmo sem login, para a instalação ser contada. Depois do login,
+/// [setUserId] liga as ações seguintes à conta.
 class MmpService {
   MmpService._();
 
@@ -18,9 +22,15 @@ class MmpService {
   static const devKeyFromEnv = String.fromEnvironment('PAGO_AF_DEV_KEY');
   static const appleAppIdFromEnv = String.fromEnvironment('PAGO_AF_APPLE_APP_ID');
 
+  // Eventos de funil (nomes padrão da AppsFlyer que Google e Meta entendem).
+  static const eventRegistration = 'af_complete_registration';
+  static const eventPaywallView = 'af_premium_paywall_view';
+  static const eventBillCreated = 'af_bill_created';
+
   final _sdk = AppsFlyerSdk.instance;
   Future<void>? _starting;
   String? _userId;
+  String? _appliedUserId;
   String? _appsFlyerId;
 
   /// Id do aparelho na AppsFlyer. Vai junto na confirmação da compra para o
@@ -33,28 +43,26 @@ class MmpService {
 
   static bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
-  /// Chamar depois da resposta do ATT ([trackingAuthorized]): no iPhone o SDK
-  /// só pode ler o IDFA com o consentimento, e a sessão de instalação já sai
-  /// com o status certo. Seguro chamar de novo (troca de conta só muda o id).
+  /// Primeira abertura do app, com o ATT já respondido ([trackingAuthorized]):
+  /// no iPhone o SDK só pode ler o IDFA com o consentimento, e a sessão de
+  /// instalação já sai com o status certo. Não depende de login. Chamar de
+  /// novo não faz nada.
   Future<void> init({
-    required String userId,
     required bool trackingAuthorized,
     String devKey = devKeyFromEnv,
     String appleAppId = appleAppIdFromEnv,
   }) {
     if (kIsWeb || !(_isAndroid || _isIOS) || devKey.isEmpty) return Future.value();
     if (_isIOS && appleAppId.isEmpty) return Future.value();
-    if (_starting != null) return _switchUser(userId);
-    _userId = userId;
-    return _starting = _start(devKey, appleAppId, trackingAuthorized);
+    return _starting ??= _start(devKey, appleAppId, trackingAuthorized);
   }
 
   Future<void> _start(String devKey, String appleAppId, bool trackingAuthorized) async {
     try {
       await _sdk.init(devKey: devKey, appId: _isIOS ? appleAppId : null);
       if (_isIOS) await _sdk.setDisableAdvertisingIdentifiers(!trackingAuthorized);
-      await _sdk.setCustomerUserId(_userId!);
       await _sdk.setCurrencyCode('BRL');
+      await _applyUserId();
       if (_isAndroid) {
         try {
           await _sdk.collectDataFromLauncherActivity();
@@ -77,34 +85,61 @@ class MmpService {
     }
   }
 
-  Future<void> _switchUser(String userId) async {
-    await _starting;
-    if (_userId == userId) return;
-    _userId = userId;
+  /// Depois do login: liga as ações seguintes à conta (`customer_user_id`).
+  /// Se o login chegar antes do [init] terminar, o id fica guardado e é
+  /// aplicado assim que o SDK iniciar.
+  Future<void> setUserId(String uid) async {
+    if (uid.isEmpty) return;
+    _userId = uid;
+    final starting = _starting;
+    if (starting == null) return;
+    await starting;
+    await _applyUserId();
+  }
+
+  Future<void> _applyUserId() async {
+    final uid = _userId;
+    if (uid == null || uid == _appliedUserId) return;
     try {
-      await _sdk.setCustomerUserId(userId);
+      await _sdk.setCustomerUserId(uid);
+      _appliedUserId = uid;
     } catch (error) {
-      debugPrint('AppsFlyer não trocou a conta: $error');
+      debugPrint('AppsFlyer não ligou a conta: $error');
     }
   }
+
+  Future<void> _log(String name, [Map<String, dynamic>? values]) async {
+    final starting = _starting;
+    if (starting == null) return;
+    try {
+      await starting;
+      await _sdk.logEvent(name, eventValues: values);
+    } catch (error) {
+      debugPrint('AppsFlyer não registrou $name: $error');
+    }
+  }
+
+  /// Conta criada no Firebase Auth.
+  Future<void> logRegistrationComplete() =>
+      _log(eventRegistration, {'af_registration_method': 'email'});
+
+  /// Tela Premium aberta (quem viu o preço).
+  Future<void> logPremiumPaywallView() => _log(eventPaywallView);
+
+  /// Boleto a pagar cadastrado (uso forte da ferramenta). Um evento por
+  /// cadastro, mesmo que gere várias parcelas.
+  Future<void> logBillCreated() => _log(eventBillCreated);
 
   /// Sinal de conversão para otimizar campanhas (o anúncio aprende quem
   /// assina). Não leva `af_revenue` de propósito: a receita real e o LTV
   /// (líquido da taxa da loja, renovações, estornos) vêm só do servidor via
   /// S2S (`functions/mmp_s2s.js`), para não contar a mesma venda duas vezes.
-  Future<void> logFrontendPurchase(double price, String currency) async {
-    if (!started) return;
-    try {
-      await _sdk.logEvent(
+  Future<void> logFrontendPurchase(double price, String currency) => _log(
         'pago_premium_checkout',
-        eventValues: {
+        {
           'af_price': price,
           'af_currency': currency,
           'af_content_id': 'premium_mensal',
         },
       );
-    } catch (error) {
-      debugPrint('AppsFlyer não registrou a compra: $error');
-    }
-  }
 }

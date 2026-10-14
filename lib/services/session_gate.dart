@@ -17,8 +17,6 @@ import 'local_repository.dart';
 import 'mmp_service.dart';
 import 'presence_service.dart';
 import 'repository_factory.dart';
-import 'tracking_service.dart';
-
 class SessionGate extends ChangeNotifier {
   SessionGate({LocalAccountStore? accounts})
       : _accounts = accounts ?? LocalAccountStore();
@@ -130,6 +128,7 @@ class SessionGate extends ChangeNotifier {
         );
         await cred.user?.updateDisplayName(nome.trim());
         await cred.user?.reload();
+        unawaited(_trackRegistration(cred.user?.uid));
         return null;
       } on FirebaseAuthException catch (error) {
         _pendingName = null;
@@ -154,6 +153,13 @@ class SessionGate extends ChangeNotifier {
     );
     notifyListeners();
     return null;
+  }
+
+  /// Conta criada no Firebase: liga o id antes do evento para ele sair já
+  /// atribuído a esta conta.
+  Future<void> _trackRegistration(String? uid) async {
+    if (uid != null) await MmpService.instance.setUserId(uid);
+    await MmpService.instance.logRegistrationComplete();
   }
 
   Future<void> signOut() async {
@@ -243,7 +249,7 @@ class SessionGate extends ChangeNotifier {
       userId = user.uid;
       bootError = null;
       PresenceService.instance.start(user.uid);
-      unawaited(_startAttribution(user.uid));
+      unawaited(MmpService.instance.setUserId(user.uid));
     } catch (error, stack) {
       repository = null;
       userId = null;
@@ -253,16 +259,6 @@ class SessionGate extends ChangeNotifier {
     }
     booting = false;
     notifyListeners();
-  }
-
-  /// ATT primeiro: o MMP só inicia (e só manda a instalação) com o status
-  /// do consentimento já decidido.
-  Future<void> _startAttribution(String uid) async {
-    final trackingAuthorized = await TrackingService.instance.requestIfNeeded();
-    await MmpService.instance.init(
-      userId: uid,
-      trackingAuthorized: trackingAuthorized,
-    );
   }
 
   Future<void> _openLocal(

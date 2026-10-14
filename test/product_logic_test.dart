@@ -6,6 +6,7 @@ import 'package:pago_app/services/client_match.dart';
 import 'package:pago_app/services/debt_balance.dart';
 import 'package:pago_app/services/auth_messages.dart';
 import 'package:pago_app/services/bill_installments.dart';
+import 'package:pago_app/services/mmp_service.dart';
 import 'package:pago_app/services/pix_status.dart';
 import 'package:pago_app/services/password_hash.dart';
 import 'package:pago_app/services/receipt_amount.dart';
@@ -519,5 +520,21 @@ Troco: R\$ 0,00
     expect(AppConstants.trackingEnabled, isFalse);
     expect(await TrackingService.instance.status(), TrackingStatus.notSupported);
     expect(await TrackingService.instance.requestIfNeeded(), isFalse);
+  });
+
+  test('MMP sem chave não faz nada e não quebra a ordem login/launch', () async {
+    final mmp = MmpService.instance;
+    await mmp.setUserId('uid-antes-do-init');
+    await mmp.init(trackingAuthorized: false);
+    await mmp.setUserId('');
+    await mmp.logRegistrationComplete();
+    await mmp.logPremiumPaywallView();
+    await mmp.logBillCreated();
+    await mmp.logFrontendPurchase(39.9, 'BRL');
+    expect(mmp.started, isFalse);
+    expect(mmp.appsFlyerId, isNull);
+    expect(MmpService.eventRegistration, 'af_complete_registration');
+    expect(MmpService.eventPaywallView, 'af_premium_paywall_view');
+    expect(MmpService.eventBillCreated, 'af_bill_created');
   });
 }

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/mmp_service.dart';
 import '../services/store_ids.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
@@ -21,7 +24,9 @@ class _PremiumPageState extends State<PremiumPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AppController>().loadStorePrice();
+      if (!mounted) return;
+      unawaited(MmpService.instance.logPremiumPaywallView());
+      context.read<AppController>().loadStorePrice();
     });
   }
 

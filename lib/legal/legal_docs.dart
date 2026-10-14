@@ -8,8 +8,9 @@ class LegalSection {
 }
 
 class LegalDocs {
-  static const updatedAt = '6 de outubro de 2026';
-  static const contact = 'kevison.brandes@outlook.com';
+  static const updatedAt = '14 de outubro de 2026';
+  static const contact =
+      'WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda)';
 
   static String titleOf(LegalDoc doc) {
     switch (doc) {
@@ -42,8 +43,8 @@ class LegalDocs {
     ),
     LegalSection(
       '2. Cadastro e conta',
-      'Você se responsabiliza pela veracidade dos dados informados, pela guarda da senha e pelo uso da conta. Não compartilhe o acesso. Avise em kevison.brandes@outlook.com se suspeitar de uso indevido.\n\n'
-          'Podemos recusar, suspender ou encerrar contas usadas em fraude, abuso, violação destes termos ou da lei. Você pode excluir a conta e os dados da caderneta em Configurações → Excluir minha conta ou pedir pelo mesmo e-mail, observado o prazo e as retenções legais (por exemplo, comprovante da assinatura).',
+      'Você se responsabiliza pela veracidade dos dados informados, pela guarda da senha e pelo uso da conta. Não compartilhe o acesso. Avise pelo WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda) se suspeitar de uso indevido.\n\n'
+          'Podemos recusar, suspender ou encerrar contas usadas em fraude, abuso, violação destes termos ou da lei. Você pode excluir a conta e os dados da caderneta em Configurações → Excluir minha conta ou pelo mesmo canal de ajuda, observado o prazo e as retenções legais (por exemplo, comprovante da assinatura).',
     ),
     LegalSection(
       '3. O serviço',
@@ -81,7 +82,7 @@ class LegalDocs {
     LegalSection(
       '10. Foro e contato',
       'Aplica-se a legislação brasileira. Fica eleito o foro do domicílio do usuário, quando consumidor, ou o foro da comarca da sede do prestador, quando a lei permitir.\n\n'
-          'Dúvidas, pedidos de exclusão e encarregado de dados: kevison.brandes@outlook.com.',
+          'Dúvidas, pedidos de exclusão e encarregado de dados: WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda).',
     ),
   ];
 
@@ -89,7 +90,7 @@ class LegalDocs {
     LegalSection(
       '1. Controlador e contato',
       'O Pagô é o controlador dos dados da sua conta (cadastro, assinatura, uso do app). Dos dados dos clientes que você informa (nome, telefone, valores), você é o controlador e o Pagô atua como operador, nos termos da LGPD.\n\n'
-          'Encarregado / canal LGPD: kevison.brandes@outlook.com. Pedidos de titular serão respondidos no prazo legal.',
+          'Encarregado / canal LGPD: WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda). Pedidos de titular serão respondidos no prazo legal.',
     ),
     LegalSection(
       '2. Dados que tratamos',
@@ -117,7 +118,7 @@ class LegalDocs {
     ),
     LegalSection(
       '6. Retenção e exclusão',
-      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Para excluir a conta e os dados na hora: Configurações → Excluir minha conta (ou usepago.web.app/excluir-conta). Correção ou exclusão também podem ser pedidas em kevison.brandes@outlook.com. Backups podem levar um período técnico para sumir por completo.',
+      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Para excluir a conta e os dados na hora: Configurações → Excluir minha conta (ou usepago.web.app/excluir-conta). Correção ou exclusão também podem ser pedidas pelo WhatsApp de suporte. Backups podem levar um período técnico para sumir por completo.',
     ),
     LegalSection(
       '7. Direitos do titular (art. 18)',
@@ -148,7 +149,7 @@ class LegalDocs {
     ),
     LegalSection(
       'Direitos e prazos',
-      'Acesso, correção, exclusão, portabilidade e revogação pelo e-mail kevison.brandes@outlook.com. Responderemos no prazo da LGPD, salvo retenção legal. Autoridade nacional: ANPD.',
+      'Acesso, correção, exclusão, portabilidade e revogação pelo WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda). Responderemos no prazo da LGPD, salvo retenção legal. Autoridade nacional: ANPD.',
     ),
   ];
 }

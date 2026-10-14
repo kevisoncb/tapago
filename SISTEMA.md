@@ -27,7 +27,7 @@ Arquivo vivo. Reescrito a cada alteração. Marca: **Pagô** — frase **“E a�
 - Pacote nativo: **`app.usepago`** (Android applicationId/namespace e `MainActivity` em `kotlin/app/usepago`, bundle iOS/macOS, Linux).
 - Única sobra de “tapago”: o ID do projeto Firebase `tapago-ae948` (não pode ser renomeado). A API (`apiBase`) e o webhook continuam em `tapago-ae948.web.app/api/...`, que nunca muda; o resto desse endereço só redireciona (301) para `usepago.web.app`.
 - Links do app (termos, privacidade, LGPD) apontam para `https://usepago.web.app` (`AppConstants.siteOrigin`), que já está no ar. Trocar para `https://usepago.app` quando comprar e conectar o domínio.
-- E-mail de contato (LGPD, exclusão, CTAs do site): `kevison.brandes@outlook.com` (pessoal do dono, vale para a Play). Trocar por `ola@usepago.app` quando o domínio e o e-mail existirem.
+- Contato público (site, termos, privacidade, LGPD, ajuda, exclusão): **WhatsApp de suporte** (botão, sem número na tela) e Play Store nos CTAs “Baixar” / “Quero ser Premium”. Sem e-mail pessoal no site (14/out). O Outlook do dono continua só no painel (Resend/ALERT_EMAIL) e na ficha da Play até ter `ola@usepago.app`.
 - Domínios livres em 9/out: `usepago.app` (escolhido), `usepago.com.br`, `eaipago.app`, `eaipago.com.br`, `pagoapp.app`, `meupago.app`. Já registrados: `pago.app`, `pago.com`, `pago.com.br`, `pagou.app`, `pagou.com.br`.
 
 ## O que o app faz agora
@@ -112,7 +112,7 @@ Firestore: `Users`, `Debts`, `Payments`, `Bills`, `PremiumCharges`, `Presence` (
 - Conta compartilhada para os testadores da Play: `testador@usepago.app` ("Loja Teste", uid `abPuU5lb7tTXVQqOKcsNtIu0E042`, criada em 13/out, Premium até 14/out/2027 dado pelo painel; senha só com o dono, fora do git). Mesmo projeto Firebase, vale para o app da `main` e da `develop`. Todos que usam veem os mesmos dados.
 - Flutter SDK em `C:\Users\kevis\flutter` (PATH do usuário e `android/local.properties`). Saiu de `AppData\Local\Temp\flutter` porque a limpeza automática do Windows apagou arquivos dele.
 - Emulador: o app instalado agora é assinado com a chave de upload; um APK assinado com a chave de debug não instala por cima (precisa desinstalar).
-- CTAs do site ainda `mailto:` (e-mail pessoal do dono).
+- CTAs do site apontam para a Play Store (14/out).
 - Avisos antigos do analyzer em `app_controller.dart` e `receipt_reader_io.dart` (estilo, não quebram).
 
 - Boletos: compila e abre no emulador Android (`Medium_Phone_API_37.0`); fluxo ainda não testado à mão. Sem leitura de código pela câmera.
@@ -155,14 +155,14 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 3. Próximas idas da `develop` para a `main` quando testar (a correção do telefone repetido ainda não está no AAB 25).
 4. Play Console (cobrar): **só depois do teste das 12 pessoas**. Perfil de pagamentos já enviado (aguardando confirmação da Google). Aí: Assinaturas + plano básico `mensal`; Usuários e permissões convidar a conta de serviço; Configuração de monetização colar o tópico `play-billing` e enviar teste.
 5. Trocar a senha provisória do painel admin ("Trocar senha") e ligar o segundo fator (botão "Segurança").
-6. Resumo e alertas por e-mail: criar conta grátis no resend.com com kevison.brandes@outlook.com, gerar API key, colocar em `RESEND_API_KEY` no `functions/.env` e publicar as functions.
+6. Resend (alertas do painel, **não** some o nome do site): criar conta em resend.com, gerar API key `re_...`, pôr em `RESEND_API_KEY` no `functions/.env` e publicar as functions. No plano grátis o remetente é `onboarding@resend.dev` e só entrega para o e-mail da conta Resend. `ola@usepago.app` como remetente só depois de comprar o domínio.
 7. Quando tiver a conta Apple Individual: criar o app `app.usepago` e a assinatura `pago_premium_monthly_ios` (R$ 39,90/mês, grupo de assinatura); em Usuários e acesso → Integrações → Compra dentro do app gerar a chave (.p8, baixa uma vez só) e anotar Key ID e Issuer ID; pôr `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_APP_ID` em `functions/.env`; publicar functions + hosting padrão (rewrites); em Informações do app → Notificações do servidor da App Store colar a URL `/api/apple/notifications` (Versão 2) em Produção e Sandbox e "Solicitar notificação de teste".
 8. Tráfego pago: criar conta na AppsFlyer, cadastrar o app Android (`app.usepago`), pegar a Dev key e o S2S token; atualizar privacidade e Segurança dos dados (ID de publicidade), tirar a linha `AD_ID` do manifesto, preencher `MMP_*` no `functions/.env`, publicar as functions e gerar o AAB com `--dart-define=PAGO_AF_DEV_KEY=...`.
 9. Receita real da Play: lado Google Cloud **feito** (14/out). Falta só o item 4 no Play Console.
 
 ## Última sessão (14/out)
 
-Testadores: 13 no fechado; licenças de teste feitas; perfil de pagamentos enviado (aguardando Google). Assinatura, conta de serviço e notificações a Play só abre depois dos 14 dias. Google Cloud da cobrança já ligado.
+Site sem e-mail pessoal: CTAs vão para a Play; termos/privacidade/LGPD/ajuda usam o WhatsApp de suporte. Resend continua desligado (só alerta interno do painel). Testadores: 13 no fechado; licenças de teste feitas; perfil de pagamentos enviado. Cobrança na Play só depois dos 14 dias.
 
 ## Sessão anterior (13/out)
 

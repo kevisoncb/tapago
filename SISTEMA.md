@@ -132,7 +132,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 - Comprar `usepago.app` (e `usepago.com.br`), conectar no Firebase Hosting, criar `ola@usepago.app` e trocar o e-mail pessoal por ele.
 - Ficha da Play com nome Pagô e pacote `app.usepago` (o pacote antigo nunca foi publicado).
-- Play (14/out): app criado, ficha preenchida, AAB 25 no teste interno e no **teste fechado Alpha**. Empresa com **13 testadores** no fechado (conta os 14 dias). **Licenças de teste** já cadastradas. Perfil de pagamentos **enviado**, esperando a Google confirmar a conta. **Assinatura, convite da conta de serviço e notificações em tempo real a Play só libera depois do teste das 12 pessoas / 14 dias** (conta pessoal; não dá para forçar agora). Depois: **Monetizar com o Play → Produtos → Assinaturas** (`pago_premium_monthly` + plano básico `mensal` R$ 39,90); **Usuários e permissões → Convidar** `1077428127080-compute@developer.gserviceaccount.com` (ver dados financeiros + gerenciar pedidos e assinaturas); **Monetizar com o Play → Configuração de monetização** → tópico `projects/tapago-ae948/topics/play-billing`. Google Cloud já está pronto (API Android Publisher ligada, tópico com a Google publicadora). Functions `confirmPlayPurchase` e `playNotifications` publicadas. Sem o convite da conta de serviço, a Function **libera 30 dias sem conferir**.
+- Play (14/out): app criado, ficha preenchida, AAB 25 no teste interno e no **teste fechado Alpha**. Empresa com **13 testadores** no fechado (conta os 14 dias). **Licenças de teste** já cadastradas. Perfil de pagamentos **aprovado** (15/out); conta bancária do Asaas (CNPJ) ligada, **repasse da Google ok**. **Assinatura, convite da conta de serviço e notificações em tempo real a Play só libera depois do teste das 12 pessoas / 14 dias** (conta pessoal; não dá para forçar agora). Depois: **Monetizar com o Play → Produtos → Assinaturas** (`pago_premium_monthly` + plano básico `mensal` R$ 39,90); **Usuários e permissões → Convidar** `1077428127080-compute@developer.gserviceaccount.com` (ver dados financeiros + gerenciar pedidos e assinaturas); **Monetizar com o Play → Configuração de monetização** → tópico `projects/tapago-ae948/topics/play-billing`. Google Cloud já está pronto (API Android Publisher ligada, tópico com a Google publicadora). Functions `confirmPlayPurchase` e `playNotifications` publicadas. Sem o convite da conta de serviço, a Function **libera 30 dias sem conferir**.
 - Site público: publicar sempre no site `usepago` (`firebase.usepago.json`); o site padrão fica só com API + redirecionamento.
 - Criar a assinatura `pago_premium_monthly` **depois** do teste das 12 pessoas (a Play bloqueia antes).
 - Bot WhatsApp: **futuro, não implementar**.
@@ -153,7 +153,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 1. Comprar `usepago.app` / `usepago.com.br`.
 2. Play Console (testadores): empresa com 13 pessoas no fechado; **licenças de teste feitas**. Manter o app instalado 14 dias; depois "Solicitar a produção". Guardar cópia da chave de upload fora do PC.
 3. Próximas idas da `develop` para a `main` quando testar (a correção do telefone repetido ainda não está no AAB 25).
-4. Play Console (cobrar): **só depois do teste das 12 pessoas**. Perfil de pagamentos já enviado (aguardando confirmação da Google). Aí: Assinaturas + plano básico `mensal`; Usuários e permissões convidar a conta de serviço; Configuração de monetização colar o tópico `play-billing` e enviar teste.
+4. Play Console (cobrar): banco/repasse **feito**. Assinatura, conta de serviço e notificações a Play **só libera depois do teste das 12 pessoas**. Aí: Assinaturas + plano básico `mensal`; Usuários e permissões convidar a conta de serviço; Configuração de monetização colar o tópico `play-billing` e enviar teste.
 5. Trocar a senha provisória do painel admin ("Trocar senha") e ligar o segundo fator (botão "Segurança").
 6. Resend: **não fazer agora.** Não existe e-mail para o usuário. Alertas do dono, se um dia quiser, ligam no painel; até lá o `pago-admin` basta.
 7. Quando tiver a conta Apple Individual: criar o app `app.usepago` e a assinatura `pago_premium_monthly_ios` (R$ 39,90/mês, grupo de assinatura); em Usuários e acesso → Integrações → Compra dentro do app gerar a chave (.p8, baixa uma vez só) e anotar Key ID e Issuer ID; pôr `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_APP_ID` em `functions/.env`; publicar functions + hosting padrão (rewrites); em Informações do app → Notificações do servidor da App Store colar a URL `/api/apple/notifications` (Versão 2) em Produção e Sandbox e "Solicitar notificação de teste".
@@ -162,7 +162,7 @@ Congelar novidades e lançar: 1) Play com assinatura `pago_premium_monthly` + va
 
 ## Última sessão (14/out)
 
-Site sem e-mail pessoal: CTAs vão para a Play; termos/privacidade/LGPD/ajuda usam o WhatsApp de suporte. Resend continua desligado (só alerta interno do painel). Testadores: 13 no fechado; licenças de teste feitas; perfil de pagamentos enviado. Cobrança na Play só depois dos 14 dias.
+Banco da Play aprovado (15/out), repasse da Google ok (Asaas/CNPJ). Site sem e-mail pessoal. Resend desligado. Testadores: 13 no fechado; licenças de teste feitas. Assinatura na Play só depois dos 14 dias.
 
 ## Sessão anterior (13/out)
 

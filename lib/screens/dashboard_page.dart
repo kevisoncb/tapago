@@ -17,6 +17,7 @@ import 'bills_page.dart';
 import 'caderneta_page.dart';
 import 'client_profile_page.dart';
 import 'follow_up_page.dart';
+import 'follow_ups_page.dart';
 import 'premium_page.dart';
 import 'settings_page.dart';
 
@@ -704,7 +705,11 @@ class _CollectionAgenda extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeading(title: 'Cobranças para acompanhar'),
+        _SectionHeading(
+          title: 'Cobranças para acompanhar',
+          action: 'Ver todos',
+          onAction: () => _open(context, const FollowUpsPage()),
+        ),
         const SizedBox(height: 4),
         Text(
           'Contato e promessa não alteram o saldo da caderneta.',

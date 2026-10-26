@@ -90,6 +90,13 @@ void main() {
       find.textContaining('não são saldo bancário nem lucro'),
       findsOneWidget,
     );
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Importar lançamentos'), 300);
+    await tester.tap(find.text('Importar lançamentos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Traga até 12 lançamentos por vez'), findsOneWidget);
+    expect(find.text('Escolher arquivo CSV'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

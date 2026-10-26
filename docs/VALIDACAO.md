@@ -7,7 +7,7 @@ Branch `develop`, base `2c987d5e7161123b511d99971a903440033d77ce`. Verificaçõe
 | APK Android release ARM64 | Compilação aprovada em 26/10, assinatura local de debug; envio de símbolos Crashlytics excluído somente do comando local |
 | APK: assinatura, pacote e 16 KB | Verificados: app.usepago, 2.4.0+25, minSdk 24, targetSdk 36; zipalign e 5 bibliotecas ARM64 compatíveis com alinhamento de 16 KB |
 | Flutter analyze | Sem problemas encontrados |
-| Flutter test | 67 testes aprovados, incluindo navegação principal e relatórios |
+| Flutter test | 71 testes aprovados, incluindo navegação, relatórios e importação CSV |
 | Backend Node 22 | 23 testes aprovados |
 | Regras Firestore, projeto demo-pago | 9 testes aprovados |
 | Build web release, PAGO_DEMO=true | Compilação aprovada; renderizador local incluído |
@@ -36,8 +36,8 @@ Antes de publicar, executar a sequência de [publicação financeira](financial-
 
 ## Artefato Android local
 
-- Arquivo: `build/app/outputs/flutter-apk/app-release.apk` (57.846.307 bytes).
-- SHA-256: `f0f113e2e1c5612995dc101bb571137ea24872eeb5c2b192d56a5b4667e556e3`.
+- Arquivo: `build/app/outputs/flutter-apk/app-release.apk` (58.002.369 bytes), recompilado após integrar o seletor nativo de CSV.
+- SHA-256: `ed70e35f6f29c75b6c473a779122f573a55382b1c82f5c9aac0e948ea2c9f2a3`.
 - Modo release, arquitetura Flutter ARM64, certificado Android Debug. Não enviar esse artefato à Play; usar aparelho/perfil de teste sem substituir a instalação de produção.
 - Build nativo concluiu `lintVitalRelease`, otimização R8, empacotamento e assinatura. Avisos remanescentes: plugins que usam KGP legado, leitura de metadados SDK mais novos, aviso R8 do SDK AppsFlyer e deprecações de Gradle. Não foi atualizada a cadeia de plugins apenas para eliminar esses avisos; revisar antes de uma futura atualização de Gradle/Flutter.
 - Procedimento de reprodução e roteiro de aparelhos: [VALIDACAO-MOBILE.md](VALIDACAO-MOBILE.md).

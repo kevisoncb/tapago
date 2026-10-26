@@ -18,7 +18,9 @@ Incremento concluído: navegação inferior **Hoje / Clientes / Boletos / Mais**
 
 Incremento concluído: relatórios simples e úteis, separando claramente recebido, previsto, vencido e boletos de fornecedores, sem chamar recebíveis de saldo bancário ou lucro.
 
-Próximo incremento recomendado: importação CSV assistida, com modelo, prévia, validação de erros e duplicatas antes de gravar qualquer lançamento.
+Incremento concluído: importação CSV assistida em lotes atômicos de até 12 lançamentos, com modelo, prévia, validação de erros e duplicatas antes de gravar.
+
+Próximo incremento recomendado: melhorar o primeiro uso com uma introdução curta e um lançamento guiado, solicitando permissões somente quando cada função for usada.
 
 ## 1. Minha avaliação do potencial
 

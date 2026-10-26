@@ -1,0 +1,277 @@
+<title>Pagô — prévia do novo site</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Pagô organiza o fiado e as vendas a prazo: quem deve, quanto e quando cobrar. Você cobra pelo seu WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: nav fixa curta; hero em duas colunas (promessa + tela do app); faixas alternadas até o rodapé. */
+:root {
+  --bg: #f4f7fc;
+  --band: #ffffff;
+  --fg: #0f172a;
+  --muted: #526078;
+  --line: #dbe4f0;
+  --blue: #2f6bff;
+  --blue-ink: #1d4ed8;
+  --on-blue: #ffffff;
+  --lime: #b6f23a;
+  --on-lime: #0f172a;
+  --danger: #dc2626;
+  --ok: #15803d;
+  --night: #102a6b;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220; --band: #101a2e; --fg: #e8eefb; --muted: #9aaac4; --line: #223049;
+    --blue-ink: #8fb0ff; --night: #0a1a45; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1220; --band: #101a2e; --fg: #e8eefb; --muted: #9aaac4; --line: #223049;
+  --blue-ink: #8fb0ff; --night: #0a1a45; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 17px; line-height: 1.55; }
+.in { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: inherit; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--blue-ink); }
+
+/* nav */
+.nav { display: flex; align-items: center; gap: 22px; padding-block: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; text-decoration: none; letter-spacing: -.02em; }
+.brand svg { width: 34px; height: 34px; }
+.nav nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 600; color: var(--muted); }
+.nav nav a { text-decoration: none; }
+.nav nav a:hover { color: var(--fg); }
+@media (max-width: 720px) { .nav nav { display: none; } .nav .btn { margin-left: auto; } }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: var(--on-blue); font: inherit; font-weight: 800; font-size: 16px; padding: 14px 24px; border-radius: 14px; text-decoration: none; border: 0; }
+.btn.small { padding: 10px 18px; font-size: 14.5px; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.btn.lime { background: var(--lime); color: var(--on-lime); }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding-block: 56px 72px; }
+.hero h1 { font-size: clamp(36px, 5.4vw, 60px); font-weight: 800; margin: 14px 0 18px; }
+.hero h1 em { font-style: normal; color: var(--blue); }
+.hero .lead { font-size: 19px; color: var(--muted); max-width: 46ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 14px; }
+.fine { font-size: 14px; color: var(--muted); }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-block: 28px 48px; } }
+
+/* telefone com tela ilustrada do app */
+.phone { width: 292px; max-width: 100%; margin: 0 auto; border-radius: 42px; background: #0f172a; padding: 9px; box-shadow: 0 30px 60px -28px rgba(15,23,42,.55); position: relative; }
+.screen { background: #f4f7fc; color: #0f172a; border-radius: 34px; padding: 40px 16px 16px; min-height: 560px; position: relative; overflow: hidden; font-size: 13px; }
+.screen::before { content: ""; position: absolute; top: 12px; left: 50%; translate: -50% 0; width: 84px; height: 22px; background: #0f172a; border-radius: 99px; }
+.hi { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.hi b { font-size: 20px; letter-spacing: -.02em; font-weight: 800; }
+.hi span { font-size: 11px; color: #64748b; font-weight: 700; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.kpi { background: #fff; border-radius: 14px; padding: 10px 12px; }
+.kpi small { display: block; color: #64748b; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.kpi b { font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.late b { color: #dc2626; }
+.list-h { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin: 14px 2px 6px; }
+.item { background: #fff; border-radius: 14px; padding: 10px 12px; margin-bottom: 7px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.item strong { font-size: 13.5px; }
+.item b { font-variant-numeric: tabular-nums; }
+.item small { grid-column: 1 / -1; font-size: 11.5px; font-weight: 600; }
+.item .a { color: #dc2626; } .item .b { color: #b45309; } .item .c { color: #15803d; }
+.item .wa { grid-column: 1 / -1; margin-top: 6px; background: #e8f0ff; color: #1d4ed8; font-weight: 800; font-size: 11.5px; text-align: center; padding: 7px; border-radius: 9px; }
+.fab { position: absolute; left: 16px; right: 16px; bottom: 16px; background: var(--blue); color: #fff; text-align: center; padding: 13px; border-radius: 14px; font-weight: 800; }
+.cap { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+
+/* faixas */
+.band { background: var(--band); border-block: 1px solid var(--line); padding-block: 72px; }
+.section-head { max-width: 640px; margin-bottom: 36px; }
+.section-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 800; margin: 10px 0 12px; }
+.section-head p { color: var(--muted); }
+.pad { padding-block: 72px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.step { border-top: 3px solid var(--blue); padding-top: 16px; }
+.step h3 { font-size: 20px; margin-bottom: 8px; }
+.step p { color: var(--muted); font-size: 16px; }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+
+/* grátis x premium */
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.plan { border: 1.5px solid var(--line); border-radius: 24px; padding: 30px; background: var(--bg); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.plan.pro { background: var(--night); border-color: transparent; color: #fff; }
+.plan h3 { font-size: 24px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan h3 small { font-size: 15px; font-weight: 700; color: var(--muted); }
+.plan.pro h3 small { color: #b6c7f2; }
+.plan ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.plan li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 16px; }
+.plan li::before { content: ""; width: 20px; height: 20px; margin-top: 3px; border-radius: 50%; background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+.plan.pro li::before { background-color: var(--lime); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.plan .note { font-size: 13.5px; color: var(--muted); margin-top: auto; }
+.plan.pro .note { color: #b6c7f2; }
+@media (max-width: 760px) { .plans { grid-template-columns: 1fr; } }
+
+/* seus dados */
+.trust { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.facts { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.facts div { padding: 16px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 150px 1fr; gap: 14px; }
+.facts dt { font-weight: 800; }
+.facts dd { margin: 0; color: var(--muted); font-size: 16px; }
+@media (max-width: 860px) { .trust { grid-template-columns: 1fr; gap: 24px; } .facts div { grid-template-columns: 1fr; gap: 2px; } }
+
+/* perguntas */
+.faq { max-width: 760px; }
+details { border-bottom: 1px solid var(--line); padding-block: 16px; }
+summary { cursor: pointer; font-weight: 800; font-size: 18px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::after { content: "+"; font-size: 22px; line-height: 1; color: var(--blue-ink); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin-top: 10px; }
+
+/* chamada final */
+.final { background: var(--night); color: #fff; padding-block: 72px; }
+.final .in { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: space-between; }
+.final h2 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 800; max-width: 18ch; }
+.final h2 em { font-style: normal; color: var(--lime); }
+footer { padding-block: 28px 40px; color: var(--muted); font-size: 14.5px; }
+footer .in { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+footer a { text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+footer .legal { flex-basis: 100%; font-size: 13px; }
+</style>
+
+<header class="in nav">
+  <a class="brand" href="#topo" aria-label="Pagô, início">
+    <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="114" fill="#2F6BFF"/><path d="M132 268 L228 364 L348 176" fill="none" stroke="#fff" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><circle cx="402" cy="110" r="32" fill="#fff"/></svg>
+    Pagô
+  </a>
+  <nav aria-label="Seções">
+    <a href="#como">Como funciona</a>
+    <a href="#planos">Grátis e Premium</a>
+    <a href="#dados">Seus dados</a>
+    <a href="#perguntas">Perguntas</a>
+  </nav>
+  <a class="btn small" href="https://play.google.com/store/apps/details?id=app.usepago">Baixar</a>
+</header>
+
+<main id="topo">
+  <section class="in hero">
+    <div>
+      <p class="eyebrow">Caderneta digital para quem vende fiado</p>
+      <h1>Saiba quem te deve, <em>quanto</em> e quando cobrar.</h1>
+      <p class="lead">O Pagô guarda o fiado e as vendas a prazo do seu comércio, mostra o que vence hoje e deixa a mensagem de cobrança pronta no seu WhatsApp.</p>
+      <div class="actions">
+        <a class="btn" href="https://play.google.com/store/apps/details?id=app.usepago">Baixar grátis na Google Play</a>
+        <a class="btn ghost" href="#como">Como funciona</a>
+      </div>
+      <p class="fine">Grátis para começar, sem limite de clientes. iPhone em breve.</p>
+    </div>
+    <div>
+      <div class="phone" role="img" aria-label="Tela Hoje do aplicativo, com valores a receber e clientes para cobrar">
+        <div class="screen">
+          <div class="hi"><b>Hoje</b><span>Qui, 29 de out.</span></div>
+          <div class="kpis">
+            <div class="kpi"><small>A receber na semana</small><b>R$ 1.936</b></div>
+            <div class="kpi late"><small>Vencido</small><b>R$ 450</b></div>
+          </div>
+          <div class="list-h">Para cobrar hoje</div>
+          <div class="item"><strong>Carlos Oliveira</strong><b>R$ 450,00</b><small class="a">Venceu há 3 dias · sem contato</small><div class="wa">Cobrar no WhatsApp</div></div>
+          <div class="item"><strong>Mariana Souza</strong><b>R$ 1.200,00</b><small class="b">Prometeu pagar hoje</small></div>
+          <div class="item"><strong>Ricardo Carvalho</strong><b>R$ 286,00</b><small class="c">Vence amanhã</small></div>
+          <div class="fab">+ Novo lançamento</div>
+        </div>
+      </div>
+      <p class="cap">Ilustração da tela Hoje. Nomes e valores são exemplos.</p>
+    </div>
+  </section>
+
+  <section class="band" id="como">
+    <div class="in">
+      <div class="section-head">
+        <p class="eyebrow">Como funciona</p>
+        <h2>Do papel e da memória para o celular em três passos</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><h3>Anote</h3><p>Registre a venda com valor e vencimento. Divida em até 12 parcelas se precisar. Ou importe a lista que você já tem em planilha.</p></div>
+        <div class="step"><h3>Veja quem cobrar</h3><p>A tela Hoje mostra o que venceu, o que vence nos próximos dias e quem ainda não foi lembrado.</p></div>
+        <div class="step"><h3>Cobre e dê baixa</h3><p>Abra o WhatsApp com a mensagem pronta e envie você mesmo. Quando o cliente pagar, registre o valor recebido.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="in pad" id="planos">
+    <div class="section-head">
+      <p class="eyebrow">Grátis e Premium</p>
+      <h2>A caderneta é grátis. O Premium poupa digitação.</h2>
+      <p>Você não perde nada do essencial se ficar no plano gratuito.</p>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <h3>Grátis <small>para sempre</small></h3>
+        <ul>
+          <li>Clientes e lançamentos sem limite</li>
+          <li>Pagamentos parciais, parcelas e juros opcionais</li>
+          <li>Tela Hoje, acompanhamento e lembretes</li>
+          <li>Extrato do cliente em PDF e exportação dos dados</li>
+        </ul>
+        <p class="note">Sem cartão para começar.</p>
+      </div>
+      <div class="plan pro">
+        <h3>Premium <small>R$ 39,90 por mês</small></h3>
+        <ul>
+          <li>Lançamento por voz: você fala, o app sugere o preenchimento</li>
+          <li>Leitura de comprovante por foto, com conferência antes de salvar</li>
+          <li>Mensagem de cobrança com o seu texto</li>
+          <li>Boletos de fornecedores e parcelamento a receber</li>
+        </ul>
+        <p class="note">O preço final aparece na loja de aplicativos antes de você assinar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="dados">
+    <div class="in trust">
+      <div class="section-head" style="margin:0">
+        <p class="eyebrow">Seus dados</p>
+        <h2>O Pagô organiza. Não mexe no seu dinheiro.</h2>
+        <p>É um assistente de cobrança. O app não consulta banco, não confirma transferências e não movimenta dinheiro. Quem recebe e confere é você.</p>
+      </div>
+      <dl class="facts">
+        <div><dt>Só você vê</dt><dd>Cada caderneta pertence à sua conta e fica protegida por regras de acesso.</dd></div>
+        <div><dt>Sem enviar sozinho</dt><dd>O WhatsApp só abre quando você toca. O Pagô nunca manda mensagem em seu nome.</dd></div>
+        <div><dt>Erro? Corrija</dt><dd>Uma baixa errada vira uma correção com motivo, e o histórico original fica guardado.</dd></div>
+        <div><dt>Você manda</dt><dd>Exporte seus dados quando quiser e exclua sua conta pela página de exclusão.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="in pad" id="perguntas">
+    <div class="section-head"><p class="eyebrow">Perguntas</p><h2>O que mais perguntam</h2></div>
+    <div class="faq">
+      <details><summary>O Pagô cobra meu cliente?</summary><p>Não. Ele deixa a mensagem pronta e você decide quando enviar, pelo seu WhatsApp.</p></details>
+      <details><summary>O Pagô recebe o pagamento?</summary><p>Não. O dinheiro vai direto de quem paga para você. No app você anota o que recebeu para manter a caderneta em dia.</p></details>
+      <details><summary>Posso usar de graça?</summary><p>Pode. Clientes e lançamentos são ilimitados no plano gratuito. O Premium acrescenta voz, leitura de comprovante, texto próprio de cobrança e boletos.</p></details>
+      <details><summary>Funciona no iPhone?</summary><p>Hoje está disponível para Android na Google Play. A versão para iPhone está em preparação.</p></details>
+      <details><summary>Como apago minha conta?</summary><p>Pela página de exclusão de conta, linkada no rodapé. A exclusão segue a política de retenção descrita na política de privacidade.</p></details>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="in">
+      <h2>E aí, <em>pagô?</em> Comece a sua caderneta hoje.</h2>
+      <a class="btn lime" href="https://play.google.com/store/apps/details?id=app.usepago">Baixar grátis na Google Play</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="in">
+    <a href="./ajuda.html">Ajuda</a>
+    <a href="./privacidade.html">Privacidade</a>
+    <a href="./termos.html">Termos</a>
+    <a href="./lgpd.html">LGPD</a>
+    <a href="./excluir-conta.html">Excluir conta</a>
+    <p class="legal">Pagô é uma ferramenta de organização. Não é banco, carteira digital nem meio de pagamento.</p>
+  </div>
+</footer>

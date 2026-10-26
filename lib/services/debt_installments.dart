@@ -16,14 +16,16 @@ class DebtInstallment {
 
 /// Divide o valor já combinado de uma venda em 2 a 12 parcelas não nulas.
 ///
-/// [firstDue] é o primeiro vencimento. As demais datas avançam [intervalDays]
-/// dias de calendário, preservando a data mesmo em mudanças de horário de
-/// verão. Não há aplicação de juros ou recebimento automático.
+/// [firstDue] é o primeiro vencimento. Por padrão as demais parcelas vencem
+/// no mesmo dia dos meses seguintes; em meses mais curtos vale o último dia
+/// (31/01 → 28/02 → 31/03). Com [intervalDays] as datas avançam essa
+/// quantidade de dias corridos. Não há aplicação de juros nem recebimento
+/// automático.
 List<DebtInstallment> splitReceivable({
   required double total,
   required DateTime firstDue,
   required int installments,
-  int intervalDays = 30,
+  int? intervalDays,
 }) {
   if (!total.isFinite || total <= 0 || total > 100000000) {
     throw ArgumentError.value(total, 'total', 'Informe um valor válido.');
@@ -35,7 +37,7 @@ List<DebtInstallment> splitReceivable({
       'Use 2 a 12 parcelas.',
     );
   }
-  if (intervalDays < 1 || intervalDays > 365) {
+  if (intervalDays != null && (intervalDays < 1 || intervalDays > 365)) {
     throw ArgumentError.value(
       intervalDays,
       'intervalDays',
@@ -55,11 +57,24 @@ List<DebtInstallment> splitReceivable({
         valor:
             (i == installments - 1 ? cents - each * (installments - 1) : each) /
             100,
-        vencimento: DateTime(
-          firstDue.year,
-          firstDue.month,
-          firstDue.day + i * intervalDays,
-        ),
+        vencimento: intervalDays == null
+            ? _sameDayOfMonth(firstDue, i)
+            : DateTime(
+                firstDue.year,
+                firstDue.month,
+                firstDue.day + i * intervalDays,
+              ),
       ),
   ]);
+}
+
+/// Mesmo dia, [months] meses depois, limitado ao último dia do mês de destino.
+DateTime _sameDayOfMonth(DateTime from, int months) {
+  final target = DateTime(from.year, from.month + months);
+  final lastDay = DateTime(target.year, target.month + 1, 0).day;
+  return DateTime(
+    target.year,
+    target.month,
+    from.day > lastDay ? lastDay : from.day,
+  );
 }

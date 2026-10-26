@@ -49,7 +49,6 @@ class _AddDebtPageState extends State<AddDebtPage> {
   bool _saving = false;
   bool _parcelado = false;
   int _parcelas = 3;
-  int _intervaloDias = 30;
   String? _grupoId;
   final List<String> _newIds = [];
   List<Debt>? _pendingSave;
@@ -112,7 +111,6 @@ class _AddDebtPageState extends State<AddDebtPage> {
         total: _principal,
         firstDue: date,
         installments: _parcelas,
-        intervalDays: _intervaloDias,
       );
     } on ArgumentError {
       return const [];
@@ -642,7 +640,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
             title: const Text('Parcelar a receber'),
             subtitle: Text(
               state.user.premiumAtivo
-                  ? 'Divida a venda em até 12 parcelas'
+                  ? 'Escolha o 1º vencimento e em quantas vezes dividir'
                   : 'Premium · lançamento único continua grátis',
             ),
             value: _parcelado,
@@ -651,48 +649,16 @@ class _AddDebtPageState extends State<AddDebtPage> {
           if (_parcelado)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final count = DropdownButtonFormField<int>(
-                    initialValue: _parcelas,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Parcelas'),
-                    items: [
-                      for (var i = 2; i <= 12; i++)
-                        DropdownMenuItem(value: i, child: Text('$i vezes')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) setState(() => _parcelas = value);
-                    },
-                  );
-                  final interval = DropdownButtonFormField<int>(
-                    initialValue: _intervaloDias,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Intervalo'),
-                    items: [
-                      for (final days in [7, 15, 30])
-                        DropdownMenuItem(
-                          value: days,
-                          child: Text('$days dias corridos'),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) setState(() => _intervaloDias = value);
-                    },
-                  );
-                  if (constraints.maxWidth < 320 ||
-                      MediaQuery.textScalerOf(context).scale(1) > 1.3) {
-                    return Column(
-                      children: [count, const SizedBox(height: 14), interval],
-                    );
-                  }
-                  return Row(
-                    children: [
-                      Expanded(child: count),
-                      const SizedBox(width: 12),
-                      Expanded(child: interval),
-                    ],
-                  );
+              child: DropdownButtonFormField<int>(
+                initialValue: _parcelas,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Parcelas'),
+                items: [
+                  for (var i = 2; i <= 12; i++)
+                    DropdownMenuItem(value: i, child: Text('$i vezes')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _parcelas = value);
                 },
               ),
             ),
@@ -714,6 +680,15 @@ class _AddDebtPageState extends State<AddDebtPage> {
           Text(
             'Confira antes de salvar',
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Parcelado em ${_parcelas}x · vence todo dia ${_vencimento!.day} do mês',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.mutedDark,
+            ),
           ),
           const SizedBox(height: 8),
           for (final installment in _preview)

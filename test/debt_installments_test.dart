@@ -22,6 +22,36 @@ void main() {
       expect(installments.every((item) => item.totalParcelas == 3), isTrue);
     });
 
+    test('por padrão vence no mesmo dia de cada mês', () {
+      final installments = splitReceivable(
+        total: 400,
+        firstDue: DateTime(2026, 11, 15),
+        installments: 4,
+      );
+
+      expect(installments.map((item) => item.vencimento), [
+        DateTime(2026, 11, 15),
+        DateTime(2026, 12, 15),
+        DateTime(2027, 1, 15),
+        DateTime(2027, 2, 15),
+      ]);
+    });
+
+    test('dia 31 usa o último dia dos meses curtos e volta ao 31', () {
+      final installments = splitReceivable(
+        total: 400,
+        firstDue: DateTime(2027, 1, 31),
+        installments: 4,
+      );
+
+      expect(installments.map((item) => item.vencimento), [
+        DateTime(2027, 1, 31),
+        DateTime(2027, 2, 28),
+        DateTime(2027, 3, 31),
+        DateTime(2027, 4, 30),
+      ]);
+    });
+
     test('primeiro vencimento e intervalo são dias corridos de calendário', () {
       final installments = splitReceivable(
         total: 600,

@@ -36,13 +36,14 @@ Incremento concluído: área completa de acompanhamentos com busca por nome/What
 
 Incremento concluído: lembretes locais opcionais para acompanhamentos. A permissão é solicitada somente ao ativar, os avisos abrem a agenda e nunca enviam mensagem nem registram baixa automaticamente.
 
-Restam três incrementos no plano atual:
+Incremento concluído: filtros avançados da carteira por atraso, próximos sete dias, saldo em aberto, caderneta quitada e atraso sem contato, combinados com busca e ordenação por urgência e saldo.
 
-1. Melhorar busca e filtros de clientes por situação, último contato e faixa de vencimento.
-2. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
-3. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+Restam dois incrementos no plano atual:
 
-Próximo incremento recomendado: filtros avançados da carteira de clientes.
+1. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
+2. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+
+Próximo incremento recomendado: indicadores de rotina de cobrança.
 
 ## 1. Minha avaliação do potencial
 

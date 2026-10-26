@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/client_match.dart';
+import '../services/collection_follow_up.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
@@ -103,73 +104,171 @@ class _CadernetaPageState extends State<CadernetaPage> {
   }
 }
 
-class _ClientesTab extends StatelessWidget {
+enum _ClientFilter { all, overdue, nextDays, open, paid, noContact }
+
+extension on _ClientFilter {
+  String get label => switch (this) {
+    _ClientFilter.all => 'Todos',
+    _ClientFilter.overdue => 'Em atraso',
+    _ClientFilter.nextDays => 'Próximos 7 dias',
+    _ClientFilter.open => 'Em aberto',
+    _ClientFilter.paid => 'Quitados',
+    _ClientFilter.noContact => 'Sem contato',
+  };
+}
+
+class _ClientesTab extends StatefulWidget {
   const _ClientesTab({required this.needle});
 
   final String needle;
 
   @override
+  State<_ClientesTab> createState() => _ClientesTabState();
+}
+
+class _ClientesTabState extends State<_ClientesTab> {
+  var _filter = _ClientFilter.all;
+  Future<List<CollectionFollowUp>>? _followUps;
+  String? _userId;
+
+  void _ensureFollowUps(AppController state) {
+    if (_userId == state.user.id && _followUps != null) return;
+    _userId = state.user.id;
+    _followUps = CollectionFollowUpStore(
+      usesFirestore: state.usesFirestore,
+      userId: state.user.id,
+    ).list();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
-    final contacts = groupContacts(state.debts)
-        .where((contact) => contactMatchesQuery(contact, needle))
-        .toList();
+    _ensureFollowUps(state);
+    return FutureBuilder<List<CollectionFollowUp>>(
+      future: _followUps,
+      builder: (context, snapshot) {
+        final contacted = {
+          for (final item in snapshot.data ?? const <CollectionFollowUp>[])
+            item.contactKey: item.lastContactedAt,
+        };
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final limit = today.add(const Duration(days: 7));
+        final contacts =
+            groupContacts(state.debts)
+                .where((contact) => contactMatchesQuery(contact, widget.needle))
+                .where((contact) {
+                  final open = contact.temAberto(state.saldoOf);
+                  return switch (_filter) {
+                    _ClientFilter.all => true,
+                    _ClientFilter.overdue => contact.temAtraso(state.saldoOf),
+                    _ClientFilter.nextDays => contact.debts.any((debt) {
+                      final due = DateTime(
+                        debt.dataVencimento.year,
+                        debt.dataVencimento.month,
+                        debt.dataVencimento.day,
+                      );
+                      return !debt.statusPago &&
+                          state.saldoOf(debt) > 0.009 &&
+                          !due.isBefore(today) &&
+                          due.isBefore(limit);
+                    }),
+                    _ClientFilter.open => open,
+                    _ClientFilter.paid => !open,
+                    _ClientFilter.noContact =>
+                      contact.temAtraso(state.saldoOf) &&
+                          contacted[contact.key] == null,
+                  };
+                })
+                .toList()
+              ..sort((a, b) {
+                final overdue =
+                    (b.temAtraso(state.saldoOf) ? 1 : 0) -
+                    (a.temAtraso(state.saldoOf) ? 1 : 0);
+                if (overdue != 0) return overdue;
+                final balance = b
+                    .saldoAbertoOf(state.saldoOf)
+                    .compareTo(a.saldoAbertoOf(state.saldoOf));
+                if (balance != 0) return balance;
+                return a.nome.compareTo(b.nome);
+              });
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              contacts.isEmpty
-                  ? 'Nenhum contato encontrado.'
-                  : '${contacts.length} ${contacts.length == 1 ? 'contato' : 'contatos'}',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: AppColors.mutedDark,
+        return Column(
+          children: [
+            SizedBox(
+              height: 46,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: _ClientFilter.values.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final filter = _ClientFilter.values[index];
+                  return ChoiceChip(
+                    label: Text(filter.label),
+                    selected: _filter == filter,
+                    showCheckmark: false,
+                    onSelected: (_) => setState(() => _filter = filter),
+                  );
+                },
               ),
             ),
-          ),
-        ),
-        Expanded(
-          child: contacts.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      state.debts.isEmpty
-                          ? 'A caderneta ainda está vazia.'
-                          : 'Nada com esse nome ou telefone.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: AppColors.mutedDark,
-                      ),
-                    ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  contacts.isEmpty
+                      ? 'Nenhum contato encontrado.'
+                      : '${contacts.length} ${contacts.length == 1 ? 'contato' : 'contatos'}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.mutedDark,
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                  itemCount: contacts.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final contact = contacts[index];
-                    return CadernetaContactTile(
-                      contact: contact,
-                      saldo: contact.saldoAbertoOf(state.saldoOf),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ContactHistoryPage(contactKey: contact.key),
+                ),
+              ),
+            ),
+            Expanded(
+              child: contacts.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          state.debts.isEmpty
+                              ? 'A caderneta ainda está vazia.'
+                              : 'Nenhum cliente neste filtro.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.mutedDark,
                           ),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                      itemCount: contacts.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final contact = contacts[index];
+                        return CadernetaContactTile(
+                          contact: contact,
+                          saldo: contact.saldoAbertoOf(state.saldoOf),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ContactHistoryPage(contactKey: contact.key),
+                              ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
-        ),
-      ],
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

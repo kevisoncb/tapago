@@ -19,6 +19,7 @@ Esta implementação está na `develop`. APK Android ARM64 compilado localmente;
 - Agenda de cobrança no Meu dia com promessas vencidas ou próximas, contatos atrasados e clientes vencidos ainda sem contato; WhatsApp só abre por ação do comerciante.
 - Área completa de acompanhamentos com busca por nome/WhatsApp e filtros por atrasado, hoje, próximos dias e sem contato, acessível pelo Meu dia e pelo menu Mais.
 - Lembretes locais opcionais para datas combinadas; a permissão só é pedida ao ativar e o aviso apenas abre a agenda.
+- Carteira com filtros por atraso, próximos sete dias, saldo em aberto, quitados e vencidos sem contato.
 - Recuperação de senha, identificação de dados em cache, tratamento de falhas de sessão e correção da leitura de comprovantes.
 - Validação de assinatura no servidor antes de concluir a compra, proteção de titularidade, renovação, reembolso e exclusão de conta.
 - Notificações com destino no app e reagendamento limitado; fila recuperável de atribuição de receita quando configurada.

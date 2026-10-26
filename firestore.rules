@@ -58,7 +58,8 @@ service cloud.firestore {
     // ===============================================================
 
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null
+        && !exists(/databases/$(database)/documents/DeletedAccounts/$(request.auth.uid));
     }
 
     function isOwner(userId) {
@@ -156,6 +157,11 @@ service cloud.firestore {
           'status_pago',
           'client_score',
           'created_at',
+          'grupo_id',
+          'parcela',
+          'total_parcelas',
+          'ledger_revision',
+          'ledger_payment_id',
         ])
         && data.user_id is string
         && data.user_id == request.auth.uid
@@ -172,6 +178,16 @@ service cloud.firestore {
         && data.client_score is number
         && data.client_score >= 0
         && data.client_score <= 100
+        && optionalString(data, 'grupo_id', 80)
+        && data.get('parcela', 1) is int
+        && data.get('total_parcelas', 1) is int
+        && data.get('total_parcelas', 1) >= 1
+        && data.get('total_parcelas', 1) <= 12
+        && data.get('parcela', 1) >= 1
+        && data.get('parcela', 1) <= data.get('total_parcelas', 1)
+        && data.get('ledger_revision', 0) is int
+        && data.get('ledger_revision', 0) >= 0
+        && optionalString(data, 'ledger_payment_id', 80)
         && optionalTimestamp(data, 'created_at');
     }
 
@@ -182,6 +198,8 @@ service cloud.firestore {
           'valor',
           'data',
           'descricao',
+          'estornado_em',
+          'estorno_motivo',
         ])
         && data.user_id is string
         && data.user_id == request.auth.uid
@@ -194,7 +212,53 @@ service cloud.firestore {
         && data.data is timestamp
         && data.descricao is string
         && data.descricao.size() > 0
-        && data.descricao.size() <= 80;
+        && data.descricao.size() <= 80
+        && optionalTimestamp(data, 'estornado_em')
+        && optionalString(data, 'estorno_motivo', 200);
+    }
+
+    function paymentDebt(data) {
+      return getAfter(/databases/$(database)/documents/Debts/$(data.debt_id)).data;
+    }
+
+    function paymentHasOwnedDebt(data) {
+      return paymentDebt(data).user_id == request.auth.uid;
+    }
+
+    // Marked ledgers can only be changed together with the parent revision.
+    // Unmarked legacy records remain usable until their first upgraded write.
+    function coordinatedPayment(data, paymentId) {
+      let before = get(/databases/$(database)/documents/Debts/$(data.debt_id)).data;
+      let after = paymentDebt(data);
+      return after.get('ledger_revision', 0) == before.get('ledger_revision', 0) + 1
+        && after.get('ledger_payment_id', '') == paymentId;
+    }
+
+    function ledgerAdvance(debtId) {
+      let paymentId = request.resource.data.get('ledger_payment_id', '');
+      let paymentPath = /databases/$(database)/documents/Payments/$(paymentId);
+      let after = getAfter(paymentPath).data;
+      return request.resource.data.get('ledger_revision', 0) == resource.data.get('ledger_revision', 0) + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status_pago', 'ledger_revision', 'ledger_payment_id'
+        ])
+        && after.user_id == request.auth.uid
+        && after.debt_id == debtId
+        && (!exists(paymentPath)
+          || (get(paymentPath).data.get('estornado_em', null) == null
+            && after.get('estornado_em', null) == request.time));
+    }
+
+    function safeDebtUpdate(debtId) {
+      let before = resource.data.get('ledger_revision', 0);
+      let after = request.resource.data.get('ledger_revision', 0);
+      return (before == 0 && after == 0)
+        || (before > 0 && after == before
+          && request.resource.data.get('ledger_payment_id', '') == resource.data.get('ledger_payment_id', '')
+          && request.resource.data.valor_principal == resource.data.valor_principal
+          && request.resource.data.taxa_juros == resource.data.taxa_juros
+          && request.resource.data.status_pago == resource.data.status_pago)
+        || ledgerAdvance(debtId);
     }
 
     function hasActivePremium() {
@@ -251,23 +315,41 @@ service cloud.firestore {
 
     match /Debts/{debtId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && isValidDebt(request.resource.data);
+      allow create: if isAuthenticated()
+        && isValidDebt(request.resource.data)
+        && request.resource.data.get('ledger_revision', 0) == 0
+        && request.resource.data.get('ledger_payment_id', '') == '';
       allow update: if isAuthenticated()
         && resource.data.user_id == request.auth.uid
         && isValidDebt(request.resource.data)
-        && request.resource.data.user_id == resource.data.user_id;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+        && request.resource.data.user_id == resource.data.user_id
+        && safeDebtUpdate(debtId);
+      allow delete: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && resource.data.get('ledger_revision', 0) == 0;
     }
 
     match /Payments/{paymentId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && isValidPayment(request.resource.data);
+      allow create: if isAuthenticated()
+        && isValidPayment(request.resource.data)
+        && paymentHasOwnedDebt(request.resource.data)
+        && request.resource.data.get('estornado_em', null) == null
+        && request.resource.data.get('estorno_motivo', null) == null
+        && (get(/databases/$(database)/documents/Debts/$(request.resource.data.debt_id)).data.get('ledger_revision', 0) == 0
+          || coordinatedPayment(request.resource.data, paymentId));
       allow update: if isAuthenticated()
         && resource.data.user_id == request.auth.uid
         && isValidPayment(request.resource.data)
         && request.resource.data.user_id == resource.data.user_id
-        && request.resource.data.debt_id == resource.data.debt_id;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+        && request.resource.data.debt_id == resource.data.debt_id
+        && paymentHasOwnedDebt(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estornado_em', 'estorno_motivo'])
+        && resource.data.get('estornado_em', null) == null
+        && request.resource.data.get('estornado_em', null) == request.time
+        && requiredString(request.resource.data, 'estorno_motivo', 200)
+        && coordinatedPayment(request.resource.data, paymentId);
+      allow delete: if false;
     }
 
     match /Bills/{billId} {
@@ -284,6 +366,35 @@ service cloud.firestore {
 
     match /PremiumCharges/{chargeId} {
       allow read, write: if false;
+    }
+
+    function validFollowUp() {
+      return request.resource.data.user_id == request.auth.uid
+        && hasOnlyAllowedFields([
+          'user_id', 'contact_key', 'client_name', 'note', 'last_contacted_at',
+          'next_contact_at', 'promised_amount', 'updated_at'
+        ])
+        && requiredString(request.resource.data, 'contact_key', 200)
+        && requiredString(request.resource.data, 'client_name', 80)
+        && optionalString(request.resource.data, 'note', 1000)
+        && optionalTimestamp(request.resource.data, 'last_contacted_at')
+        && optionalTimestamp(request.resource.data, 'next_contact_at')
+        && (request.resource.data.get('promised_amount', null) == null
+          || (request.resource.data.promised_amount is number
+            && request.resource.data.promised_amount > 0
+            && request.resource.data.promised_amount <= 100000000))
+        && request.resource.data.updated_at == request.time;
+    }
+
+    match /CollectionFollowUps/{followUpId} {
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated() && validFollowUp();
+      allow update: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.contact_key == resource.data.contact_key
+        && validFollowUp();
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
     }
 
     match /Presence/{userId} {

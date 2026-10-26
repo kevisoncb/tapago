@@ -40,10 +40,10 @@ class AppUser {
   final DateTime? aceitePrivacidadeEm;
 
   bool get premiumAtivo => premiumIsActive(
-        isPremium: isPremium,
-        until: premiumVenceEm,
-        now: DateTime.now(),
-      );
+    isPremium: isPremium,
+    until: premiumVenceEm,
+    now: DateTime.now(),
+  );
 
   AppUser copyWith({
     String? id,
@@ -153,6 +153,9 @@ class Debt {
     required this.statusPago,
     required this.clientScore,
     this.createdAt,
+    this.grupoId = '',
+    this.parcela = 1,
+    this.totalParcelas = 1,
   });
 
   final String id;
@@ -165,9 +168,14 @@ class Debt {
   final bool statusPago;
   final int clientScore;
   final DateTime? createdAt;
+  final String grupoId;
+  final int parcela;
+  final int totalParcelas;
 
-  double get valorAtualizado =>
-      valorPrincipal * (1 + (taxaJuros / 100));
+  bool get parcelado => totalParcelas > 1;
+  String get parcelaLabel => 'Parcela $parcela de $totalParcelas';
+
+  double get valorAtualizado => valorPrincipal * (1 + (taxaJuros / 100));
 
   bool get isOverdue {
     if (statusPago) return false;
@@ -207,6 +215,9 @@ class Debt {
     bool? statusPago,
     int? clientScore,
     DateTime? createdAt,
+    String? grupoId,
+    int? parcela,
+    int? totalParcelas,
   }) {
     return Debt(
       id: id ?? this.id,
@@ -219,6 +230,9 @@ class Debt {
       statusPago: statusPago ?? this.statusPago,
       clientScore: clientScore ?? this.clientScore,
       createdAt: createdAt ?? this.createdAt,
+      grupoId: grupoId ?? this.grupoId,
+      parcela: parcela ?? this.parcela,
+      totalParcelas: totalParcelas ?? this.totalParcelas,
     );
   }
 
@@ -233,6 +247,9 @@ class Debt {
       'data_vencimento': dataVencimento.toIso8601String(),
       'status_pago': statusPago,
       'client_score': clientScore,
+      if (grupoId.isNotEmpty) 'grupo_id': grupoId,
+      if (totalParcelas > 1) 'parcela': parcela,
+      if (totalParcelas > 1) 'total_parcelas': totalParcelas,
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -247,6 +264,9 @@ class Debt {
       'data_vencimento': dataVencimento,
       'status_pago': statusPago,
       'client_score': clientScore,
+      if (grupoId.isNotEmpty) 'grupo_id': grupoId,
+      if (totalParcelas > 1) 'parcela': parcela,
+      if (totalParcelas > 1) 'total_parcelas': totalParcelas,
       'created_at': createdAt ?? DateTime.now(),
     };
   }
@@ -261,7 +281,10 @@ class Debt {
       taxaJuros: (map['taxa_juros'] as num?)?.toDouble() ?? 0,
       dataVencimento: _parseDate(map['data_vencimento']) ?? DateTime.now(),
       statusPago: map['status_pago'] as bool? ?? false,
-      clientScore: map['client_score'] as int? ?? 80,
+      clientScore: (map['client_score'] as num?)?.toInt() ?? 80,
+      grupoId: map['grupo_id'] as String? ?? '',
+      parcela: (map['parcela'] as num?)?.toInt() ?? 1,
+      totalParcelas: (map['total_parcelas'] as num?)?.toInt() ?? 1,
       createdAt: _parseDate(map['created_at']),
     );
   }
@@ -419,6 +442,8 @@ class Payment {
     required this.valor,
     required this.data,
     this.descricao = 'Pagamento Recebido',
+    this.estornadoEm,
+    this.estornoMotivo,
   });
 
   final String id;
@@ -427,6 +452,21 @@ class Payment {
   final double valor;
   final DateTime data;
   final String descricao;
+  final DateTime? estornadoEm;
+  final String? estornoMotivo;
+
+  bool get estornado => estornadoEm != null;
+
+  Payment copyWith({DateTime? estornadoEm, String? estornoMotivo}) => Payment(
+    id: id,
+    debtId: debtId,
+    userId: userId,
+    valor: valor,
+    data: data,
+    descricao: descricao,
+    estornadoEm: estornadoEm ?? this.estornadoEm,
+    estornoMotivo: estornoMotivo ?? this.estornoMotivo,
+  );
 
   Map<String, dynamic> toMap() {
     return {
@@ -436,6 +476,8 @@ class Payment {
       'valor': valor,
       'data': data.toIso8601String(),
       'descricao': descricao,
+      if (estornadoEm != null) 'estornado_em': estornadoEm!.toIso8601String(),
+      if (estornoMotivo != null) 'estorno_motivo': estornoMotivo,
     };
   }
 
@@ -446,6 +488,8 @@ class Payment {
       'valor': valor,
       'data': data,
       'descricao': descricao,
+      if (estornadoEm != null) 'estornado_em': estornadoEm,
+      if (estornoMotivo != null) 'estorno_motivo': estornoMotivo,
     };
   }
 
@@ -457,6 +501,8 @@ class Payment {
       valor: (map['valor'] as num?)?.toDouble() ?? 0,
       data: Debt._parseDate(map['data']) ?? DateTime.now(),
       descricao: map['descricao'] as String? ?? 'Pagamento Recebido',
+      estornadoEm: Debt._parseDate(map['estornado_em']),
+      estornoMotivo: map['estorno_motivo'] as String?,
     );
   }
 }

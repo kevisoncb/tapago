@@ -25,6 +25,8 @@ const OWNED_COLLECTIONS = [
   ["Bills", "user_id"],
   ["PremiumCharges", "userId"],
   ["AdminNotes", "uid"],
+  ["CollectionFollowUps", "user_id"],
+  ["MmpOutbox", "uid"],
 ];
 const OPEN_2FA_ROUTES = new Set(["/2fa/status", "/2fa/verify"]);
 
@@ -603,12 +605,18 @@ async function deleteAccount(uid) {
   let record = null;
   try {
     record = await admin.auth().getUser(uid);
-  } catch (_) {
-    record = null;
+  } catch (error) {
+    if (error.code !== "auth/user-not-found") throw error;
   }
   if (record && adminEmails().includes(String(record.email || "").toLowerCase())) {
     throw httpError(400, "Não dá para excluir uma conta administradora.");
   }
+
+  // Written before any destructive step. Store webhook transactions read this
+  // document so concurrent renewals cannot recreate a deleted user profile.
+  await db().collection("DeletedAccounts").doc(uid).set({
+    deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
 
   let removed = 0;
   for (const [collection, field] of OWNED_COLLECTIONS) {
@@ -618,6 +626,18 @@ async function deleteAccount(uid) {
   await db().collection("Presence").doc(uid).delete();
   await db().collection("AdminContacts").doc(uid).delete();
   await db().collection("MmpIds").doc(uid).delete();
+  // Financial records remain server-only. Purchase tokens and attribution IDs
+  // are operational secrets, not needed in a retained financial record.
+  for (const collection of ["PlaySubscriptions", "AppleSubscriptions"]) {
+    const subscriptions = await db().collection(collection).where("uid", "==", uid).get();
+    for (const subscription of subscriptions.docs) {
+      await subscription.ref.set({
+        deletedAccount: true,
+        purchaseToken: admin.firestore.FieldValue.delete(),
+        appAccountToken: admin.firestore.FieldValue.delete(),
+      }, { merge: true });
+    }
+  }
   if (record) await admin.auth().deleteUser(uid);
   return { ok: true, documentos: removed };
 }

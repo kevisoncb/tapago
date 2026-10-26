@@ -15,7 +15,7 @@ Future<void> chargeOnWhatsApp({
 }) async {
   final state = context.read<AppController>();
   final custom = state.user.mensagemCobranca.trim();
-  final useCustom = state.user.isPremium && custom.isNotEmpty;
+  final useCustom = state.user.premiumAtivo && custom.isNotEmpty;
   final chosenAction = action ?? whatsAppActionForDue(debt.dataVencimento);
 
   var tone = WhatsAppTone.amigavel;
@@ -101,7 +101,7 @@ Future<void> chargeOnWhatsApp({
     saldo: state.saldoOf(debt),
     chavePix: state.user.chavePix,
     customTemplate: custom,
-    isPremium: state.user.isPremium,
+    isPremium: state.user.premiumAtivo,
   );
   if (!context.mounted) return;
   if (!ok) {

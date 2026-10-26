@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/debt_balance.dart';
+import '../services/client_match.dart';
 import '../services/receipt_amount.dart';
 import '../services/receipt_reader.dart';
 import '../services/whatsapp_service.dart';
@@ -18,6 +19,7 @@ import '../widgets/common.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
+import 'customer_statement_page.dart';
 import 'premium_page.dart';
 
 class ClientProfilePage extends StatelessWidget {
@@ -40,7 +42,7 @@ class ClientProfilePage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Perfil do Cliente'),
+        title: const Text('Caderneta do cliente'),
         actions: [
           IconButton(
             onPressed: () {
@@ -91,36 +93,32 @@ class ClientProfilePage extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.star_rounded, size: 16, color: AppColors.star),
-              const SizedBox(width: 4),
-              Text(
-                'Score de Confiança: ${current.clientScore}/100',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.mutedDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) {
-              final filled = index < current.scoreStars;
-              return Icon(
-                filled ? Icons.star_rounded : Icons.star_border_rounded,
-                size: 16,
-                color: filled ? const Color(0xFFF5B942) : AppColors.muted,
-              );
-            }),
-          ),
           const SizedBox(height: 20),
-          _ValueCard(debt: current, saldo: saldo, balance: state.balanceOf(current)),
+          _ValueCard(
+            debt: current,
+            saldo: saldo,
+            balance: state.balanceOf(current),
+          ),
+          if (current.totalParcelas > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Parcela ${current.parcela} de ${current.totalParcelas}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.mutedDark),
+              ),
+            ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    CustomerStatementPage(contactKey: contactKeyOf(current)),
+              ),
+            ),
+            icon: const Icon(Icons.receipt_long_outlined),
+            label: const Text('Ver extrato e compartilhar'),
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -129,7 +127,7 @@ class ClientProfilePage extends StatelessWidget {
                   ? null
                   : () => _abater(context, current, saldo),
               icon: const Icon(Icons.remove_circle_outline_rounded),
-              label: const Text('Abater valor'),
+              label: const Text('Registrar pagamento'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: const Color(0xFFE8EEF6),
@@ -145,10 +143,7 @@ class ClientProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _OcrButton(
-            debt: current,
-            isPremium: state.user.isPremium,
-          ),
+          _OcrButton(debt: current, isPremium: state.user.premiumAtivo),
           const SizedBox(height: 26),
           Row(
             children: [
@@ -226,19 +221,21 @@ class ClientProfilePage extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                'Ver Tudo',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CustomerStatementPage(
+                      contactKey: contactKeyOf(current),
+                    ),
+                  ),
                 ),
+                child: const Text('Ver extrato'),
               ),
             ],
           ),
           const SizedBox(height: 12),
           _PaymentHistory(items: history),
-          if (!state.user.isPremium) ...[
+          if (!state.user.premiumAtivo) ...[
             const SizedBox(height: 18),
             const _MiniPremiumBanner(),
           ],
@@ -279,10 +276,10 @@ class ClientProfilePage extends StatelessWidget {
           );
     if (valor == null || !context.mounted) return;
     final error = await context.read<AppController>().abate(
-          debt: current,
-          valor: valor,
-          somenteJuros: somenteJuros,
-        );
+      debt: current,
+      valor: valor,
+      somenteJuros: somenteJuros,
+    );
     if (!context.mounted) return;
     final next = context.read<AppController>().balanceOf(current);
     showPagoSnack(
@@ -332,13 +329,13 @@ class _ValueCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [Color(0xFF2EE0C5), Color(0xFF2F6BFF)],
+          colors: [Color(0xFF2455D9), Color(0xFF2F6BFF)],
         ),
       ),
       child: Column(
         children: [
           Text(
-            'Saldo da caderneta',
+            'Saldo a receber',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white.withValues(alpha: 0.9),
               fontWeight: FontWeight.w600,
@@ -365,7 +362,11 @@ class _ValueCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.trending_up_rounded, size: 14, color: Colors.white),
+                  const Icon(
+                    Icons.trending_up_rounded,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     balance.jurosRestantes > 0.009
@@ -388,10 +389,7 @@ class _ValueCard extends StatelessWidget {
 }
 
 class _WhatsAppAction extends StatelessWidget {
-  const _WhatsAppAction({
-    required this.label,
-    required this.onTap,
-  });
+  const _WhatsAppAction({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -442,9 +440,8 @@ class _OcrButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: () {
         if (!isPremium) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PremiumPage()),
-          );
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
           return;
         }
         _pick(context);
@@ -583,15 +580,13 @@ class _OcrButton extends StatelessWidget {
     final somenteJuros = kind == AbateKind.juros;
     final teto = somenteJuros ? balance.jurosRestantes : balance.saldo;
     if (teto <= 0.009) {
-      showPagoSnack(
-        context,
-        'Não há valor em aberto para esse tipo de abate.',
-      );
+      showPagoSnack(context, 'Não há valor em aberto para esse tipo de abate.');
       return;
     }
 
-    final sugerido =
-        kind == AbateKind.total ? balance.saldo : (lido > teto ? teto : lido);
+    final sugerido = kind == AbateKind.total
+        ? balance.saldo
+        : (lido > teto ? teto : lido);
     final valor = await showAmountKeypad(
       context: context,
       title: 'Valor lido no comprovante',
@@ -616,8 +611,8 @@ class _OcrButton extends StatelessWidget {
           (somenteJuros
               ? 'Comprovante: ${Money.full(valor)} de juros do mês.'
               : kind == AbateKind.total
-                  ? 'Comprovante: valor total abatido.'
-                  : 'Comprovante: ${Money.full(valor)} na parte do valor.'),
+              ? 'Comprovante: valor total abatido.'
+              : 'Comprovante: ${Money.full(valor)} na parte do valor.'),
     );
   }
 }
@@ -674,7 +669,9 @@ class _PaymentHistory extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          paymentKindLabel(items[i].descricao),
+                          items[i].estornado
+                              ? 'Pagamento estornado'
+                              : paymentKindLabel(items[i].descricao),
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
                           ),
@@ -684,6 +681,8 @@ class _PaymentHistory extends StatelessWidget {
                             if (paymentKindHint(items[i].descricao).isNotEmpty)
                               paymentKindHint(items[i].descricao),
                             Dates.history(items[i].data),
+                            if (items[i].estornado)
+                              items[i].estornoMotivo ?? 'Correção de registro',
                           ].join(' · '),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
@@ -693,11 +692,29 @@ class _PaymentHistory extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    Money.full(items[i].valor),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w800,
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          Money.full(items[i].valor),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: items[i].estornado
+                                ? AppColors.mutedDark
+                                : AppColors.success,
+                            fontWeight: FontWeight.w800,
+                            decoration: items[i].estornado
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        if (!items[i].estornado)
+                          TextButton(
+                            onPressed: () =>
+                                confirmPaymentReversal(context, items[i]),
+                            child: const Text('Estornar'),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -733,7 +750,9 @@ class _MiniPremiumBanner extends StatelessWidget {
               children: [
                 Text(
                   'Pagô Premium',
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 Text(
                   'Voz e leitura de recibos, quando a mão cansar',
@@ -747,9 +766,8 @@ class _MiniPremiumBanner extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PremiumPage()),
-              );
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,

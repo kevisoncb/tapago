@@ -17,6 +17,7 @@ import '../widgets/common.dart';
 import '../widgets/fields.dart';
 import '../widgets/pago_logo.dart';
 import 'legal_page.dart';
+import 'account_export_page.dart';
 import 'premium_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -102,7 +103,7 @@ class SettingsPage extends StatelessWidget {
                           fontSize: 12.5,
                         ),
                       ),
-                      if (user.isPremium) ...[
+                      if (user.premiumAtivo) ...[
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -162,14 +163,13 @@ class SettingsPage extends StatelessWidget {
                 icon: Icons.chat_rounded,
                 iconBackground: AppColors.whatsappSoft,
                 iconColor: AppColors.whatsapp,
-                title: user.isPremium
-                    ? 'Sua mensagem'
-                    : 'Mensagem pronta',
-                subtitle: user.isPremium && user.mensagemCobranca.trim().isNotEmpty
+                title: user.premiumAtivo ? 'Sua mensagem' : 'Mensagem pronta',
+                subtitle:
+                    user.premiumAtivo && user.mensagemCobranca.trim().isNotEmpty
                     ? 'Premium: toque para editar'
-                    : user.isPremium
-                        ? 'Escreva o texto que vai no WhatsApp'
-                        : 'O plano livre usa esta. Premium deixa mudar.',
+                    : user.premiumAtivo
+                    ? 'Escreva o texto que vai no WhatsApp'
+                    : 'O plano livre usa esta. Premium deixa mudar.',
                 onTap: () => _editMensagem(context),
               ),
             ],
@@ -208,8 +208,8 @@ class SettingsPage extends StatelessWidget {
                   value: user.notificacoesDiarias,
                   onChanged: (value) {
                     context.read<AppController>().saveUser(
-                          user.copyWith(notificacoesDiarias: value),
-                        );
+                      user.copyWith(notificacoesDiarias: value),
+                    );
                   },
                 ),
               ),
@@ -224,8 +224,8 @@ class SettingsPage extends StatelessWidget {
                   value: user.acessoBiometrico,
                   onChanged: (value) {
                     context.read<AppController>().saveUser(
-                          user.copyWith(acessoBiometrico: value),
-                        );
+                      user.copyWith(acessoBiometrico: value),
+                    );
                   },
                 ),
               ),
@@ -256,8 +256,10 @@ class SettingsPage extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.workspace_premium_outlined,
-                        color: AppColors.primary),
+                    const Icon(
+                      Icons.workspace_premium_outlined,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -270,11 +272,11 @@ class SettingsPage extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            user.isPremium && user.premiumVenceEm != null
+                            user.premiumAtivo && user.premiumVenceEm != null
                                 ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
-                                : user.isPremium
-                                    ? 'Assinatura ativa'
-                                    : 'Voz e leitura de recibos',
+                                : user.premiumAtivo
+                                ? 'Assinatura ativa'
+                                : 'Voz e leitura de recibos',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.mutedDark,
@@ -304,7 +306,9 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      user.isPremium ? 'Gerenciar Assinatura' : 'Assinar Premium',
+                      user.premiumAtivo
+                          ? 'Gerenciar Assinatura'
+                          : 'Assinar Premium',
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w700,
                       ),
@@ -313,6 +317,21 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 22),
+          const SectionLabel('MEUS DADOS'),
+          const SizedBox(height: 10),
+          GroupCard(
+            children: [
+              SettingsRow(
+                icon: Icons.file_download_outlined,
+                title: 'Exportar meus dados',
+                subtitle: 'Sua caderneta em CSV ou JSON',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AccountExportPage()),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 22),
           const SectionLabel('SUPORTE'),
@@ -325,7 +344,11 @@ class SettingsPage extends StatelessWidget {
                 iconColor: AppColors.whatsapp,
                 title: 'Ajuda',
                 subtitle: 'Mesmo WhatsApp do site',
-                trailing: const Icon(Icons.chat_rounded, size: 18, color: AppColors.whatsapp),
+                trailing: const Icon(
+                  Icons.chat_rounded,
+                  size: 18,
+                  color: AppColors.whatsapp,
+                ),
                 onTap: () => launchUrl(
                   Uri.parse(AppConstants.helpUrl),
                   mode: LaunchMode.externalApplication,
@@ -495,7 +518,9 @@ class SettingsPage extends StatelessWidget {
                       ),
                       child: Text(
                         busy ? 'Excluindo...' : 'Excluir para sempre',
-                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
@@ -557,9 +582,7 @@ class SettingsPage extends StatelessWidget {
                     );
                     return;
                   }
-                  await state.saveUser(
-                    state.user.copyWith(chavePix: chave),
-                  );
+                  await state.saveUser(state.user.copyWith(chavePix: chave));
                   if (context.mounted) Navigator.pop(context);
                 },
               ),
@@ -573,7 +596,9 @@ class SettingsPage extends StatelessWidget {
   Future<void> _editBank(BuildContext context) async {
     final state = context.read<AppController>();
     final banco = TextEditingController(text: state.user.banco);
-    final agencia = TextEditingController(text: formatAgency(state.user.agencia));
+    final agencia = TextEditingController(
+      text: formatAgency(state.user.agencia),
+    );
     final conta = TextEditingController(text: formatAccount(state.user.conta));
     await showModalBottomSheet<void>(
       context: context,
@@ -648,7 +673,7 @@ class SettingsPage extends StatelessWidget {
   Future<void> _editMensagem(BuildContext context) async {
     final state = context.read<AppController>();
     final user = state.user;
-    if (!user.isPremium) {
+    if (!user.premiumAtivo) {
       await showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.white,

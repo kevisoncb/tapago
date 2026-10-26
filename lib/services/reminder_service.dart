@@ -10,6 +10,30 @@ import 'whatsapp_service.dart';
 
 enum ReminderKind { amanha, hoje, atraso }
 
+/// Identificador de navegação, sem nome, valor ou chave PIX no payload.
+class ReminderTarget {
+  const ReminderTarget({required this.id, required this.isBill, this.userId});
+
+  final String id;
+  final bool isBill;
+  final String? userId;
+
+  static ReminderTarget? parse(String? payload) {
+    final parts = (payload ?? '').split('|');
+    if (parts.length < 2 || parts.length > 3 || parts[1].isEmpty) return null;
+    if (parts[1].contains('/') || parts[1].length > 100) return null;
+    final bill = parts[0] == 'boleto';
+    if (!bill && !ReminderKind.values.any((kind) => kind.name == parts[0])) {
+      return null;
+    }
+    return ReminderTarget(
+      id: parts[1],
+      isBill: bill,
+      userId: parts.length == 3 && parts[2].isNotEmpty ? parts[2] : null,
+    );
+  }
+}
+
 ReminderKind? reminderKind({
   required DateTime due,
   required DateTime day,
@@ -48,9 +72,11 @@ BillReminderKind? billReminderKind({
   final vencimento = DateTime(due.year, due.month, due.day);
   final start = DateTime(day.year, day.month, day.day);
   if (vencimento.isBefore(start)) return BillReminderKind.atraso;
-  final dias = DateTime.utc(vencimento.year, vencimento.month, vencimento.day)
-      .difference(DateTime.utc(start.year, start.month, start.day))
-      .inDays;
+  final dias = DateTime.utc(
+    vencimento.year,
+    vencimento.month,
+    vencimento.day,
+  ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
   switch (dias) {
     case 0:
       return BillReminderKind.hoje;
@@ -94,24 +120,33 @@ String billReminderBody(List<Bill> bills) {
 }
 
 class ReminderService {
-  ReminderService();
+  ReminderService({this.onOpen});
+
+  final Future<void> Function(ReminderTarget target)? onOpen;
+
+  // Agenda limitada pelo SO. Ela é refeita ao carregar/retomar o app; não é
+  // uma promessa de renovação em background sem execução do aplicativo.
+  static const scheduleHorizonDays = 14;
+  static const maxScheduledNotifications = 60;
 
   final _plugin = FlutterLocalNotificationsPlugin();
   var _ready = false;
-  final _debtsById = <String, Debt>{};
-  var _saldos = <String, double>{};
-  var _chavePix = '';
-  var _customTemplate = '';
-  var _isPremium = false;
-
+  Future<void>? _initializing;
+  Future<void> _syncWork = Future.value();
   bool get _supported {
     if (kIsWeb) return false;
     return defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
   }
 
-  Future<void> init() async {
-    if (_ready || !_supported) return;
+  Future<void> init() {
+    if (_ready || !_supported) return Future.value();
+    return _initializing ??= _initialize().whenComplete(() {
+      _initializing = null;
+    });
+  }
+
+  Future<void> _initialize() async {
     tzdata.initializeTimeZones();
     try {
       final name = await FlutterTimezone.getLocalTimezone();
@@ -138,19 +173,28 @@ class ReminderService {
       onDidReceiveNotificationResponse: _onNotificationResponse,
     );
     _ready = true;
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    final response = launch?.notificationResponse;
+    if (launch?.didNotificationLaunchApp == true && response != null) {
+      await _onNotificationResponse(response);
+    }
   }
 
   Future<bool> requestPermission() async {
     await init();
     if (!_ready) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       final granted = await android?.requestNotificationsPermission();
       return granted ?? true;
     }
-    final ios = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     final granted = await ios?.requestPermissions(
       alert: true,
       badge: true,
@@ -167,17 +211,31 @@ class ReminderService {
     String customTemplate = '',
     bool isPremium = false,
     List<Bill> bills = const [],
+  }) {
+    // Atualizações de perfil e lançamentos podem chegar juntas. Serializar
+    // evita cancelAll de uma chamada apagar a agenda da chamada seguinte.
+    final debtSnapshot = List<Debt>.of(debts);
+    final billSnapshot = List<Bill>.of(bills);
+    _syncWork = _syncWork
+        .catchError((Object _) {})
+        .then(
+          (_) => _performSync(
+            enabled: enabled,
+            debts: debtSnapshot,
+            bills: billSnapshot,
+          ),
+        );
+    return _syncWork;
+  }
+
+  Future<void> _performSync({
+    required bool enabled,
+    required List<Debt> debts,
+    required List<Bill> bills,
   }) async {
     await init();
     if (!_ready) return;
     await _plugin.cancelAll();
-    _debtsById
-      ..clear()
-      ..addEntries(debts.map((debt) => MapEntry(debt.id, debt)));
-    _saldos = Map<String, double>.from(saldos);
-    _chavePix = chavePix;
-    _customTemplate = customTemplate;
-    _isPremium = isPremium;
     if (!enabled) return;
 
     const androidDetails = AndroidNotificationDetails(
@@ -186,9 +244,14 @@ class ReminderService {
       channelDescription: 'Avisos no dia anterior e no vencimento',
       importance: Importance.high,
       priority: Priority.high,
+      visibility: NotificationVisibility.private,
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction('depois', 'Agora não'),
-        AndroidNotificationAction('enviar', 'Enviar cobrança'),
+        AndroidNotificationAction(
+          'enviar',
+          'Ver cobrança',
+          showsUserInterface: true,
+        ),
       ],
     );
     const details = NotificationDetails(
@@ -202,15 +265,19 @@ class ReminderService {
         channelDescription: 'Avisos de boletos que você precisa pagar',
         importance: Importance.high,
         priority: Priority.high,
+        visibility: NotificationVisibility.private,
       ),
       iOS: DarwinNotificationDetails(),
     );
 
     final now = DateTime.now();
     var slot = 0;
-    for (var offset = 0; offset < 14; offset++) {
-      final day =
-          DateTime(now.year, now.month, now.day).add(Duration(days: offset));
+    for (var offset = 0; offset < scheduleHorizonDays; offset++) {
+      final day = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).add(Duration(days: offset));
       final atNine = DateTime(day.year, day.month, day.day, 9);
       if (!atNine.isAfter(now)) continue;
       final when = tz.TZDateTime(
@@ -234,6 +301,7 @@ class ReminderService {
             )
             .toList();
         if (group.isEmpty) continue;
+        if (slot >= maxScheduledNotifications) return;
         await _plugin.zonedSchedule(
           slot,
           _title(kind, group),
@@ -241,7 +309,7 @@ class ReminderService {
           when,
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: '${kind.name}|${group.first.id}',
+          payload: '${kind.name}|${group.first.id}|${group.first.userId}',
         );
         slot++;
       }
@@ -259,6 +327,7 @@ class ReminderService {
             )
             .toList();
         if (group.isEmpty) continue;
+        if (slot >= maxScheduledNotifications) return;
         await _plugin.zonedSchedule(
           slot,
           billReminderTitle(kind, group),
@@ -266,7 +335,7 @@ class ReminderService {
           when,
           billDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: 'boleto|${group.first.id}',
+          payload: 'boleto|${group.first.id}|${group.first.userId}',
         );
         slot++;
       }
@@ -275,22 +344,11 @@ class ReminderService {
 
   Future<void> _onNotificationResponse(NotificationResponse response) async {
     if (response.actionId == 'depois') return;
-    final payload = response.payload ?? '';
-    final parts = payload.split('|');
-    if (parts.length < 2) return;
-    final kind = ReminderKind.values.where((item) => item.name == parts[0]);
-    if (kind.isEmpty) return;
-    final debt = _debtsById[parts[1]];
-    if (debt == null) return;
-    await WhatsAppService.open(
-      action: whatsAppActionForReminder(kind.first),
-      tone: WhatsAppTone.amigavel,
-      debt: debt,
-      saldo: _saldos[debt.id] ?? debt.valorPrincipal,
-      chavePix: _chavePix,
-      customTemplate: _customTemplate,
-      isPremium: _isPremium,
-    );
+    final target = ReminderTarget.parse(response.payload);
+    if (target == null) return;
+    // Tocar abre o contexto no app; jamais dispara WhatsApp automaticamente,
+    // especialmente antes de confirmar a conta e desbloquear a interface.
+    await onOpen?.call(target);
   }
 
   String _title(ReminderKind kind, List<Debt> debts) {

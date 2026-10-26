@@ -17,7 +17,7 @@ Future<String?> readReceiptBytes(List<int> bytes) async {
   );
   await file.writeAsBytes(Uint8List.fromList(bytes), flush: true);
   try {
-    return readReceiptText(file.path);
+    return await readReceiptText(file.path);
   } finally {
     if (file.existsSync()) file.deleteSync();
   }

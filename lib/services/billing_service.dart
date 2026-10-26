@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'billing_purchase_stub.dart'
-    if (dart.library.io) 'billing_purchase_io.dart' as purchase;
+    if (dart.library.io) 'billing_purchase_io.dart'
+    as purchase;
 import 'store_ids.dart';
 
 enum PurchaseOutcome {
@@ -39,31 +40,42 @@ class PurchaseUpdate {
   static const canceled = PurchaseUpdate(outcome: PurchaseOutcome.canceled);
 
   static PurchaseUpdate unavailable(StoreKind store) => PurchaseUpdate(
-        outcome: PurchaseOutcome.unavailable,
-        store: store,
-        message: 'A ${store.label} não está disponível neste aparelho.',
-      );
+    outcome: PurchaseOutcome.unavailable,
+    store: store,
+    message: 'A ${store.label} não está disponível neste aparelho.',
+  );
 
   static PurchaseUpdate missing(StoreKind store) => PurchaseUpdate(
-        outcome: PurchaseOutcome.missing,
-        store: store,
-        message:
-            'O plano ${store.premiumProductId} ainda não está publicado na ${store.label}.',
-      );
+    outcome: PurchaseOutcome.missing,
+    store: store,
+    message:
+        'A assinatura não está disponível nesta conta da ${store.label} agora. Tente novamente mais tarde.',
+  );
 
   static PurchaseUpdate nothingToRestore(StoreKind store) => PurchaseUpdate(
-        outcome: PurchaseOutcome.nothingToRestore,
-        store: store,
-        message: 'Nenhuma assinatura ativa encontrada nesta conta da ${store.label}.',
-      );
+    outcome: PurchaseOutcome.nothingToRestore,
+    store: store,
+    message:
+        'Nenhuma assinatura ativa encontrada nesta conta da ${store.label}.',
+  );
 }
 
 class BillingService {
-  BillingService({InAppPurchase? store}) : _store = store ?? InAppPurchase.instance;
+  BillingService({InAppPurchase? store, this.restoreWait = restoreTimeout})
+    : _store = store ?? InAppPurchase.instance,
+      _supported =
+          store != null ||
+          (!kIsWeb &&
+              (defaultTargetPlatform == TargetPlatform.android ||
+                  defaultTargetPlatform == TargetPlatform.iOS));
 
   static const restoreTimeout = Duration(seconds: 12);
 
   final InAppPurchase _store;
+  final bool _supported;
+  final Duration restoreWait;
+  Future<void> _purchaseWork = Future.value();
+  Future<PurchaseUpdate>? _restoreRequest;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Future<void> Function(PurchaseUpdate update)? onUpdate;
   Completer<PurchaseUpdate>? _restoring;
@@ -79,16 +91,16 @@ class BillingService {
   String? get currency => _product?.currencyCode;
 
   Future<void> start() async {
-    if (_started) return;
+    if (_started || !_supported) return;
     _started = true;
     _subscription = _store.purchaseStream.listen(
-      _onPurchases,
+      (items) {
+        _purchaseWork = _purchaseWork.then((_) => _onPurchases(items));
+      },
       onError: (Object error) {
-        onUpdate?.call(
-          PurchaseUpdate(
-            outcome: PurchaseOutcome.error,
-            store: store,
-            message: 'Falha na compra: $error',
+        unawaited(
+          _reportError(
+            'Não foi possível acompanhar a compra. Tente restaurar quando a conexão voltar.',
           ),
         );
       },
@@ -99,6 +111,16 @@ class BillingService {
     await _subscription?.cancel();
     _subscription = null;
     _started = false;
+    final restoring = _restoring;
+    if (restoring != null && !restoring.isCompleted) {
+      restoring.complete(
+        PurchaseUpdate(
+          outcome: PurchaseOutcome.pending,
+          store: store,
+          message: 'A restauração foi interrompida. Tente novamente ao entrar na conta.',
+        ),
+      );
+    }
   }
 
   /// Preço como a loja mostra (moeda e impostos do país da conta).
@@ -123,10 +145,7 @@ class BillingService {
       if (response.productDetails.isEmpty) return PurchaseUpdate.missing(store);
       _product = response.productDetails.first;
       final started = await _store.buyNonConsumable(
-        purchaseParam: purchase.buildPurchaseParam(
-          _product!,
-          userId: userId,
-        ),
+        purchaseParam: purchase.buildPurchaseParam(_product!, userId: userId),
       );
       if (!started) {
         return PurchaseUpdate(
@@ -145,26 +164,33 @@ class BillingService {
     }
   }
 
-  /// Restaurar Compras (exigido pela Apple): pede à loja as assinaturas da
-  /// conta e espera a resposta. A loja não avisa quando não há nada, por isso
-  /// o tempo limite vira "nada para restaurar".
-  Future<PurchaseUpdate> restorePurchases() async {
+  /// A loja pode não responder quando não há compras. Um timeout significa
+  /// resultado ainda desconhecido, não prova ausência de assinatura.
+  Future<PurchaseUpdate> restorePurchases() {
+    return _restoreRequest ??= _restore().whenComplete(() {
+      _restoreRequest = null;
+    });
+  }
+
+  Future<PurchaseUpdate> _restore() async {
     final ready = await _prepare();
     if (ready != null) return ready;
-    final pending = _restoring;
-    if (pending != null) return pending.future;
     final completer = _restoring = Completer<PurchaseUpdate>();
     try {
       await _store.restorePurchases();
       return await completer.future.timeout(
-        restoreTimeout,
-        onTimeout: () => PurchaseUpdate.nothingToRestore(store),
+        restoreWait,
+        onTimeout: () => PurchaseUpdate(
+          outcome: PurchaseOutcome.pending,
+          store: store,
+          message: 'A loja ainda não confirmou a restauração. Aguarde ou tente novamente; isso não significa que você não tem assinatura.',
+        ),
       );
-    } catch (error) {
+    } catch (_) {
       return PurchaseUpdate(
         outcome: PurchaseOutcome.error,
         store: store,
-        message: 'Não foi possível restaurar a compra: $error',
+        message: 'Não foi possível restaurar a compra. Confira a conexão e tente novamente.',
       );
     } finally {
       _restoring = null;
@@ -172,8 +198,9 @@ class BillingService {
   }
 
   Future<PurchaseUpdate?> _prepare() async {
-    await start();
+    if (!_supported) return PurchaseUpdate.unavailable(store);
     try {
+      await start();
       final available = await _store.isAvailable();
       if (!available) return PurchaseUpdate.unavailable(store);
     } catch (error) {
@@ -185,45 +212,63 @@ class BillingService {
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {
     for (final item in purchases) {
-      if (!isPremiumProductId(item.productID)) {
-        if (item.pendingCompletePurchase) {
-          await _store.completePurchase(item);
-        }
-        continue;
-      }
-      switch (item.status) {
-        case PurchaseStatus.pending:
-          await onUpdate?.call(PurchaseUpdate.pending);
-        case PurchaseStatus.purchased:
-        case PurchaseStatus.restored:
-          if (item.pendingCompletePurchase) {
-            await _store.completePurchase(item);
-          }
-          final update = PurchaseUpdate(
-            outcome: item.status == PurchaseStatus.purchased
-                ? PurchaseOutcome.purchased
-                : PurchaseOutcome.restored,
-            store: store,
-            transactionId: _transactionId(item),
-            purchaseToken: _purchaseToken(item),
-          );
-          final restoring = _restoring;
-          if (restoring != null && !restoring.isCompleted) {
-            restoring.complete(update);
-          } else {
-            await onUpdate?.call(update);
-          }
-        case PurchaseStatus.canceled:
-          await onUpdate?.call(PurchaseUpdate.canceled);
-        case PurchaseStatus.error:
-          await onUpdate?.call(
-            PurchaseUpdate(
-              outcome: PurchaseOutcome.error,
+      // Não concluir compras de produtos que este serviço não administra.
+      if (item.productID != productId) continue;
+      try {
+        switch (item.status) {
+          case PurchaseStatus.pending:
+            await onUpdate?.call(PurchaseUpdate.pending);
+          case PurchaseStatus.purchased:
+          case PurchaseStatus.restored:
+            final update = PurchaseUpdate(
+              outcome: item.status == PurchaseStatus.purchased
+                  ? PurchaseOutcome.purchased
+                  : PurchaseOutcome.restored,
               store: store,
-              message: item.error?.message ?? 'A compra não foi concluída.',
-            ),
-          );
+              transactionId: _transactionId(item),
+              purchaseToken: _purchaseToken(item),
+            );
+            final validate = onUpdate;
+            if (validate == null) continue;
+            // O callback só retorna com sucesso quando o backend confirmou e
+            // o direito está carregado. Falha mantém a compra pendente na loja.
+            await validate(update);
+            if (item.pendingCompletePurchase) {
+              await _store.completePurchase(item);
+            }
+            _finishRestore(update);
+          case PurchaseStatus.canceled:
+            _finishRestore(PurchaseUpdate.canceled);
+            await onUpdate?.call(PurchaseUpdate.canceled);
+          case PurchaseStatus.error:
+            await _reportError(
+              item.error?.message ?? 'A compra não foi concluída.',
+            );
+        }
+      } catch (_) {
+        await _reportError(
+          'A compra ainda não foi confirmada no Pagô. Confira a conexão e use Restaurar Compras para tentar novamente.',
+        );
       }
+    }
+  }
+
+  void _finishRestore(PurchaseUpdate update) {
+    final restoring = _restoring;
+    if (restoring != null && !restoring.isCompleted) restoring.complete(update);
+  }
+
+  Future<void> _reportError(String message) async {
+    final update = PurchaseUpdate(
+      outcome: PurchaseOutcome.error,
+      store: store,
+      message: message,
+    );
+    _finishRestore(update);
+    try {
+      await onUpdate?.call(update);
+    } catch (_) {
+      // Erro de UI/callback não deve encerrar o processamento do stream.
     }
   }
 

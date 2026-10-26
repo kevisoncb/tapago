@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -18,20 +18,16 @@ import '../utils/formatters.dart';
 class AppController extends ChangeNotifier {
   AppController(
     this._repository, {
-    Future<void> Function()? onSignOut,
-    BillingService? billing,
-    ReminderService? reminders,
+    this._onSignOut,
+    this._billing,
+    this._reminders,
     BiometricService? biometrics,
-  })  : _onSignOut = onSignOut,
-        _billing = billing,
-        _reminders = reminders,
-        _biometrics = biometrics;
+  });
 
   final AppRepository _repository;
   final Future<void> Function()? _onSignOut;
   final BillingService? _billing;
   final ReminderService? _reminders;
-  final BiometricService? _biometrics;
   final _uuid = const Uuid();
   StreamSubscription<AppUser>? _userSubscription;
 
@@ -46,6 +42,12 @@ class AppController extends ChangeNotifier {
   List<Payment> payments = [];
   List<Bill> bills = [];
   bool loading = true;
+  DateTime? lastSyncedAt;
+  String? syncWarning;
+  final Set<String> _pendingPayments = {};
+  bool _disposed = false;
+  int _dataRevision = 0;
+  Future<void>? _loading;
   String? errorMessage;
   bool billingBusy = false;
   bool restoringPurchases = false;
@@ -57,42 +59,45 @@ class AppController extends ChangeNotifier {
   bool get usesFirestore => _repository.usesFirestore;
 
   List<Debt> get pendingDebts {
-    final pending = debts.where((debt) => !debt.statusPago).toList()
-      ..sort((a, b) {
-        if (a.isOverdue && !b.isOverdue) return -1;
-        if (!a.isOverdue && b.isOverdue) return 1;
-        return a.dataVencimento.compareTo(b.dataVencimento);
-      });
+    final pending =
+        debts
+            .where((debt) => !debt.statusPago && balanceOf(debt).saldo > 0.009)
+            .toList()
+          ..sort((a, b) {
+            if (a.isOverdue && !b.isOverdue) return -1;
+            if (!a.isOverdue && b.isOverdue) return 1;
+            return a.dataVencimento.compareTo(b.dataVencimento);
+          });
     return pending;
   }
 
   double paidFor(String debtId) {
-    return paymentsFor(debtId).fold(0, (sum, item) => sum + item.valor);
+    return paymentsFor(debtId)
+        .where((item) => !item.estornado)
+        .fold(0, (sum, item) => sum + item.valor);
   }
 
   DebtBalance balanceOf(Debt debt) {
-    final ledger = payments.where((item) => item.debtId == debt.id).toList()
-      ..sort((a, b) => a.data.compareTo(b.data));
+    final ledger =
+        payments
+            .where((item) => item.debtId == debt.id && !item.estornado)
+            .toList()
+          ..sort((a, b) => a.data.compareTo(b.data));
     return debtBalance(
       principal: debt.valorPrincipal,
       taxaPercent: debt.taxaJuros,
       quitado: debt.statusPago,
       lancamentos: [
         for (final item in ledger)
-          LedgerPay(
-            valor: item.valor,
-            somenteJuros: item.descricao == 'Juros',
-          ),
+          LedgerPay(valor: item.valor, somenteJuros: item.descricao == 'Juros'),
       ],
     );
   }
 
   double saldoOf(Debt debt) => balanceOf(debt).saldo;
 
-  double get saldoAberto => pendingDebts.fold(
-        0,
-        (sum, debt) => sum + saldoOf(debt),
-      );
+  double get saldoAberto =>
+      pendingDebts.fold(0, (sum, debt) => sum + saldoOf(debt));
 
   double get aReceberNaSemana => pendingDebts
       .where((debt) => debt.isDueThisWeek)
@@ -102,12 +107,16 @@ class AppController extends ChangeNotifier {
       .where((debt) => debt.isOverdue)
       .fold(0, (sum, debt) => sum + saldoOf(debt));
 
-  List<Bill> get pendingBills => bills.where((bill) => !bill.pago).toList()
-    ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+  List<Bill> get pendingBills =>
+      bills.where((bill) => !bill.pago).toList()
+        ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
 
   List<Bill> get paidBills => bills.where((bill) => bill.pago).toList()
-    ..sort((a, b) => (b.pagoEm ?? b.dataVencimento)
-        .compareTo(a.pagoEm ?? a.dataVencimento));
+    ..sort(
+      (a, b) => (b.pagoEm ?? b.dataVencimento).compareTo(
+        a.pagoEm ?? a.dataVencimento,
+      ),
+    );
 
   double get aPagarAberto =>
       pendingBills.fold(0, (sum, bill) => sum + bill.valor);
@@ -131,9 +140,8 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> addBills(List<Bill> next) async {
-    for (final bill in next) {
-      await _repository.upsertBill(bill);
-    }
+    await _repository.upsertBills(next);
+    _dataRevision++;
     final ids = next.map((bill) => bill.id).toSet();
     bills = [...bills.where((bill) => !ids.contains(bill.id)), ...next];
     notifyListeners();
@@ -152,6 +160,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> deleteBill(Bill bill) async {
     await _repository.deleteBill(bill.id);
+    _dataRevision++;
     bills = bills.where((item) => item.id != bill.id).toList();
     notifyListeners();
     await _syncReminders();
@@ -163,42 +172,81 @@ class AppController extends ChangeNotifier {
     return list;
   }
 
-  Future<void> load() async {
+  Future<void> load() {
+    return _loading ??= _load().whenComplete(() => _loading = null);
+  }
+
+  Future<void> _load() async {
     loading = true;
     errorMessage = null;
     notifyListeners();
+    final revision = _dataRevision;
     try {
-      user = await _repository.getCurrentUser();
-      debts = await _repository.getDebts();
-      payments = await _repository.getPayments();
-      try {
-        bills = await _repository.getBills();
-      } catch (error) {
-        bills = [];
-        debugPrint('Boletos: $error');
-      }
+      final nextUser = await _repository.getCurrentUser();
+      final nextDebts = await _repository.getDebts();
+      final nextPayments = await _repository.getPayments();
+      final nextBills = await _repository.getBills();
+      if (_disposed || revision != _dataRevision) return;
+      user = nextUser;
+      debts = nextDebts;
+      payments = nextPayments;
+      bills = nextBills;
+      _updateSyncStatus();
       _billing?.onUpdate = _onPurchase;
       await _billing?.start();
       await _syncReminders();
       _watchUser();
     } catch (error) {
-      errorMessage = 'Não foi possível carregar os dados.';
-      debugPrint('$error');
+      if (_disposed) return;
+      errorMessage = 'Não foi possível atualizar seus dados. Confira a conexão e tente novamente.';
+      debugPrint('Carregamento: $error');
     } finally {
-      loading = false;
-      notifyListeners();
+      if (!_disposed) {
+        loading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void _updateSyncStatus() {
+    final repository = _repository;
+    if (repository is RepositorySyncStatus) {
+      final status = repository as RepositorySyncStatus;
+      lastSyncedAt = status.lastSyncedAt;
+      syncWarning = status.usingCachedData
+          ? 'Mostrando dados salvos neste aparelho. Conecte-se e atualize antes de registrar pagamentos.'
+          : null;
+    } else {
+      lastSyncedAt = DateTime.now();
+      syncWarning = null;
     }
   }
 
   Future<void> saveUser(AppUser next) async {
+    await _repository.saveUser(next);
+    if (_disposed) return;
+    _dataRevision++;
     user = next;
     notifyListeners();
-    await _repository.saveUser(next);
+    await _syncReminders();
+  }
+
+  Future<void> createDebts(List<Debt> next) async {
+    if (next.isEmpty) return;
+    await _repository.upsertDebts(next);
+    if (_disposed) return;
+    _dataRevision++;
+    final ids = next.map((debt) => debt.id).toSet();
+    debts = [...debts.where((debt) => !ids.contains(debt.id)), ...next];
+    _updateSyncStatus();
+    notifyListeners();
     await _syncReminders();
   }
 
   Future<void> upsertDebt(Debt debt) async {
     await _repository.upsertDebt(debt);
+    if (_disposed) return;
+    _dataRevision++;
     final exists = debts.any((item) => item.id == debt.id);
     if (exists) {
       debts = [
@@ -213,9 +261,21 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> addPayment(Payment payment) async {
-    await _repository.addPayment(payment);
-    payments = [...payments, payment];
+    await _repository.recordPayment(payment);
+    await _refreshLedger();
+  }
+
+  Future<void> _refreshLedger() async {
+    // Retain the previous coherent snapshot until both queries succeed.
+    final nextDebts = await _repository.getDebts();
+    final nextPayments = await _repository.getPayments();
+    if (_disposed) return;
+    _dataRevision++;
+    debts = nextDebts;
+    payments = nextPayments;
+    _updateSyncStatus();
     notifyListeners();
+    await _syncReminders();
   }
 
   Future<String?> abate({
@@ -223,58 +283,92 @@ class AppController extends ChangeNotifier {
     required double valor,
     bool somenteJuros = false,
   }) async {
-    if (valor <= 0) return 'Digite um valor.';
+    if (_pendingPayments.isNotEmpty) {
+      return 'Um pagamento desta caderneta já está sendo registrado. Aguarde.';
+    }
+    if (!valor.isFinite || valor <= 0 || valor > 100000000) {
+      return 'Digite um valor válido.';
+    }
     final balance = balanceOf(debt);
+    final cents = (valor * 100).round();
+    if (cents <= 0) return 'O valor mínimo é R\$ 0,01.';
+    final normalized = cents / 100;
     if (somenteJuros) {
       if (balance.jurosRestantes <= 0.009) {
         return 'Não há juros em aberto nesta caderneta.';
       }
-      if (valor > balance.jurosRestantes + 0.009) {
+      if (normalized > balance.jurosRestantes + 0.009) {
         return 'Juros em aberto: ${Money.full(balance.jurosRestantes)}.';
       }
-    } else if (valor > balance.saldo + 0.009) {
+    } else if (normalized > balance.saldo + 0.009) {
       return 'Não dá para abater mais que o saldo (${Money.full(balance.saldo)}).';
     }
-
-    final next = debtBalance(
-      principal: debt.valorPrincipal,
-      taxaPercent: debt.taxaJuros,
-      lancamentos: [
-        ...payments
-            .where((item) => item.debtId == debt.id)
-            .map(
-              (item) => LedgerPay(
-                valor: item.valor,
-                somenteJuros: item.descricao == 'Juros',
-              ),
-            ),
-        LedgerPay(valor: valor, somenteJuros: somenteJuros),
-      ],
-    );
-
-    await addPayment(
-      Payment(
-        id: newId(),
-        debtId: debt.id,
-        userId: user.id,
-        valor: valor,
-        data: DateTime.now(),
-        descricao: next.quitado
-            ? 'Quitação'
-            : somenteJuros
-                ? 'Juros'
-                : 'Abatimento',
-      ),
-    );
-
-    if (next.quitado) {
-      await markPaid(debt);
+    _pendingPayments.add(debt.id);
+    notifyListeners();
+    try {
+      await _repository.recordPayment(
+        Payment(
+          id: newId(),
+          debtId: debt.id,
+          userId: user.id,
+          valor: normalized,
+          data: DateTime.now(),
+          descricao: somenteJuros
+              ? 'Juros'
+              : normalized >= balance.saldo - 0.009
+              ? 'Quitação'
+              : 'Abatimento',
+        ),
+      );
+      try {
+        await _refreshLedger();
+      } catch (_) {
+        await load();
+        if (errorMessage != null || syncWarning != null) {
+          errorMessage = 'O pagamento foi salvo. Atualize a caderneta para conferir o saldo; não registre novamente.';
+        }
+      }
+      return null;
+    } catch (error) {
+      debugPrint('Pagamento: $error');
+      return 'Não foi possível confirmar o pagamento. Atualize a caderneta e confira o histórico antes de tentar novamente.';
+    } finally {
+      _pendingPayments.remove(debt.id);
+      if (!_disposed) notifyListeners();
     }
-    return null;
+  }
+
+  Future<String?> reversePayment(
+    Payment payment, {
+    required String reason,
+  }) async {
+    if (payment.estornado) return 'Este pagamento já foi estornado.';
+    if (reason.trim().isEmpty) return 'Informe o motivo do estorno.';
+    if (_pendingPayments.contains(payment.debtId)) {
+      return 'Aguarde a operação em andamento.';
+    }
+    _pendingPayments.add(payment.debtId);
+    notifyListeners();
+    try {
+      await _repository.reversePayment(payment.id, reason: reason.trim());
+      try {
+        await _refreshLedger();
+      } catch (_) {
+        errorMessage = 'Estorno salvo. Atualize para conferir o saldo antes de repetir a operação.';
+      }
+      return null;
+    } catch (error) {
+      debugPrint('Estorno: $error');
+      return 'Não foi possível confirmar o estorno. Atualize o histórico antes de tentar novamente.';
+    } finally {
+      _pendingPayments.remove(payment.debtId);
+      if (!_disposed) notifyListeners();
+    }
   }
 
   Future<void> markPaid(Debt debt) async {
-    await upsertDebt(debt.copyWith(statusPago: true));
+    final result = await abate(debt: debt, valor: saldoOf(debt));
+    if (result != null) throw StateError(result);
   }
 
   Future<void> activatePremium() async {
@@ -286,12 +380,16 @@ class AppController extends ChangeNotifier {
   }
 
   Future<String?> subscribePremium() async {
+    if (billingBusy || restoringPurchases) {
+      return 'Aguarde a confirmação da loja.';
+    }
     billingBusy = true;
     billingMessage = null;
     notifyListeners();
     try {
       final update =
-          await _billing?.buy(userId: user.id) ?? PurchaseUpdate.unavailable(store);
+          await _billing?.buy(userId: user.id) ??
+          PurchaseUpdate.unavailable(store);
       switch (update.outcome) {
         case PurchaseOutcome.purchased:
         case PurchaseOutcome.restored:
@@ -326,15 +424,17 @@ class AppController extends ChangeNotifier {
   /// Botão "Restaurar Compras": recupera a assinatura da conta da loja sem
   /// comprar de novo (troca de aparelho, reinstalação).
   Future<String?> restorePremium() async {
+    if (restoringPurchases || billingBusy) return 'Aguarde a operação da loja.';
     restoringPurchases = true;
     billingMessage = null;
     notifyListeners();
     try {
-      final update = await _billing?.restorePurchases() ??
+      final update =
+          await _billing?.restorePurchases() ??
           PurchaseUpdate.unavailable(store);
       if (update.outcome == PurchaseOutcome.restored ||
           update.outcome == PurchaseOutcome.purchased) {
-        await _grantFromStore(update);
+        // BillingService has already awaited validation before acknowledging.
         return null;
       }
       if (user.premiumAtivo) return null;
@@ -362,15 +462,22 @@ class AppController extends ChangeNotifier {
   String newId() => _uuid.v4();
 
   Future<void> _onPurchase(PurchaseUpdate update) async {
+    if (_disposed) {
+      throw StateError(
+        'Sessão encerrada; restaure a compra ao entrar novamente.',
+      );
+    }
     if (update.outcome == PurchaseOutcome.purchased ||
         update.outcome == PurchaseOutcome.restored) {
       try {
         await _grantFromStore(update);
         billingMessage = null;
-      } on AsaasException catch (error) {
-        billingMessage = error.message;
+      } catch (error) {
+        billingMessage = error is AsaasException ? error.message : 'Não foi possível confirmar a assinatura. Tente restaurar quando a conexão voltar.';
+        if (!_disposed) notifyListeners();
+        rethrow;
       }
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return;
     }
     if (update.outcome == PurchaseOutcome.error) {
@@ -380,6 +487,8 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _grantFromStore(PurchaseUpdate update) async {
+    if (_disposed) throw StateError('Sessão encerrada.');
+    final expectedUserId = user.id;
     if (usesFirestore) {
       final api = AsaasClient();
       final mmpId = MmpService.instance.appsFlyerId;
@@ -397,13 +506,20 @@ class AppController extends ChangeNotifier {
         );
       }
       if (update.outcome == PurchaseOutcome.purchased) {
-        unawaited(MmpService.instance.logFrontendPurchase(
-          _billing?.price ?? AppConstants.premiumPrice,
-          _billing?.currency ?? 'BRL',
-        ));
+        unawaited(
+          MmpService.instance.logFrontendPurchase(
+            _billing?.price ?? AppConstants.premiumPrice,
+            _billing?.currency ?? 'BRL',
+          ),
+        );
       }
-      user = await _repository.getCurrentUser();
+      final verifiedUser = await _repository.getCurrentUser();
+      if (_disposed || user.id != expectedUserId) {
+        throw StateError('Sessão encerrada.');
+      }
+      user = verifiedUser;
       notifyListeners();
+      await _syncReminders();
       return;
     }
     final next = user.copyWith(
@@ -419,12 +535,10 @@ class AppController extends ChangeNotifier {
       await _reminders?.sync(
         enabled: user.notificacoesDiarias,
         debts: pendingDebts,
-        saldos: {
-          for (final debt in pendingDebts) debt.id: saldoOf(debt),
-        },
+        saldos: {for (final debt in pendingDebts) debt.id: saldoOf(debt)},
         chavePix: user.chavePix,
         customTemplate: user.mensagemCobranca,
-        isPremium: user.isPremium,
+        isPremium: user.premiumAtivo,
         bills: user.premiumAtivo ? pendingBills : const [],
       );
     } catch (error) {
@@ -434,19 +548,17 @@ class AppController extends ChangeNotifier {
 
   void _watchUser() {
     _userSubscription?.cancel();
-    _userSubscription = _repository.watchCurrentUser()?.listen(
-      (next) {
-        final premiumChanged = next.premiumAtivo != user.premiumAtivo;
-        user = next;
-        notifyListeners();
-        if (premiumChanged) _syncReminders();
-      },
-      onError: (Object error) => debugPrint('Conta ao vivo: $error'),
-    );
+    _userSubscription = _repository.watchCurrentUser()?.listen((next) {
+      final premiumChanged = next.premiumAtivo != user.premiumAtivo;
+      user = next;
+      notifyListeners();
+      if (premiumChanged) _syncReminders();
+    }, onError: (Object error) => debugPrint('Conta ao vivo: $error'));
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _userSubscription?.cancel();
     _billing?.onUpdate = null;
     super.dispose();

@@ -2,6 +2,7 @@ const crypto = require("crypto");
 
 const { onRequest } = require("firebase-functions/v2/https");
 const { onMessagePublished } = require("firebase-functions/v2/pubsub");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineString } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
@@ -15,6 +16,10 @@ const adminModule = require("./admin");
 
 exports.adminApi = adminModule.adminApi;
 exports.adminDailyDigest = adminModule.adminDailyDigest;
+exports.retryMmpRevenue = onSchedule(
+  { schedule: "every 15 minutes", region: "southamerica-east1", timeoutSeconds: 540, maxInstances: 1 },
+  () => mmp.flushRevenueOutbox(),
+);
 
 const asaasKeyParam = defineString("ASAAS_API_KEY");
 const webhookTokenParam = defineString("ASAAS_WEBHOOK_TOKEN");
@@ -83,10 +88,20 @@ exports.asaasWebhook = onRequest(httpOptions, async (req, res) => {
     return;
   }
 
-  if (payment.id) {
-    await saveCharge(payment.id, userId, payment.status || "RECEIVED");
+  if (!payment.id) {
+    res.status(400).json({ ok: false, message: "Cobrança sem identificação." });
+    return;
   }
-  await grantPremium(userId, payment.id || null);
+  try {
+    await saveCharge(payment.id, userId, payment.status || "RECEIVED");
+    await grantPremium(userId, payment.id);
+  } catch (error) {
+    if (error.status === 410) {
+      res.status(200).json({ ok: true, ignored: true });
+      return;
+    }
+    throw error;
+  }
   res.status(200).json({ ok: true, userId });
 });
 
@@ -193,10 +208,8 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
 
   try {
     const user = await requireUser(req);
-    await mmp.rememberDevice(user.uid, "android", req.body?.mmpId);
-    const transactionId = String(req.body?.transactionId || "").trim().slice(0, 120);
     const purchaseToken = String(req.body?.purchaseToken || "").trim();
-    if (!purchaseToken) {
+    if (!purchaseToken || purchaseToken.length > 4096) {
       res.status(400).json({ message: "Atualize o app para confirmar a assinatura." });
       return;
     }
@@ -205,12 +218,14 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
     try {
       summary = await play.fetchSubscription(purchaseToken);
     } catch (error) {
-      console.warn("API da Play indisponível; liberando 30 dias sem conferir.", error.message);
-      await play.linkUnverified(user.uid, purchaseToken, transactionId);
-      await grantPremium(user.uid, transactionId || `play_${Date.now()}`);
-      const fallback = { orderId: transactionId, price: PREMIUM_VALUE, test: false, unverified: true };
-      if (await play.logPlayEvent(user.uid, "COMPRA", fallback)) await alertNewSubscriber(user, fallback);
-      res.status(200).json({ ok: true, verificada: false });
+      const status = Number(error.response?.status || error.code);
+      console.warn("Validação da Play não concluída.", { status: Number.isFinite(status) ? status : null });
+      const invalid = status === 400 || status === 404 || status === 410;
+      res.status(invalid ? 402 : 503).json({
+        message: invalid
+          ? "A Google Play não confirmou esta compra. Confira a conta da loja ou procure o suporte."
+          : "Não foi possível confirmar com a Google Play agora. Tente restaurar a compra em instantes. Seu acesso já confirmado não foi alterado.",
+      });
       return;
     }
 
@@ -223,6 +238,7 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
       return;
     }
     await play.applySubscription(user.uid, purchaseToken, summary);
+    await rememberDeviceSafely(user.uid, "android", req.body?.mmpId);
     const known = summary.orderId
       ? await admin.firestore().collection("PlayEvents").where("orderId", "==", summary.orderId).limit(1).get()
       : { empty: true };
@@ -231,8 +247,8 @@ exports.confirmPlayPurchase = onRequest(httpOptions, async (req, res) => {
     }
     res.status(200).json({ ok: true, verificada: true });
   } catch (error) {
-    res.status(error.status || 401).json({
-      message: error.message || "Não foi possível confirmar a compra.",
+    res.status(error.status || 503).json({
+      message: error.status ? error.message : "Não foi possível confirmar a compra agora. Tente novamente.",
     });
   }
 });
@@ -245,11 +261,11 @@ exports.confirmApplePurchase = onRequest(httpOptions, async (req, res) => {
 
   try {
     const user = await requireUser(req);
-    await mmp.rememberDevice(user.uid, "ios", req.body?.mmpId);
     const { summary, created } = await apple.confirmPurchase(user.uid, {
       transactionId: String(req.body?.transactionId || "").trim().slice(0, 64),
       signedTransaction: String(req.body?.signedTransaction || "").trim(),
     });
+    await rememberDeviceSafely(user.uid, "ios", req.body?.mmpId);
     if (created) await alertNewSubscriber(user, summary);
     res.status(200).json({ ok: true, verificada: true, venceEm: summary.expiry });
   } catch (error) {
@@ -331,9 +347,10 @@ const ALERT_TYPES = {
 };
 
 exports.playNotifications = onMessagePublished(
-  { topic: "play-billing", region: REGION },
+  { topic: "play-billing", region: REGION, retry: true },
   async (event) => {
     const data = event.data?.message?.json || {};
+    if (data.packageName && data.packageName !== play.PACKAGE_NAME) return;
     if (data.testNotification) {
       console.log("Aviso de teste da Play recebido.");
       return;
@@ -347,11 +364,22 @@ exports.playNotifications = onMessagePublished(
     try {
       summary = await play.fetchSubscription(notification.purchaseToken);
     } catch (error) {
-      console.error("Não foi possível consultar a assinatura na Play.", type, error.message);
-      return;
+      const status = Number(error.response?.status || error.code);
+      console.error("Não foi possível consultar a assinatura na Play.", type,
+        { status: Number.isFinite(status) ? status : null });
+      // A permanently missing/invalid token cannot be recovered by a retry.
+      if ([400, 404, 410].includes(status)) return;
+      throw new Error("Consulta temporariamente indisponível; retentar a notificação da Play.");
     }
+    if (summary.productId !== play.PRODUCT_ID) return;
     const uid = await play.uidForToken(notification.purchaseToken, summary);
-    if (uid) await play.applySubscription(uid, notification.purchaseToken, summary);
+    if (!uid) return;
+    try {
+      await play.applySubscription(uid, notification.purchaseToken, summary);
+    } catch (error) {
+      if (error.status === 410) return; // Deleted accounts must never be recreated.
+      throw error;
+    }
     const created = await play.logPlayEvent(uid, type, summary);
     if (!created) return;
 
@@ -368,6 +396,14 @@ exports.playNotifications = onMessagePublished(
     }
   },
 );
+
+async function rememberDeviceSafely(uid, platform, mmpId) {
+  try {
+    await mmp.rememberDevice(uid, platform, mmpId);
+  } catch (_) {
+    console.warn("Identificador de atribuição não atualizado; compra preservada.");
+  }
+}
 
 async function describeUser(uid) {
   const [record, profile] = await Promise.all([
@@ -411,26 +447,50 @@ async function requireUser(req) {
 async function grantPremium(userId, transactionId) {
   const expires = new Date();
   expires.setDate(expires.getDate() + 30);
-  await admin.firestore().collection("Users").doc(userId).set(
-    {
-      is_premium: true,
-      premium_vence_em: admin.firestore.Timestamp.fromDate(expires),
-      premium_transaction_id: transactionId || null,
-    },
-    { merge: true },
-  );
+  const db = admin.firestore();
+  const ref = db.collection("Users").doc(userId);
+  const chargeRef = db.collection("PremiumCharges").doc(transactionId);
+  await db.runTransaction(async (transaction) => {
+    const [profile, deleted, charge] = await Promise.all([
+      transaction.get(ref), transaction.get(db.collection("DeletedAccounts").doc(userId)),
+      transaction.get(chargeRef),
+    ]);
+    if (!profile.exists || deleted.exists) {
+      throw Object.assign(new Error("Esta conta não está disponível."), { status: 410 });
+    }
+    if (charge.data()?.grantedAt || profile.data().premium_transaction_id === transactionId) return;
+    const currentExpiry = profile.data().premium_vence_em?.toMillis?.() || 0;
+    // Polling a paid charge or replaying a webhook must not extend it again,
+    // and legacy PIX must never shorten an existing grant from another source.
+    if (!profile.data().is_premium || currentExpiry < expires.getTime()) {
+      transaction.update(ref, {
+        is_premium: true,
+        premium_vence_em: admin.firestore.Timestamp.fromDate(expires),
+        premium_transaction_id: transactionId,
+      });
+    }
+    transaction.set(chargeRef, {
+      userId, grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+      grantedUntil: admin.firestore.Timestamp.fromDate(expires),
+    }, { merge: true });
+  });
 }
 
 async function saveCharge(paymentId, userId, status) {
   if (!paymentId) return;
-  await admin.firestore().collection("PremiumCharges").doc(paymentId).set(
-    {
-      userId,
-      status,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
+  const db = admin.firestore();
+  await db.runTransaction(async (transaction) => {
+    const [profile, deleted] = await Promise.all([
+      transaction.get(db.collection("Users").doc(userId)),
+      transaction.get(db.collection("DeletedAccounts").doc(userId)),
+    ]);
+    if (!profile.exists || deleted.exists) {
+      throw Object.assign(new Error("Esta conta não está disponível."), { status: 410 });
+    }
+    transaction.set(db.collection("PremiumCharges").doc(paymentId), {
+      userId, status, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
 }
 
 async function customerIdFor({ apiKey, userId, name, email, cpf }) {

@@ -4,6 +4,7 @@ const admin = require("firebase-admin");
 const { GoogleAuth } = require("google-auth-library");
 
 const mmp = require("./mmp_s2s");
+const rights = require("./subscription_rights");
 
 const PACKAGE_NAME = "app.usepago";
 const PRODUCT_ID = "pago_premium_monthly";
@@ -47,23 +48,28 @@ async function fetchSubscription(purchaseToken) {
 
 function summarize(sub) {
   const items = Array.isArray(sub?.lineItems) ? sub.lineItems : [];
-  const item = items.find((line) => line.productId === PRODUCT_ID) || items[0] || {};
-  const expiry = Math.max(0, ...items.map((line) => Date.parse(line.expiryTime || "") || 0));
+  const premiumItems = items.filter((line) => line.productId === PRODUCT_ID);
+  const item = premiumItems.reduce((best, line) =>
+    (Date.parse(line.expiryTime || "") || 0) > (Date.parse(best?.expiryTime || "") || 0) ? line : best, null) || {};
+  const expiry = Date.parse(item.expiryTime || "") || 0;
   const money = item.autoRenewingPlan?.recurringPrice;
   const price = money ? Number(money.units || 0) + Number(money.nanos || 0) / 1e9 : DEFAULT_PRICE;
   return {
+    productId: item.productId || "",
     state: sub?.subscriptionState || "",
     expiry: expiry || null,
     orderId: sub?.latestOrderId || "",
     price: Math.round(price * 100) / 100,
     autoRenew: item.autoRenewingPlan?.autoRenewEnabled === true,
     uid: sub?.externalAccountIdentifiers?.obfuscatedExternalAccountId || "",
+    linkedPurchaseToken: sub?.linkedPurchaseToken || "",
     test: !!sub?.testPurchase,
   };
 }
 
 function isActive(summary) {
-  return ACTIVE_STATES.has(summary.state) && !!summary.expiry && summary.expiry > Date.now();
+  return summary.productId === PRODUCT_ID && ACTIVE_STATES.has(summary.state) &&
+    !!summary.expiry && summary.expiry > Date.now();
 }
 
 function tokenKey(purchaseToken) {
@@ -72,11 +78,32 @@ function tokenKey(purchaseToken) {
 
 async function applySubscription(uid, purchaseToken, summary) {
   const db = admin.firestore();
+  if (summary.productId !== PRODUCT_ID) {
+    const error = new Error("Esta compra não é o Pagô Premium.");
+    error.status = 400;
+    throw error;
+  }
+  if (summary.uid && summary.uid !== uid) throw ownerMismatch();
   const active = isActive(summary);
-  await db.collection("PlaySubscriptions").doc(tokenKey(purchaseToken)).set(
-    {
+  const key = tokenKey(purchaseToken);
+  const ref = db.collection("PlaySubscriptions").doc(key);
+  const linkedKey = summary.linkedPurchaseToken ? tokenKey(summary.linkedPurchaseToken) : null;
+  const linkedRef = linkedKey && linkedKey !== key ? db.collection("PlaySubscriptions").doc(linkedKey) : null;
+  return db.runTransaction(async (transaction) => {
+    const [storedSnap, account, linkedSnap] = await Promise.all([
+      transaction.get(ref), rights.readAccount(transaction, db, uid),
+      linkedRef ? transaction.get(linkedRef) : null,
+    ]);
+    const stored = storedSnap.data() || {};
+    if (stored.uid && stored.uid !== uid) throw ownerMismatch();
+    if (!summary.uid && stored.uid !== uid) throw ownerMismatch();
+    if (linkedSnap?.data()?.uid && linkedSnap.data().uid !== uid) throw ownerMismatch();
+    if (stored.deletedAccount || !account.exists) throw rights.accountUnavailable();
+    const data = {
       uid,
       purchaseToken,
+      productId: PRODUCT_ID,
+      replacesTokenKey: linkedKey,
       verificada: true,
       estado: summary.state,
       venceEm: summary.expiry ? admin.firestore.Timestamp.fromMillis(summary.expiry) : null,
@@ -85,45 +112,38 @@ async function applySubscription(uid, purchaseToken, summary) {
       renovaSozinha: summary.autoRenew,
       teste: summary.test,
       atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
-  await db.collection("Users").doc(uid).set(
-    {
-      is_premium: active,
-      premium_vence_em: summary.expiry ? admin.firestore.Timestamp.fromMillis(summary.expiry) : null,
-      premium_transaction_id: (summary.orderId || `play_${tokenKey(purchaseToken).slice(0, 16)}`).slice(0, 120),
-    },
-    { merge: true },
-  );
-  return active;
+    };
+    transaction.set(ref, data, { merge: true });
+    if (linkedSnap?.exists) transaction.update(linkedRef, { replacedBy: key });
+    transaction.update(account.userRef,
+      rights.choosePremium(account.profile, rights.sourcesFor(account, "play", key, data)));
+    return active;
+  });
 }
 
-async function linkUnverified(uid, purchaseToken, transactionId) {
-  await admin.firestore().collection("PlaySubscriptions").doc(tokenKey(purchaseToken)).set(
-    {
-      uid,
-      purchaseToken,
-      verificada: false,
-      orderId: transactionId || "",
-      atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
+function ownerMismatch() {
+  const error = new Error("Esta assinatura pertence a outra conta do Pagô.");
+  error.status = 403;
+  return error;
 }
 
 async function uidForToken(purchaseToken, summary) {
-  if (summary?.uid) return summary.uid;
   const snap = await admin.firestore().collection("PlaySubscriptions").doc(tokenKey(purchaseToken)).get();
-  return snap.data()?.uid || "";
+  const stored = snap.data() || {};
+  if (stored.deletedAccount) return "";
+  if (summary?.uid && stored.uid && summary.uid !== stored.uid) throw ownerMismatch();
+  return stored.uid || summary?.uid || "";
 }
 
 async function logPlayEvent(uid, type, summary) {
   const charge = CHARGE_TYPES.has(type);
   const base = summary.orderId || `sem_pedido_${Date.now()}`;
   const id = (charge ? base : `${base}_${type}`).replace(/[^\w.-]/g, "_");
-  try {
-    await admin.firestore().collection("PlayEvents").doc(id).create({
+  const revenueEvent = charge && !summary.unverified ? {
+    uid, platform: "android", transactionId: summary.orderId, type,
+    revenue: mmp.netRevenue(summary.price), test: summary.test === true,
+  } : null;
+  const created = await mmp.recordRevenueEvent(admin.firestore().collection("PlayEvents").doc(id), {
       uid: uid || null,
       tipo: type,
       cobranca: charge,
@@ -131,32 +151,22 @@ async function logPlayEvent(uid, type, summary) {
       orderId: summary.orderId || "",
       teste: summary.test === true,
       em: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    if (charge && !summary.unverified) {
-      await mmp.logServerRevenue({
-        uid,
-        platform: "android",
-        transactionId: summary.orderId,
-        type,
-        revenue: mmp.netRevenue(summary.price),
-        test: summary.test,
-      });
-    }
-    return true;
-  } catch (error) {
-    if (error.code === 6) return false;
-    throw error;
+    }, revenueEvent);
+  if (created && revenueEvent) {
+    try { await mmp.flushRevenueEvent(revenueEvent); }
+    catch (_) { console.warn("Receita da Play permanece na fila para nova tentativa."); }
   }
+  return created;
 }
 
 module.exports = {
   NOTIFICATION_TYPES,
   PACKAGE_NAME,
+  PRODUCT_ID,
   fetchSubscription,
   summarize,
   isActive,
   applySubscription,
-  linkUnverified,
   uidForToken,
   logPlayEvent,
 };

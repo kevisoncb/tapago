@@ -17,13 +17,28 @@ import 'local_repository.dart';
 import 'mmp_service.dart';
 import 'presence_service.dart';
 import 'repository_factory.dart';
+
 class SessionGate extends ChangeNotifier {
-  SessionGate({LocalAccountStore? accounts})
-      : _accounts = accounts ?? LocalAccountStore();
+  SessionGate({
+    LocalAccountStore? accounts,
+    Future<bool> Function()? initializeFirebase,
+    this.allowLocalAccounts = kDebugMode,
+  }) : _accounts = accounts ?? LocalAccountStore(),
+       _initializeFirebase = initializeFirebase ?? FirebaseBootstrap.tryInit;
 
   final LocalAccountStore _accounts;
+  final Future<bool> Function() _initializeFirebase;
+  final bool allowLocalAccounts;
+
+  static const unavailableMessage =
+      'Não foi possível conectar sua conta. Confira a conexão e tente novamente.';
+  static const passwordResetNotice =
+      'Se houver uma conta com esse e-mail, você receberá as instruções para redefinir a senha.';
+
+  bool get localAccountsEnabled => allowLocalAccounts || AppConstants.demoBuild;
   StreamSubscription<User?>? _authSub;
   var _firebaseReady = false;
+  var _sessionGeneration = 0;
   String? _pendingName;
   String? _pendingPhone;
   DateTime? _pendingAceite;
@@ -36,10 +51,24 @@ class SessionGate extends ChangeNotifier {
   bool get firebaseReady => _firebaseReady;
 
   Future<void> bootstrap() async {
+    _sessionGeneration++;
     booting = true;
     bootError = null;
     notifyListeners();
-    _firebaseReady = await FirebaseBootstrap.tryInit();
+    await _authSub?.cancel();
+    _authSub = null;
+    if (AppConstants.demoBuild) {
+      _firebaseReady = false;
+      await _openDemo();
+      booting = false;
+      notifyListeners();
+      return;
+    }
+    try {
+      _firebaseReady = await _initializeFirebase();
+    } catch (_) {
+      _firebaseReady = false;
+    }
     if (_firebaseReady) {
       _authSub = FirebaseAuth.instance.authStateChanges().listen(
         _onFirebaseUser,
@@ -53,11 +82,13 @@ class SessionGate extends ChangeNotifier {
       return;
     }
 
-    final session = await _accounts.current();
-    if (session != null) {
-      await _openLocal(session);
-    } else if (AppConstants.demoBuild) {
-      await _openDemo();
+    if (!localAccountsEnabled) {
+      bootError = unavailableMessage;
+      repository = null;
+      userId = null;
+    } else {
+      final session = await _accounts.current();
+      if (session != null) await _openLocal(session);
     }
     booting = false;
     notifyListeners();
@@ -87,6 +118,7 @@ class SessionGate extends ChangeNotifier {
       }
     }
 
+    if (!localAccountsEnabled) return unavailableMessage;
     final error = await _accounts.signIn(email: email, password: password);
     if (error != null) return error;
     final session = await _accounts.current();
@@ -138,6 +170,7 @@ class SessionGate extends ChangeNotifier {
       }
     }
 
+    if (!localAccountsEnabled) return unavailableMessage;
     final error = await _accounts.register(
       nome: nome,
       email: email,
@@ -155,6 +188,34 @@ class SessionGate extends ChangeNotifier {
     return null;
   }
 
+  /// Resposta neutra: não revela se o e-mail está cadastrado.
+  Future<String?> sendPasswordReset(String email) async {
+    final address = email.trim();
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(address)) {
+      return 'Informe um e-mail válido.';
+    }
+    if (!_firebaseReady) {
+      return localAccountsEnabled
+          ? 'A recuperação está disponível para contas sincronizadas. Contas locais de teste não recebem e-mail.'
+          : unavailableMessage;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: address);
+      return null;
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'user-not-found' ||
+          error.code == 'invalid-credential') {
+        return null;
+      }
+      if (error.code == 'too-many-requests') {
+        return 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+      }
+      return 'Não foi possível solicitar a recuperação. Confira a conexão e tente novamente.';
+    } catch (_) {
+      return 'Não foi possível solicitar a recuperação. Tente novamente.';
+    }
+  }
+
   /// Conta criada no Firebase: liga o id antes do evento para ele sair já
   /// atribuído a esta conta.
   Future<void> _trackRegistration(String? uid) async {
@@ -163,6 +224,7 @@ class SessionGate extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    unawaited(MmpService.instance.clearUserId());
     if (_firebaseReady) {
       await FirebaseAuth.instance.signOut();
       return;
@@ -189,7 +251,8 @@ class SessionGate extends ChangeNotifier {
         );
         await user.getIdToken(true);
       } on FirebaseAuthException catch (error) {
-        return error.code == 'invalid-credential' || error.code == 'wrong-password'
+        return error.code == 'invalid-credential' ||
+                error.code == 'wrong-password'
             ? 'Senha incorreta.'
             : authErrorMessage(error.code);
       }
@@ -206,16 +269,20 @@ class SessionGate extends ChangeNotifier {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    for (final key in prefs.getKeys().where((key) => key.startsWith('pago_${id}_'))) {
+    for (final key in prefs.getKeys().where(
+      (key) => key.startsWith('pago_${id}_'),
+    )) {
       await prefs.remove(key);
     }
     return null;
   }
 
   Future<void> _onFirebaseUser(User? user) async {
+    final generation = ++_sessionGeneration;
     unawaited(CrashReporter.setUser(user?.uid));
     if (user == null) {
       PresenceService.instance.stop();
+      unawaited(MmpService.instance.clearUserId());
       repository = null;
       userId = null;
       booting = false;
@@ -224,7 +291,8 @@ class SessionGate extends ChangeNotifier {
     }
 
     final email = user.email ?? '';
-    final nome = (user.displayName ?? _pendingName ?? email.split('@').first).trim();
+    final nome = (user.displayName ?? _pendingName ?? email.split('@').first)
+        .trim();
     final telefone = _pendingPhone;
     final aceite = _pendingAceite;
     _pendingName = null;
@@ -241,16 +309,19 @@ class SessionGate extends ChangeNotifier {
       aceitePrivacidadeEm: aceite,
     );
     try {
-      repository = await RepositoryFactory.open(
+      final opened = await RepositoryFactory.open(
         userId: user.uid,
         profile: profile,
         firebaseReady: true,
       );
+      if (generation != _sessionGeneration) return;
+      repository = opened;
       userId = user.uid;
       bootError = null;
       PresenceService.instance.start(user.uid);
       unawaited(MmpService.instance.setUserId(user.uid));
     } catch (error, stack) {
+      if (generation != _sessionGeneration) return;
       repository = null;
       userId = null;
       bootError = 'Não foi possível abrir seus dados.';

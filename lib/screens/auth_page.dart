@@ -30,6 +30,7 @@ class _AuthPageState extends State<AuthPage> {
   var _obscure = true;
   var _accepted = false;
   String? _error;
+  String? _notice;
 
   @override
   void dispose() {
@@ -42,21 +43,28 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Future<void> _submit() async {
+    if (_busy) return;
     setState(() {
       _busy = true;
       _error = null;
+      _notice = null;
     });
     final gate = context.read<SessionGate>();
-    final error = _creating
-        ? await gate.register(
-            nome: _nome.text,
-            email: _email.text,
-            password: _senha.text,
-            passwordConfirm: _confirma.text,
-            telefone: _telefone.text,
-            acceptedTerms: _accepted,
-          )
-        : await gate.signIn(email: _email.text, password: _senha.text);
+    String? error;
+    try {
+      error = _creating
+          ? await gate.register(
+              nome: _nome.text,
+              email: _email.text,
+              password: _senha.text,
+              passwordConfirm: _confirma.text,
+              telefone: _telefone.text,
+              acceptedTerms: _accepted,
+            )
+          : await gate.signIn(email: _email.text, password: _senha.text);
+    } catch (_) {
+      error = 'Não foi possível concluir. Confira a conexão e tente novamente.';
+    }
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -64,9 +72,29 @@ class _AuthPageState extends State<AuthPage> {
     });
   }
 
+  Future<void> _requestReset() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _notice = null;
+    });
+    final error = await context.read<SessionGate>().sendPasswordReset(
+      _email.text,
+    );
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _error = error;
+      _notice = error == null ? SessionGate.passwordResetNotice : null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final firebase = context.watch<SessionGate>().firebaseReady;
+    final gate = context.watch<SessionGate>();
+    final firebase = gate.firebaseReady;
+    final canAuthenticate = firebase || gate.localAccountsEnabled;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -94,12 +122,27 @@ class _AuthPageState extends State<AuthPage> {
               Text(
                 _creating
                     ? 'Crie sua conta para começar'
-                    : 'Entre para ver seus débitos',
+                    : 'Entre para cuidar da sua caderneta',
                 style: GoogleFonts.plusJakartaSans(
                   color: AppColors.mutedDark,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (gate.bootError != null) ...[
+                const SizedBox(height: 18),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    gate.bootError!,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _busy ? null : gate.bootstrap,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Tentar conectar novamente'),
+                ),
+              ],
               const SizedBox(height: 28),
               if (_creating) ...[
                 AppTextField(
@@ -153,8 +196,9 @@ class _AuthPageState extends State<AuthPage> {
                 obscureText: _obscure,
                 autocorrect: false,
                 enableSuggestions: false,
-                textInputAction:
-                    _creating ? TextInputAction.next : TextInputAction.done,
+                textInputAction: _creating
+                    ? TextInputAction.next
+                    : TextInputAction.done,
                 autofillHints: [
                   _creating
                       ? AutofillHints.newPassword
@@ -173,6 +217,14 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                 ),
               ),
+              if (!_creating)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _busy || !firebase ? null : _requestReset,
+                    child: const Text('Esqueci minha senha'),
+                  ),
+                ),
               if (_creating) ...[
                 const SizedBox(height: 14),
                 AppTextField(
@@ -214,24 +266,34 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                 ),
               ],
+              if (_notice != null) ...[
+                const SizedBox(height: 14),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _notice!,
+                    style: const TextStyle(color: AppColors.text),
+                  ),
+                ),
+              ],
               const SizedBox(height: 22),
               PrimaryButton(
                 label: _busy
                     ? 'Aguarde...'
                     : _creating
-                        ? 'Criar conta'
-                        : 'Entrar',
-                onPressed: _busy ? null : _submit,
+                    ? 'Criar conta'
+                    : 'Entrar',
+                onPressed: _busy || !canAuthenticate ? null : _submit,
               ),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: _busy
+                onPressed: _busy || !canAuthenticate
                     ? null
                     : () => setState(() {
-                          _creating = !_creating;
-                          _error = null;
-                          _accepted = false;
-                        }),
+                        _creating = !_creating;
+                        _error = null;
+                        _accepted = false;
+                      }),
                 child: Text(
                   _creating ? 'Já tenho conta' : 'Criar uma conta',
                   style: GoogleFonts.plusJakartaSans(
@@ -243,8 +305,10 @@ class _AuthPageState extends State<AuthPage> {
               const SizedBox(height: 12),
               Text(
                 firebase
-                    ? 'Sua conta fica no Firebase e os débitos sincronizam na nuvem.'
-                    : 'Conta neste aparelho. Quando o Firebase do projeto estiver configurado, o login passa a valer na nuvem.',
+                    ? 'Sua caderneta fica vinculada à sua conta. Confira a sincronização no aplicativo.'
+                    : gate.localAccountsEnabled
+                    ? 'Modo de teste local: os dados ficam apenas neste aparelho e não migram automaticamente para uma conta na nuvem.'
+                    : 'Seus dados não foram substituídos por uma conta local. Reconecte para continuar.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
@@ -260,10 +324,7 @@ class _AuthPageState extends State<AuthPage> {
 }
 
 class _TermsAccept extends StatelessWidget {
-  const _TermsAccept({
-    required this.accepted,
-    required this.onChanged,
-  });
+  const _TermsAccept({required this.accepted, required this.onChanged});
 
   final bool accepted;
   final ValueChanged<bool> onChanged;

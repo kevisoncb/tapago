@@ -60,3 +60,6 @@ key.properties
 .env.local
 
 /android/build/
+
+# Ferramentas locais de testes
+/tool/rules/node_modules/

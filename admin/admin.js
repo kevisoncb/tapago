@@ -1,11 +1,9 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  updatePassword,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+// Modo demonstração: só existe quando a página define PAGO_ADMIN_DEMO (cópia de prévia
+// montada por tool/admin-preview.sh). Usa dados fictícios e nunca fala com o Firebase.
+const DEMO = globalThis.PAGO_ADMIN_DEMO === true;
+const demo = DEMO ? await import("./demo-data.js") : null;
+const fbApp = DEMO ? null : await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js");
+const fbAuth = DEMO ? null : await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js");
 
 const firebaseConfig = {
   apiKey: "AIzaSyCy2sI-4oJ4Zqfy85a_vN8hG_hS4ire6d8",
@@ -88,7 +86,11 @@ const SEGMENTS = {
   },
 };
 
-const auth = getAuth(initializeApp(firebaseConfig));
+const auth = DEMO ? { currentUser: { email: "demo@pago.app" } } : fbAuth.getAuth(fbApp.initializeApp(firebaseConfig));
+const onAuthStateChanged = (instance, callback) => (DEMO ? callback(instance.currentUser) : fbAuth.onAuthStateChanged(instance, callback));
+const signInWithEmailAndPassword = (...args) => fbAuth.signInWithEmailAndPassword(...args);
+const signOut = (...args) => (DEMO ? Promise.resolve() : fbAuth.signOut(...args));
+const updatePassword = (...args) => fbAuth.updatePassword(...args);
 const $ = (id) => document.getElementById(id);
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -190,6 +192,7 @@ $("tabs").addEventListener("click", (event) => {
   const tab = event.target.closest("[data-tab]");
   if (!tab) return;
   state.tab = tab.dataset.tab;
+  $("page-title").textContent = tab.querySelector("span").textContent;
   document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
   document.querySelectorAll("[data-page]").forEach((page) => (page.hidden = page.dataset.page !== state.tab));
   if (state.tab === "registro") loadLog();
@@ -232,6 +235,7 @@ function closeLayer(layer) {
 }
 
 async function api(path, body, attempt = 1) {
+  if (DEMO) return demo.demoApi(path, body);
   const token = await auth.currentUser.getIdToken();
   const session = sessionStorage.getItem(SESSION_KEY);
   let response;
@@ -301,6 +305,8 @@ function renderAll() {
   renderStats(data.stats, data.receita);
   renderFocus();
   renderRevenue(data.receita);
+  renderRevenuePage(data.receita);
+  renderAnalysis();
   renderMonthly();
   renderFunnel();
   renderRetention();
@@ -334,10 +340,10 @@ function renderStats(stats, receita) {
     { label: "Cadastros", value: stats.total, hint: `+${stats.novos7d} nos últimos 7 dias` },
     { label: "Premium ativos", value: stats.premium, hint: `${stats.premiumPagantes} pagantes · ${stats.premiumCortesia} cortesia` },
     {
-      label: "Receita do mês (Play)",
+      label: "Receita do mês (lojas)",
       value: money.format(receita.mesAtual.bruto),
       hint: receita.mesAtual.cobrancas
-        ? `${money.format(receita.mesAtual.liquido)} líquido · ${receita.mesAtual.cobrancas} cobranças`
+        ? `Play ${money.format(receita.mesAtual.porLoja.play.bruto)} · iPhone ${money.format(receita.mesAtual.porLoja.app_store.bruto)}`
         : `estimada: ${money.format(stats.receitaEstimada)}/mês`,
     },
     { label: "Premium vence em 7 dias", value: stats.premiumVence7d, hint: "podem não renovar" },
@@ -354,12 +360,18 @@ function renderStats(stats, receita) {
     .join("");
 }
 
+const STORE_NAME = { play: "Google Play", app_store: "App Store" };
+const STORE_SHORT = { play: "Play", app_store: "iPhone" };
+const STORE_COLOR = { play: "var(--c-play)", app_store: "var(--c-apple)" };
+const monthShort = new Intl.DateTimeFormat("pt-BR", { month: "short" });
+
 function renderRevenue(receita) {
   const now = receita.mesAtual;
   const before = receita.mesAnterior;
+  const fee = (store) => Math.round((receita.taxas?.[store] ?? receita.taxaPlay) * 100);
   const rows = [
     ["Faturamento bruto", money.format(now.bruto), money.format(before.bruto)],
-    [`Líquido (sem os ${Math.round(receita.taxaPlay * 100)}% da Google)`, money.format(now.liquido), money.format(before.liquido)],
+    [`Líquido (sem as taxas das lojas)`, money.format(now.liquido), money.format(before.liquido)],
     ["Assinaturas novas", now.novas, before.novas],
     ["Renovações", now.renovacoes, before.renovacoes],
     ["Cancelamentos", now.cancelamentos, before.cancelamentos],
@@ -373,10 +385,224 @@ function renderRevenue(receita) {
     </table>
     <p class="muted small">${
       empty
-        ? "Ainda sem cobranças registradas. Os números aparecem quando a primeira assinatura for feita pela Play (e as renovações, depois de ligar os avisos da Play)."
-        : "Valores conferidos com a Google. Compras de teste ficam de fora. A Google paga o líquido no mês seguinte."
+        ? "Ainda sem cobranças registradas. Os números aparecem quando a primeira assinatura for feita pela Play ou pela App Store."
+        : `Compras de teste ficam de fora. Taxa considerada: Google ${fee("play")}% e Apple ${fee("app_store")}%. As lojas pagam o líquido no mês seguinte.`
     }</p>`;
 }
+
+function renderRevenuePage(receita) {
+  const now = receita.mesAtual;
+  const before = receita.mesAnterior;
+  const iosShare = now.bruto ? Math.round((now.porLoja.app_store.bruto / now.bruto) * 100) : 0;
+  const cards = [
+    { label: "Bruto do mês", value: money.format(now.bruto), hint: `${trend(now.bruto, before.bruto) || "sem comparação"} vs. mês passado`, hero: true },
+    { label: "Líquido do mês", value: money.format(now.liquido), hint: "depois das taxas das lojas" },
+    { label: "Cobranças", value: now.cobrancas, hint: `${now.novas} novas · ${now.renovacoes} renovações` },
+    { label: "Cancelamentos", value: now.cancelamentos, hint: `${now.falhas} pagamentos recusados` },
+    { label: "Peso do iPhone", value: `${iosShare}%`, hint: "da receita bruta do mês" },
+  ];
+  $("rev-kpis").innerHTML = cards.map(statCard).join("");
+
+  $("stores").innerHTML = ["play", "app_store"]
+    .map((store) => {
+      const part = now.porLoja[store];
+      const rate = Math.round((receita.taxas?.[store] ?? receita.taxaPlay) * 100);
+      return `
+        <article class="store ${store === "play" ? "play" : "apple"}">
+          <div class="store-head"><h3>${STORE_NAME[store]}</h3><span class="badge">${store === "play" ? "Android" : "iPhone"}</span></div>
+          <div class="store-value">${money.format(part.bruto)}</div>
+          <div class="muted small">${money.format(part.liquido)} líquido · taxa de ${rate}%</div>
+          <dl>
+            <dt>Cobranças</dt><dd>${part.cobrancas}</dd>
+            <dt>Assinaturas novas</dt><dd>${part.novas}</dd>
+            <dt>Renovações</dt><dd>${part.renovacoes}</dd>
+            <dt>Cancelamentos</dt><dd>${part.cancelamentos}</dd>
+            <dt>Pagamentos recusados</dt><dd>${part.falhas}</dd>
+          </dl>
+        </article>`;
+    })
+    .join("");
+
+  $("rev-legend").innerHTML = ["play", "app_store"]
+    .map((store) => `<span style="--c:${STORE_COLOR[store]}"><i></i>${STORE_NAME[store]}</span>`)
+    .join("");
+  $("rev-chart").innerHTML = stackedBars(receita.meses || []);
+
+  $("rev-events").innerHTML = receita.eventos.length
+    ? receita.eventos
+        .map(
+          (item) => `
+        <div class="feed-item ${item.loja === "app_store" ? "apple" : "play"}">
+          <span class="feed-dot"></span>
+          <div><button class="link" data-file="${escapeHtml(item.uid)}">${escapeHtml(item.nome || "Assinante")}</button> ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo.toLowerCase())}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""} <span class="badge" style="--store:${STORE_COLOR[item.loja]}">${STORE_SHORT[item.loja]}</span></div>
+          <span class="muted small">${relative(item.em)}</span>
+        </div>`,
+        )
+        .join("")
+    : `<div class="empty">Nenhuma cobrança ainda.</div>`;
+}
+
+function statCard(card) {
+  return `
+      <div class="stat${card.hero ? " hero" : ""}">
+        <div class="label">${card.dot ? '<span class="dot"></span>' : ""}${card.label}</div>
+        <div class="value">${card.value}</div>
+        <div class="hint">${card.hint}</div>
+      </div>`;
+}
+
+function stackedBars(months) {
+  if (!months.length) return `<div class="empty">Sem dados.</div>`;
+  const W = 520, H = 220, L = 44, B = 28, T = 12;
+  const max = niceMax(Math.max(1, ...months.map((m) => m.bruto)));
+  const slot = (W - L) / months.length;
+  const barW = Math.min(56, slot * 0.6);
+  const y = (value) => T + (H - T - B) * (1 - value / max);
+  const grid = [0, 0.5, 1]
+    .map((f) => `<line class="grid" x1="${L}" x2="${W}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${compactMoney(max * f)}</text>`)
+    .join("");
+  const bars = months
+    .map((m, i) => {
+      const x = L + slot * i + (slot - barW) / 2;
+      const hPlay = ((H - T - B) * m.play) / max;
+      const hApple = ((H - T - B) * m.app_store) / max;
+      return `
+        <g>
+          <title>${monthShort.format(m.mes)}: Play ${money.format(m.play)} · iPhone ${money.format(m.app_store)}</title>
+          <rect x="${x}" y="${H - B - hPlay}" width="${barW}" height="${Math.max(0, hPlay)}" rx="4" fill="var(--c-play)"/>
+          <rect x="${x}" y="${H - B - hPlay - hApple}" width="${barW}" height="${Math.max(0, hApple)}" rx="4" fill="var(--c-apple)"/>
+          <text x="${x + barW / 2}" y="${H - 8}" text-anchor="middle">${monthShort.format(m.mes)}</text>
+        </g>`;
+    })
+    .join("");
+  return `<svg class="svgchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Receita bruta por mês e por loja">${grid}${bars}</svg>`;
+}
+
+function niceMax(value) {
+  const step = Math.pow(10, Math.floor(Math.log10(value)));
+  return Math.ceil(value / step) * step;
+}
+
+function compactMoney(value) {
+  return value >= 1000 ? `R$ ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(value)}`;
+}
+
+const SERIES = [
+  { key: "total", label: "Cadastros", color: "var(--primary)" },
+  { key: "ativos7d", label: "Ativos em 7 dias", color: "var(--c-play)" },
+  { key: "premiumPagantes", label: "Premium pagantes", color: "var(--c-pix)" },
+];
+
+function renderAnalysis() {
+  const { stats, receita } = state.data;
+  const total = Math.max(1, stats.total);
+  const month = receita.mesAtual;
+  const payers = stats.premiumPagantes;
+  const churnBase = payers + month.cancelamentos;
+  const cards = [
+    { label: "Conversão para pago", value: `${((payers / total) * 100).toFixed(1).replace(".", ",")}%`, hint: `${payers} pagantes em ${stats.total} cadastros`, hero: true },
+    { label: "Receita por pagante", value: payers && month.bruto ? money.format(month.bruto / payers) : "—", hint: "bruto do mês ÷ pagantes ativos" },
+    { label: "Cancelamentos do mês", value: month.cancelamentos, hint: churnBase ? `${Math.round((month.cancelamentos / churnBase) * 100)}% de quem pagava` : "sem pagantes ainda" },
+    { label: "Ativos em 7 dias", value: `${Math.round((stats.ativos7d / total) * 100)}%`, hint: `${stats.ativos7d} de ${stats.total} cadastros` },
+    { label: "Novos em 7 dias", value: stats.novos7d, hint: "cadastros recentes" },
+  ];
+  $("an-kpis").innerHTML = cards.map(statCard).join("");
+
+  $("an-legend").innerHTML = SERIES.map((item) => `<span style="--c:${item.color}"><i></i>${item.label}</span>`).join("");
+  renderLines();
+
+  const platforms = stats.plataformas || {};
+  const platformRows = [
+    ["Android", platforms.android, "var(--c-play)"],
+    ["iPhone", platforms.ios, "var(--c-apple)"],
+    ["Web", platforms.web, "var(--c-web)"],
+    ["Outras", platforms.outras, "var(--c-admin)"],
+    ["Sem registro de acesso", platforms.semDado, "var(--line)"],
+  ].filter(([, value]) => value > 0);
+  $("an-platform").innerHTML = segments(platformRows, stats.total);
+
+  const origins = stats.premiumPorOrigem || {};
+  const originRows = [
+    ["Google Play", origins.play, "var(--c-play)"],
+    ["App Store", origins.apple, "var(--c-apple)"],
+    ["PIX (legado)", origins.pix, "var(--c-pix)"],
+    ["Cortesia do admin", origins.admin, "var(--c-admin)"],
+  ].filter(([, value]) => value > 0);
+  $("an-origin").innerHTML = originRows.length ? segments(originRows, stats.premium) : `<div class="empty">Ninguém com Premium ativo ainda.</div>`;
+
+  const windows = [
+    ["Online agora (5 min)", stats.online],
+    ["Últimas 24 horas", stats.ativos24h],
+    ["Últimos 7 dias", stats.ativos7d],
+    ["Últimos 30 dias", stats.ativos30d],
+  ];
+  $("an-active").innerHTML = windows
+    .map(([label, value]) => `<div class="hbar"><span>${label}</span><div class="track"><i style="width:${Math.max(1, Math.round((value / total) * 100))}%"></i></div><b>${value} <span class="muted small">${Math.round((value / total) * 100)}%</span></b></div>`)
+    .join("");
+}
+
+function segments(rows, total) {
+  const sum = Math.max(1, total || rows.reduce((acc, [, value]) => acc + value, 0));
+  return `
+    <div class="segbar" role="img" aria-label="Distribuição">${rows.map(([label, value, color]) => `<span class="seg" title="${label}: ${value}" style="--c:${color};width:${(value / sum) * 100}%"><i style="width:100%"></i></span>`).join("")}</div>
+    <div class="rows">${rows.map(([label, value, color]) => `<div class="row-item" style="--c:${color}"><i></i><span>${label}</span><b>${value} <span class="muted small">${Math.round((value / sum) * 100)}%</span></b></div>`).join("")}</div>`;
+}
+
+function renderLines() {
+  const all = state.data.historico || [];
+  const days = state.analysisDays || 30;
+  const cutoff = dayId(Date.now() - days * DAY);
+  const points = all.filter((item) => item.dia >= cutoff);
+  const box = $("an-lines");
+  if (points.length < 2) {
+    box.innerHTML = `<div class="empty">O painel guarda uma foto por dia. A evolução aparece a partir do segundo dia de uso.</div>`;
+    return;
+  }
+  const W = 760, H = 260, L = 44, R = 12, T = 12, B = 28;
+  const max = niceMax(Math.max(1, ...points.flatMap((point) => SERIES.map((item) => point[item.key] || 0))));
+  const x = (i) => L + ((W - L - R) * i) / (points.length - 1);
+  const y = (value) => T + (H - T - B) * (1 - value / max);
+  const grid = [0, 0.25, 0.5, 0.75, 1]
+    .map((f) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${Math.round(max * f)}</text>`)
+    .join("");
+  const lines = SERIES.map((item) => {
+    const path = points.map((point, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(point[item.key] || 0).toFixed(1)}`).join(" ");
+    const last = points.length - 1;
+    return `<path d="${path}" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(last)}" cy="${y(points[last][item.key] || 0)}" r="4" fill="${item.color}"/>`;
+  }).join("");
+  const labelEvery = Math.max(1, Math.ceil(points.length / 7));
+  const labels = points
+    .map((point, i) => (i % labelEvery === 0 || i === points.length - 1 ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${point.dia.slice(8, 10)}/${point.dia.slice(5, 7)}</text>` : ""))
+    .join("");
+  const slot = (W - L - R) / (points.length - 1);
+  const hits = points.map((point, i) => `<rect class="hit" data-i="${i}" x="${x(i) - slot / 2}" y="${T}" width="${slot}" height="${H - T - B}"/>`).join("");
+  box.innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução de cadastros, ativos e pagantes">${grid}${lines}${labels}${hits}</svg><div class="tip" hidden></div>`;
+
+  const tip = box.querySelector(".tip");
+  const svg = box.querySelector("svg");
+  const show = (event) => {
+    const hit = event.target.closest("[data-i]");
+    if (!hit) return;
+    const point = points[Number(hit.dataset.i)];
+    tip.innerHTML = `<b>${point.dia.split("-").reverse().join("/")}</b>${SERIES.map((item) => `${item.label}: ${point[item.key] ?? "—"}`).join("<br>")}`;
+    const rect = svg.getBoundingClientRect();
+    const host = box.getBoundingClientRect();
+    tip.style.left = `${rect.left - host.left + (x(Number(hit.dataset.i)) / W) * rect.width}px`;
+    tip.style.top = `${rect.top - host.top + (T / H) * rect.height + 40}px`;
+    tip.hidden = false;
+  };
+  svg.addEventListener("mousemove", show);
+  svg.addEventListener("click", show);
+  svg.addEventListener("mouseleave", () => (tip.hidden = true));
+}
+
+$("an-range").addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-days]");
+  if (!chip) return;
+  state.analysisDays = Number(chip.dataset.days);
+  $("an-range").querySelectorAll(".chip").forEach((item) => item.classList.toggle("active", item === chip));
+  if (state.data) renderLines();
+});
 
 function renderMonthly() {
   const now = Date.now();
@@ -395,7 +621,7 @@ function renderMonthly() {
 
   const rows = [
     ["Cadastros (mesmo período)", signupsNow, signupsPrev],
-    ["Receita bruta da Play", money.format(receita.mesAtual.bruto), money.format(receita.mesAnterior.bruto), receita.mesAtual.bruto, receita.mesAnterior.bruto],
+    ["Receita bruta das lojas", money.format(receita.mesAtual.bruto), money.format(receita.mesAnterior.bruto), receita.mesAtual.bruto, receita.mesAnterior.bruto],
     ["Premium ativos", stats.premium, past ? past.premium : null],
     ["Pagantes", stats.premiumPagantes, past ? past.premiumPagantes : null],
     ["Ativos em 7 dias", stats.ativos7d, past ? past.ativos7d : null],
@@ -513,7 +739,7 @@ function renderFeed() {
     em: item.em,
     uid: item.uid,
     nome: item.nome || "Assinante",
-    texto: `${EVENT_LABELS[item.tipo] || item.tipo.toLowerCase()}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""}`,
+    texto: `${EVENT_LABELS[item.tipo] || item.tipo.toLowerCase()}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""}${item.loja === "app_store" ? " · iPhone" : ""}`,
     tipo: ["CANCELADA", "SUSPENSA", "PERIODO_DE_CARENCIA", "ESTORNADA", "EXPIRADA"].includes(item.tipo) ? "perda" : "play",
   }));
   const items = [...signups, ...play].sort((a, b) => b.em - a.em).slice(0, 25);
@@ -877,10 +1103,10 @@ function renderFile(file) {
         ? file.assinaturas
             .map(
               (sub) =>
-                `<p class="small">Assinatura Play: <b>${subState(sub)}</b>${sub.venceEm ? ` · vale até ${dateFmt.format(sub.venceEm)}` : ""}${sub.renovaSozinha ? " · renova sozinha" : ""}${sub.teste ? " · teste" : ""}${sub.verificada ? "" : " · não conferida com a Google"}</p>`,
+                `<p class="small">Assinatura ${sub.loja === "app_store" ? "App Store" : "Play"}: <b>${subState(sub)}</b>${sub.venceEm ? ` · vale até ${dateFmt.format(sub.venceEm)}` : ""}${sub.renovaSozinha ? " · renova sozinha" : ""}${sub.teste ? " · teste" : ""}${sub.verificada ? "" : ` · não conferida com ${sub.loja === "app_store" ? "a Apple" : "a Google"}`}</p>`,
             )
             .join("")
-        : `<p class="muted small">Nenhuma assinatura da Play ligada a esta conta.</p>`
+        : `<p class="muted small">Nenhuma assinatura de loja ligada a esta conta.</p>`
     }
 
     <h3>Histórico</h3>
@@ -890,8 +1116,8 @@ function renderFile(file) {
             .map(
               (item) =>
                 `<div class="feed-item ${item.origem}"><span class="feed-dot"></span><div>${
-                  item.origem === "play"
-                    ? `Play: ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo)}${item.detalhe ? ` · ${escapeHtml(item.detalhe)}` : ""}${item.teste ? " · teste" : ""}`
+                  item.origem === "play" || item.origem === "apple"
+                    ? `${item.origem === "apple" ? "App Store" : "Play"}: ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo)}${item.detalhe ? ` · ${escapeHtml(item.detalhe)}` : ""}${item.teste ? " · teste" : ""}`
                     : `${escapeHtml(item.por || "admin")} ${escapeHtml(ACTION_LABELS[item.tipo] || item.tipo)}${item.detalhe ? `: ${escapeHtml(item.detalhe)}` : ""}`
                 }</div><span class="muted small">${item.em ? dateTimeFmt.format(item.em) : ""}</span></div>`,
             )
@@ -961,6 +1187,9 @@ function subState(sub) {
       SUBSCRIPTION_STATE_PAUSED: "pausada",
       SUBSCRIPTION_STATE_CANCELED: "cancelada (vale até o fim do período)",
       SUBSCRIPTION_STATE_EXPIRED: "expirada",
+      ATIVA: "ativa",
+      INATIVA: "inativa",
+      REVOGADA: "revogada",
     }[sub.estado] || (sub.verificada ? sub.estado || "?" : "registrada")
   );
 }

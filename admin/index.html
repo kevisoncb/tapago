@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="admin.css?v=5" />
+    <link rel="stylesheet" href="admin.css?v=6" />
   </head>
   <body>
     <main id="login" class="login" hidden>
@@ -43,26 +43,34 @@
     </main>
 
     <div id="app" hidden>
+      <div class="shell">
+        <aside class="side">
+          <div class="brand"><img src="pago-mark.svg" alt="" /><span>Pagô!</span><em>Admin</em></div>
+          <nav class="tabs" id="tabs" aria-label="Seções do painel">
+          <button data-tab="geral" class="tab active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z"/></svg><span>Visão geral</span></button>
+          <button data-tab="receita" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Receita</span></button>
+          <button data-tab="analise" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></svg><span>Análise</span></button>
+          <button data-tab="pessoas" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 20v-1a4 4 0 0 0-3-3.9M15 4.1a3.5 3.5 0 0 1 0 6.8"/></svg><span>Pessoas</span></button>
+          <button data-tab="registro" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Registro</span></button>
+          </nav>
+          <div class="side-foot">
+            <button class="side-link" id="security-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6l-8-3Z"/></svg><span>Segurança</span></button>
+            <button class="side-link" id="password-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7a4 4 0 1 1-3.5 6L4 20.5V17h3v-3h3l1.5-1.5A4 4 0 0 1 15 7Z"/></svg><span>Trocar senha</span></button>
+            <button class="side-link" id="logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9"/></svg><span>Sair</span></button>
+          </div>
+        </aside>
+        <div class="main">
       <header class="top">
-        <div class="brand"><img src="pago-mark.svg" alt="" /><span>Pagô!</span><em>Admin</em></div>
+        <div>
+          <h1 id="page-title">Visão geral</h1>
+          <span class="live"><i class="live-dot"></i><span id="updated" class="muted small"></span></span>
+        </div>
         <div class="top-actions">
-          <span id="updated" class="muted small"></span>
           <button class="btn ghost" id="refresh" title="Atualizar">Atualizar</button>
           <button class="btn ghost" id="export">Exportar planilha</button>
-          <button class="btn ghost" id="security-btn">Segurança</button>
-          <button class="btn ghost" id="password-btn">Trocar senha</button>
-          <button class="btn ghost" id="logout">Sair</button>
         </div>
       </header>
-
       <div id="banner"></div>
-
-      <nav class="tabs" id="tabs">
-        <button data-tab="geral" class="tab active">Visão geral</button>
-        <button data-tab="pessoas" class="tab">Pessoas</button>
-        <button data-tab="registro" class="tab">Registro</button>
-      </nav>
-
       <div data-page="geral">
         <section class="stats" id="stats"></section>
 
@@ -76,17 +84,10 @@
           <div id="focus" class="users"></div>
         </section>
 
-        <div class="grid2">
-          <section class="panel">
-            <div class="panel-head"><h2>Receita da Google Play</h2></div>
-            <div id="revenue"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h2>Mês a mês</h2></div>
-            <div id="monthly"></div>
-          </section>
-        </div>
-
+        <section class="panel">
+          <div class="panel-head"><h2>Mês a mês</h2></div>
+          <div id="monthly"></div>
+        </section>
         <section class="panel">
           <div class="panel-head">
             <h2>Funil</h2>
@@ -118,6 +119,59 @@
         </div>
       </div>
 
+      <div data-page="receita" hidden>
+        <section class="stats" id="rev-kpis"></section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Receita por loja</h2>
+            <span class="muted small">Google Play e App Store, este mês, com a taxa de cada loja.</span>
+          </div>
+          <div class="stores" id="stores"></div>
+        </section>
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Últimos 6 meses</h2><div class="legend" id="rev-legend"></div></div>
+            <div id="rev-chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Este mês e o anterior</h2></div>
+            <div id="revenue"></div>
+          </section>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><h2>Cobranças e eventos recentes</h2></div>
+          <div id="rev-events" class="feed"></div>
+        </section>
+      </div>
+      <div data-page="analise" hidden>
+        <section class="stats" id="an-kpis"></section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Evolução</h2>
+            <div class="chips tight" id="an-range">
+              <button data-days="14" class="chip">14 dias</button>
+              <button data-days="30" class="chip active">30 dias</button>
+              <button data-days="70" class="chip">70 dias</button>
+            </div>
+          </div>
+          <div class="legend" id="an-legend"></div>
+          <div id="an-lines" class="linechart"></div>
+        </section>
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Plataformas</h2><span class="muted small">Onde as pessoas usam o app.</span></div>
+            <div id="an-platform"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>De onde vem o Premium</h2><span class="muted small">Premium ativo por origem.</span></div>
+            <div id="an-origin"></div>
+          </section>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><h2>Quem está ativo</h2><span class="muted small">Do total de cadastros, quantos voltaram em cada janela.</span></div>
+          <div id="an-active"></div>
+        </section>
+      </div>
       <div data-page="pessoas" hidden>
         <section class="panel">
           <div class="panel-head">
@@ -149,6 +203,8 @@
         A caderneta das pessoas (nomes e valores dos clientes delas) não aparece aqui. Só os números de uso.
         Contas de administrador ficam fora das contagens.
       </p>
+        </div>
+      </div>
     </div>
 
     <div id="drawer" class="drawer" hidden>
@@ -168,6 +224,6 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="admin.js?v=5"></script>
+    <script type="module" src="admin.js?v=6"></script>
   </body>
 </html>

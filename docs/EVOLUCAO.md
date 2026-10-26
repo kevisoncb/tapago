@@ -38,12 +38,13 @@ Incremento concluído: lembretes locais opcionais para acompanhamentos. A permis
 
 Incremento concluído: filtros avançados da carteira por atraso, próximos sete dias, saldo em aberto, caderneta quitada e atraso sem contato, combinados com busca e ordenação por urgência e saldo.
 
-Restam dois incrementos no plano atual:
+Incremento concluído: indicadores de rotina para vencidos sem contato, promessas a revisar, clientes já acompanhados e contatos realizados nos últimos sete dias. São contagens de organização e não valores recebidos.
 
-1. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
-2. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+Resta um incremento no plano atual:
 
-Próximo incremento recomendado: indicadores de rotina de cobrança.
+1. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+
+Próximo incremento recomendado: revisão da oferta gratuita e Premium.
 
 ## 1. Minha avaliação do potencial
 

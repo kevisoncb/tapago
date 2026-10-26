@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/client_match.dart';
 import '../services/collection_follow_up.dart';
+import '../services/collection_routine.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
@@ -94,6 +95,11 @@ class _FollowUpsPageState extends State<FollowUpsPage> {
             );
           }
           final all = _buildItems(state, snapshot.data ?? const []);
+          final routine = buildCollectionRoutine(
+            debts: state.debts,
+            saldoOf: state.saldoOf,
+            followUps: snapshot.data ?? const [],
+          );
           final visible = all
               .where((item) => item.matches(_filter))
               .where((item) => contactMatchesQuery(item.contact, _search.text))
@@ -108,6 +114,8 @@ class _FollowUpsPageState extends State<FollowUpsPage> {
                   'Organize conversas e datas combinadas. Nada aqui altera o saldo da caderneta.',
                   style: TextStyle(color: AppColors.mutedDark, height: 1.5),
                 ),
+                const SizedBox(height: 16),
+                _RoutineSummary(routine: routine),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _search,
@@ -154,6 +162,82 @@ class _FollowUpsPageState extends State<FollowUpsPage> {
       ),
     );
   }
+}
+
+class _RoutineSummary extends StatelessWidget {
+  const _RoutineSummary({required this.routine});
+  final CollectionRoutine routine;
+
+  @override
+  Widget build(BuildContext context) => GridView.count(
+    crossAxisCount: 2,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 10,
+    childAspectRatio: 1.7,
+    children: [
+      _RoutineMetric(
+        label: 'Sem contato',
+        value: routine.withoutContact,
+        color: AppColors.danger,
+      ),
+      _RoutineMetric(
+        label: 'Promessas a revisar',
+        value: routine.promisesToReview,
+        color: AppColors.warning,
+      ),
+      _RoutineMetric(
+        label: 'Já acompanhados',
+        value: routine.contacted,
+        color: AppColors.primary,
+      ),
+      _RoutineMetric(
+        label: 'Contatos em 7 dias',
+        value: routine.contactedLast7Days,
+        color: AppColors.success,
+      ),
+    ],
+  );
+}
+
+class _RoutineMetric extends StatelessWidget {
+  const _RoutineMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+  final String label;
+  final int value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '$label, $value',
+    child: ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$value',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(color: color, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 3),
+            Text(label, style: const TextStyle(fontSize: 11)),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 int _count(List<_FollowUpItem> items, _FollowUpFilter filter) =>

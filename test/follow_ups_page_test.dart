@@ -89,13 +89,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Cliente Atrasado'), findsOneWidget);
-    expect(find.text('Cliente Futuro'), findsOneWidget);
-    expect(find.text('Promessa vencida'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Atrasados '));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
     await tester.pumpAndSettle();
     expect(find.text('Cliente Atrasado'), findsOneWidget);
     expect(find.text('Cliente Futuro'), findsNothing);
+    expect(find.text('Promessa vencida'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'inexistente');
     await tester.pumpAndSettle();

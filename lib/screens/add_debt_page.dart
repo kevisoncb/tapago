@@ -437,6 +437,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     keyboardType: TextInputType.name,
                     autofillHints: const [AutofillHints.name],
                     inputFormatters: [NameMaskFormatter()],
+                    textInputAction: TextInputAction.next,
                     maxLength: 80,
                     onChanged: (_) => setState(() {}),
                   ),
@@ -451,6 +452,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     enableSuggestions: false,
                     autofillHints: const [AutofillHints.telephoneNumber],
                     inputFormatters: [PhoneMaskFormatter()],
+                    textInputAction: TextInputAction.next,
                     onChanged: (_) => setState(() {}),
                   ),
                   _ExistingClientHint(
@@ -499,6 +501,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                           autocorrect: false,
                           enableSuggestions: false,
                           inputFormatters: [PercentMaskFormatter()],
+                          textInputAction: TextInputAction.done,
                           onChanged: (_) => setState(() {}),
                         ),
                       ),
@@ -530,6 +533,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     onTap: _pickDate,
                     controller: _date,
                     suffix: IconButton(
+                      tooltip: 'Selecionar data de vencimento',
                       onPressed: financialLocked ? null : _pickDate,
                       icon: const Icon(
                         Icons.calendar_month_outlined,

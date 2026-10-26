@@ -177,48 +177,54 @@ class _MetricCard extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.line),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: '$title, ${Money.full(valueCents / 100)}, $detail',
+    child: ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(icon, color: color),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
+            const SizedBox(height: 12),
+            Text(
+              Money.full(valueCents / 100),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
+            const SizedBox(height: 3),
+            Text(detail, style: const TextStyle(color: AppColors.mutedDark)),
           ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          Money.full(valueCents / 100),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(detail, style: const TextStyle(color: AppColors.mutedDark)),
-      ],
+      ),
     ),
   );
 }
@@ -229,16 +235,23 @@ class _AgingRow extends StatelessWidget {
   final AgingBucket bucket;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 5),
-    child: Row(
-      children: [
-        Expanded(child: Text(bucket.label)),
-        Text(
-          '${bucket.count} · ${Money.full(bucket.cents / 100)}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label:
+        '${bucket.label}, ${bucket.count} lançamentos, ${Money.full(bucket.cents / 100)}',
+    child: ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Expanded(child: Text(bucket.label)),
+            Text(
+              '${bucket.count} · ${Money.full(bucket.cents / 100)}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 }

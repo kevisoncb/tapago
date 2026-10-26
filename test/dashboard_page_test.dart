@@ -90,6 +90,33 @@ void main() {
       expect(find.text('Meu dia'), findsOneWidget);
       expect(find.byTooltip('Buscar cliente'), findsOneWidget);
       expect(find.text('Novo lançamento'), findsOneWidget);
+      await tester.ensureVisible(find.text('A receber'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label?.startsWith('A receber') == true &&
+              widget.properties.label?.contains('Não é saldo bancário') == true,
+        ),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Cliente de hoje'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.button == true &&
+              widget.properties.label?.contains('Cliente de hoje') == true &&
+              widget.properties.label?.contains('150,00') == true,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('Preparar cobrança de Cliente de hoje pelo WhatsApp'),
+        findsOneWidget,
+      );
       await tester.ensureVisible(find.text('Em atraso'));
       await tester.tap(find.text('Em atraso'));
       await tester.pumpAndSettle();

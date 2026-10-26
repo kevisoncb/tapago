@@ -391,48 +391,59 @@ class _ReceivablesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
+        Semantics(
+          container: true,
+          label:
+              'A receber, ${Money.full(state.saldoAberto)}. Total em aberto na caderneta. Não é saldo bancário.',
+          child: ExcludeSemantics(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.south_west_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.south_west_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'A receber',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    'A receber',
+                    Money.full(state.saldoAberto),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Total em aberto na caderneta. Não é saldo bancário.',
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      height: 1.5,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                Money.full(state.saldoAberto),
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.2,
-                ),
-              ),
-              const SizedBox(height: 7),
-              const Text(
-                'Total em aberto na caderneta. Não é saldo bancário.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  height: 1.5,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -491,34 +502,40 @@ class _SmallMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 19, color: color),
-          const SizedBox(height: 9),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: AppColors.mutedDark, fontSize: 11),
+    return Semantics(
+      container: true,
+      label: '$label, $value',
+      child: ExcludeSemantics(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.line),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: color,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 19, color: color),
+              const SizedBox(height: 9),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark, fontSize: 11),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -857,6 +874,7 @@ class DebtTile extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
+        excludeFromSemantics: true,
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
@@ -870,32 +888,45 @@ class DebtTile extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      debt.nome,
-                      style: Theme.of(context).textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                child: Semantics(
+                  button: true,
+                  label: '${debt.nome}, $label, ${Money.full(saldo)}',
+                  onTap: onTap,
+                  child: ExcludeSemantics(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          debt.nome,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          label,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: overdue
+                                    ? AppColors.danger
+                                    : AppColors.mutedDark,
+                                fontSize: 11,
+                              ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          Money.full(saldo),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.text,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: overdue ? AppColors.danger : AppColors.mutedDark,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      Money.full(saldo),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.text,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

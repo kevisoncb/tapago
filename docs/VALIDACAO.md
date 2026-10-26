@@ -7,7 +7,7 @@ Branch `develop`, base `2c987d5e7161123b511d99971a903440033d77ce`. Verificaçõe
 | APK Android release ARM64 | Compilação aprovada em 26/10, assinatura local de debug; envio de símbolos Crashlytics excluído somente do comando local |
 | APK: assinatura, pacote e 16 KB | Verificados: app.usepago, 2.4.0+25, minSdk 24, targetSdk 36; zipalign e 5 bibliotecas ARM64 compatíveis com alinhamento de 16 KB |
 | Flutter analyze | Sem problemas encontrados |
-| Flutter test | 73 testes aprovados, incluindo navegação, relatórios, importação CSV e primeiro uso |
+| Flutter test | 74 testes aprovados, incluindo navegação, relatórios, importação CSV, primeiro uso e acessibilidade dos fluxos principais |
 | Backend Node 22 | 23 testes aprovados |
 | Regras Firestore, projeto demo-pago | 9 testes aprovados |
 | Build web release, PAGO_DEMO=true | Compilação aprovada; renderizador local incluído |
@@ -15,6 +15,8 @@ Branch `develop`, base `2c987d5e7161123b511d99971a903440033d77ce`. Verificaçõe
 | git diff --check | Sem erros de whitespace |
 
 Testes cobrem regressões existentes, parcelas e centavos, pagamento duplicado, quitação e estorno, isolamento de contas, campos imutáveis, titularidade de assinatura, falha de verificação da loja, eventos atrasados, exclusão, retomada de atribuição, recuperação de senha, notificações e layouts com texto ampliado. Testes do backend usam dependências simuladas: não comprovam configuração real das lojas.
+
+A revisão de acessibilidade agrupou título, valor e contexto dos cartões financeiros, associou os rótulos visuais aos campos editáveis, definiu ações de teclado e nomeou o seletor de vencimento. O cartão do cliente e a cobrança pelo WhatsApp são expostos como ações distintas. TalkBack e VoiceOver em aparelhos reais continuam pendentes.
 
 O build JavaScript emite aviso de incompatibilidade potencial WebAssembly em `flutter_timezone` e referência a fonte Cupertino ausente. Não foi gerado build WebAssembly. A interface usa Material Icons; suporte nativo continua dependente de validação em aparelho.
 

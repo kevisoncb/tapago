@@ -22,7 +22,9 @@ Incremento concluído: importação CSV assistida em lotes atômicos de até 12 
 
 Incremento concluído: primeiro uso com introdução curta e caminho direto para o primeiro lançamento, sem solicitar câmera, microfone, biometria ou notificações antecipadamente.
 
-Próximo incremento recomendado: revisão de acessibilidade do fluxo principal, com foco no TalkBack/VoiceOver, ordem de foco, nomes de ações e uso com fonte ampliada e teclado aberto.
+Incremento concluído: revisão de acessibilidade do fluxo principal, agrupando valores financeiros para TalkBack/VoiceOver, associando rótulos aos campos, nomeando ações de ícone e organizando a sequência do teclado. Cartão do cliente e cobrança por WhatsApp permanecem ações independentes.
+
+Próximo incremento recomendado: validação nativa orientada em Android e iOS, cobrindo leitor de tela, fonte ampliada, teclado, permissões solicitadas no contexto e os fluxos financeiros críticos em aparelhos reais.
 
 ## 1. Minha avaliação do potencial
 

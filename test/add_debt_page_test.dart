@@ -90,6 +90,23 @@ void main() {
   });
   tearDownAll(() => GoogleFonts.config.allowRuntimeFetching = true);
 
+  testWidgets('campos expõem rótulos e sequência de teclado', (tester) async {
+    final repository = _SaveRepository();
+    final controller = await _open(tester, repository);
+
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList();
+    expect(fields[0].decoration?.labelText, 'Nome do Cliente');
+    expect(fields[0].textInputAction, TextInputAction.next);
+    expect(fields[1].decoration?.labelText, 'WhatsApp');
+    expect(fields[1].textInputAction, TextInputAction.next);
+    expect(fields[3].decoration?.labelText, 'Juros (%)');
+    expect(fields[3].textInputAction, TextInputAction.done);
+    expect(find.byTooltip('Selecionar data de vencimento'), findsOneWidget);
+    controller.dispose();
+  });
+
   testWidgets('não duplica um salvamento enquanto o primeiro está pendente', (
     tester,
   ) async {

@@ -51,12 +51,14 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -80,6 +82,8 @@ class AppTextField extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
           decoration: InputDecoration(
+            labelText: label,
+            floatingLabelBehavior: FloatingLabelBehavior.never,
             hintText: hint,
             counterText: '',
             prefixIcon: Icon(icon, color: AppColors.muted, size: 20),

@@ -40,11 +40,11 @@ Incremento concluído: filtros avançados da carteira por atraso, próximos sete
 
 Incremento concluído: indicadores de rotina para vencidos sem contato, promessas a revisar, clientes já acompanhados e contatos realizados nos últimos sete dias. São contagens de organização e não valores recebidos.
 
-Resta um incremento no plano atual:
+Incremento concluído: oferta gratuita/Premium revisada no aplicativo. A caderneta essencial, organização, extratos e exportação são apresentados como gratuitos; o Premium acrescenta conveniência por voz, leitura assistida, texto próprio, parcelamento e boletos. A tela declara que o Pagô não consulta banco nem movimenta dinheiro.
 
-1. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+Os quatro incrementos desta rodada estão concluídos. Próximas mudanças de preço ou limites devem usar dados reais de ativação, retenção e conversão, sem reduzir retroativamente o acesso à caderneta essencial.
 
-Próximo incremento recomendado: revisão da oferta gratuita e Premium.
+Próxima etapa recomendada: estabilização e preparação de publicação, mantendo novas hipóteses de produto em backlog até haver uso real suficiente.
 
 ## 1. Minha avaliação do potencial
 

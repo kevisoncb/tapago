@@ -21,6 +21,7 @@ Esta implementação está na `develop`. APK Android ARM64 compilado localmente;
 - Lembretes locais opcionais para datas combinadas; a permissão só é pedida ao ativar e o aviso apenas abre a agenda.
 - Carteira com filtros por atraso, próximos sete dias, saldo em aberto, quitados e vencidos sem contato.
 - Indicadores de rotina para clientes sem contato, promessas a revisar, acompanhados e contatos dos últimos sete dias.
+- Oferta revisada: caderneta essencial claramente gratuita e Premium apresentado como conveniência, com aviso explícito de que o Pagô não consulta bancos nem movimenta dinheiro.
 - Recuperação de senha, identificação de dados em cache, tratamento de falhas de sessão e correção da leitura de comprovantes.
 - Validação de assinatura no servidor antes de concluir a compra, proteção de titularidade, renovação, reembolso e exclusão de conta.
 - Notificações com destino no app e reagendamento limitado; fila recuperável de atribuição de receita quando configurada.

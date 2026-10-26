@@ -317,7 +317,7 @@ class ReminderService {
         9,
       );
 
-      if (enabled)
+      if (enabled) {
         for (final kind in ReminderKind.values) {
           final group = debts
               .where(
@@ -343,8 +343,9 @@ class ReminderService {
           );
           slot++;
         }
+      }
 
-      if (enabled)
+      if (enabled) {
         for (final kind in BillReminderKind.values) {
           final group = bills
               .where(
@@ -370,6 +371,7 @@ class ReminderService {
           );
           slot++;
         }
+      }
 
       if (followUpsEnabled) {
         final scheduled = followUps

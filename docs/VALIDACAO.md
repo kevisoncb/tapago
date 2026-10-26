@@ -7,7 +7,7 @@ Branch `develop`, base `2c987d5e7161123b511d99971a903440033d77ce`. Verificaçõe
 | APK Android release ARM64 | Compilação aprovada em 26/10, assinatura local de debug; envio de símbolos Crashlytics excluído somente do comando local |
 | APK: assinatura, pacote e 16 KB | Verificados: app.usepago, 2.4.0+25, minSdk 24, targetSdk 36; zipalign e 5 bibliotecas ARM64 compatíveis com alinhamento de 16 KB |
 | Flutter analyze | Sem problemas encontrados |
-| Flutter test | 71 testes aprovados, incluindo navegação, relatórios e importação CSV |
+| Flutter test | 73 testes aprovados, incluindo navegação, relatórios, importação CSV e primeiro uso |
 | Backend Node 22 | 23 testes aprovados |
 | Regras Firestore, projeto demo-pago | 9 testes aprovados |
 | Build web release, PAGO_DEMO=true | Compilação aprovada; renderizador local incluído |

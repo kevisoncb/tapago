@@ -20,7 +20,9 @@ Incremento concluído: relatórios simples e úteis, separando claramente recebi
 
 Incremento concluído: importação CSV assistida em lotes atômicos de até 12 lançamentos, com modelo, prévia, validação de erros e duplicatas antes de gravar.
 
-Próximo incremento recomendado: melhorar o primeiro uso com uma introdução curta e um lançamento guiado, solicitando permissões somente quando cada função for usada.
+Incremento concluído: primeiro uso com introdução curta e caminho direto para o primeiro lançamento, sem solicitar câmera, microfone, biometria ou notificações antecipadamente.
+
+Próximo incremento recomendado: revisão de acessibilidade do fluxo principal, com foco no TalkBack/VoiceOver, ordem de foco, nomes de ações e uso com fonte ampliada e teclado aberto.
 
 ## 1. Minha avaliação do potencial
 

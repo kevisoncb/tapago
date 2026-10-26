@@ -10,7 +10,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<AppController> _controller() async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({
+    'pago_navigation-test_first_use_v1': true,
+  });
   final repository = LocalRepository(userId: 'navigation-test');
   await repository.init();
   await repository.saveUser(

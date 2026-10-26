@@ -628,11 +628,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
   }
 
   Widget _installmentOptions(AppController state) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return Material(
+      color: AppColors.primarySoft,
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           SwitchListTile.adaptive(

@@ -9,6 +9,7 @@ Esta implementação está na `develop`. APK Android ARM64 compilado localmente;
 - Dashboard **Meu dia**, filtros de vencimento, resumo financeiro, pagamentos recentes e recuperação de falhas de sincronização.
 - Relatórios por período de pagamentos recebidos, valores previstos, atrasos por faixa e boletos de fornecedores, com definições visíveis.
 - Importação CSV assistida de até 12 lançamentos por confirmação, com modelo, prévia, validação e duplicatas sinalizadas.
+- Primeiro uso curto para contas vazias, com explicação do produto e acesso direto ao primeiro lançamento, sem pedir permissões antecipadamente.
 - Identidade visual atualizada, fontes incluídas no aplicativo, telas com suporte a texto ampliado. Renderizador web servido junto com o app, sem depender do CDN externo.
 - Parcelamento a receber em até 12 parcelas, distribuição em centavos, prévia e proteção contra envio duplicado.
 - Extrato do cliente em PDF/CSV; exportação dos registros carregados em JSON/CSV. Exportação não é restauração de backup e não inclui anotações de acompanhamento.

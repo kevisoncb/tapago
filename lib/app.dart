@@ -15,16 +15,28 @@ import 'services/session_gate.dart';
 import 'state/app_controller.dart';
 import 'theme/app_theme.dart';
 import 'widgets/biometric_lock.dart';
+import 'widgets/brand_splash.dart';
 import 'widgets/common.dart';
 
-class PagoApp extends StatelessWidget {
-  const PagoApp({super.key, required this.gate});
+class PagoApp extends StatefulWidget {
+  const PagoApp({super.key, required this.gate, this.splash = true});
 
   final SessionGate gate;
 
+  /// Abertura de marca na abertura a frio; os testes a desligam.
+  final bool splash;
+
+  @override
+  State<PagoApp> createState() => _PagoAppState();
+}
+
+class _PagoAppState extends State<PagoApp> {
+  late bool _showSplash = widget.splash;
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<SessionGate>.value(
+    final gate = widget.gate;
+    final app = ChangeNotifierProvider<SessionGate>.value(
       value: gate,
       child: ListenableBuilder(
         listenable: gate,
@@ -43,6 +55,17 @@ class PagoApp extends StatelessWidget {
             onSignOut: gate.signOut,
           );
         },
+      ),
+    );
+    if (!_showSplash) return app;
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          app,
+          BrandSplash(onDone: () => setState(() => _showSplash = false)),
+        ],
       ),
     );
   }

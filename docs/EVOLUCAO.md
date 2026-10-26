@@ -16,7 +16,9 @@ Concluído no código da `develop`, aguardando validação completa em aparelhos
 
 Incremento concluído: navegação inferior **Hoje / Clientes / Boletos / Mais**, preservando o botão de novo lançamento e os atalhos existentes durante a transição.
 
-Próximo incremento recomendado: relatórios simples e úteis, separando claramente recebido, previsto e vencido, sem chamar recebíveis de saldo bancário ou lucro.
+Incremento concluído: relatórios simples e úteis, separando claramente recebido, previsto, vencido e boletos de fornecedores, sem chamar recebíveis de saldo bancário ou lucro.
+
+Próximo incremento recomendado: importação CSV assistida, com modelo, prévia, validação de erros e duplicatas antes de gravar qualquer lançamento.
 
 ## 1. Minha avaliação do potencial
 

@@ -38,6 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'dashboard-new-debt',
         onPressed: () => _open(context, const AddDebtPage()),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Novo lançamento'),

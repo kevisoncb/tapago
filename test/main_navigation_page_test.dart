@@ -78,6 +78,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Configurações'), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsNothing);
+    await tester.tap(find.text('Relatórios'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recebimentos de clientes'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Boletos de fornecedores'), 300);
+    await tester.scrollUntilVisible(
+      find.textContaining('não são saldo bancário nem lucro'),
+      300,
+    );
+    expect(
+      find.textContaining('não são saldo bancário nem lucro'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

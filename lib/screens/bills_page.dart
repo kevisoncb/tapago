@@ -43,6 +43,7 @@ class BillsPage extends StatelessWidget {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'bills-new-bill',
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         onPressed: () => Navigator.of(context).push(

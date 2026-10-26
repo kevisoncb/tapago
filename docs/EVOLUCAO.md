@@ -14,7 +14,9 @@ Concluído no código da `develop`, aguardando validação completa em aparelhos
 - P2 parcial: acompanhamento manual de contato e promessa de pagamento, separado do saldo financeiro.
 - Base móvel: APK Android ARM64 compilado; projeto iOS ajustado para iOS 15.5 e dependências nativas, aguardando build no Xcode.
 
-Próximo incremento: navegação inferior **Hoje / Clientes / Boletos / Mais**, preservando o botão de novo lançamento e os atalhos existentes durante a transição.
+Incremento concluído: navegação inferior **Hoje / Clientes / Boletos / Mais**, preservando o botão de novo lançamento e os atalhos existentes durante a transição.
+
+Próximo incremento recomendado: relatórios simples e úteis, separando claramente recebido, previsto e vencido, sem chamar recebíveis de saldo bancário ou lucro.
 
 ## 1. Minha avaliação do potencial
 

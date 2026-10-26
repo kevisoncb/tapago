@@ -12,10 +12,16 @@ import 'bills_page.dart';
 import 'contact_history_page.dart';
 
 class CadernetaPage extends StatefulWidget {
-  const CadernetaPage({super.key, this.initialTab = 0, this.focusSearch = false});
+  const CadernetaPage({
+    super.key,
+    this.initialTab = 0,
+    this.focusSearch = false,
+    this.showBillsTab = true,
+  });
 
   final int initialTab;
   final bool focusSearch;
+  final bool showBillsTab;
 
   @override
   State<CadernetaPage> createState() => _CadernetaPageState();
@@ -35,22 +41,26 @@ class _CadernetaPageState extends State<CadernetaPage> {
     final needle = _query.text;
 
     return DefaultTabController(
-      length: 2,
+      length: widget.showBillsTab ? 2 : 1,
       initialIndex: widget.initialTab,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('Caderneta'),
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.mutedDark,
-            indicatorColor: AppColors.primary,
-            labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-            tabs: const [
-              Tab(text: 'Clientes'),
-              Tab(text: 'Boletos'),
-            ],
-          ),
+          bottom: widget.showBillsTab
+              ? TabBar(
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.mutedDark,
+                  indicatorColor: AppColors.primary,
+                  labelStyle: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Clientes'),
+                    Tab(text: 'Boletos'),
+                  ],
+                )
+              : null,
         ),
         body: Column(
           children: [
@@ -77,12 +87,14 @@ class _CadernetaPageState extends State<CadernetaPage> {
               ),
             ),
             Expanded(
-              child: TabBarView(
-                children: [
-                  _ClientesTab(needle: needle),
-                  _FornecedoresTab(needle: needle),
-                ],
-              ),
+              child: widget.showBillsTab
+                  ? TabBarView(
+                      children: [
+                        _ClientesTab(needle: needle),
+                        _FornecedoresTab(needle: needle),
+                      ],
+                    )
+                  : _ClientesTab(needle: needle),
             ),
           ],
         ),
@@ -104,62 +116,61 @@ class _ClientesTab extends StatelessWidget {
         .toList();
 
     return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                contacts.isEmpty
-                    ? 'Nenhum contato encontrado.'
-                    : '${contacts.length} ${contacts.length == 1 ? 'contato' : 'contatos'}',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.mutedDark,
-                ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              contacts.isEmpty
+                  ? 'Nenhum contato encontrado.'
+                  : '${contacts.length} ${contacts.length == 1 ? 'contato' : 'contatos'}',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                color: AppColors.mutedDark,
               ),
             ),
           ),
-          Expanded(
-            child: contacts.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(
-                        state.debts.isEmpty
-                            ? 'A caderneta ainda está vazia.'
-                            : 'Nada com esse nome ou telefone.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.mutedDark,
-                        ),
+        ),
+        Expanded(
+          child: contacts.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      state.debts.isEmpty
+                          ? 'A caderneta ainda está vazia.'
+                          : 'Nada com esse nome ou telefone.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppColors.mutedDark,
                       ),
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                    itemCount: contacts.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final contact = contacts[index];
-                      return CadernetaContactTile(
-                        contact: contact,
-                        saldo: contact.saldoAbertoOf(state.saldoOf),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ContactHistoryPage(
-                                contactKey: contact.key,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
                   ),
-          ),
-        ],
-      );
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  itemCount: contacts.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final contact = contacts[index];
+                    return CadernetaContactTile(
+                      contact: contact,
+                      saldo: contact.saldoAbertoOf(state.saldoOf),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ContactHistoryPage(contactKey: contact.key),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
   }
 }
 
@@ -190,19 +201,26 @@ class _FornecedoresTab extends StatelessWidget {
     final byKey = <String, _Fornecedor>{};
     for (final bill in state.bills) {
       final key = bill.fornecedor.trim().toLowerCase();
-      byKey.putIfAbsent(key, () => _Fornecedor(bill.fornecedor.trim())).bills.add(bill);
+      byKey
+          .putIfAbsent(key, () => _Fornecedor(bill.fornecedor.trim()))
+          .bills
+          .add(bill);
     }
     final query = needle.trim().toLowerCase();
-    final fornecedores = byKey.values
-        .where((item) => query.isEmpty || item.nome.toLowerCase().contains(query))
-        .toList()
-      ..sort((a, b) {
-        final atraso = (b.vencido > 0 ? 1 : 0) - (a.vencido > 0 ? 1 : 0);
-        if (atraso != 0) return atraso;
-        final aberto = b.aberto.compareTo(a.aberto);
-        if (aberto != 0) return aberto;
-        return a.nome.compareTo(b.nome);
-      });
+    final fornecedores =
+        byKey.values
+            .where(
+              (item) =>
+                  query.isEmpty || item.nome.toLowerCase().contains(query),
+            )
+            .toList()
+          ..sort((a, b) {
+            final atraso = (b.vencido > 0 ? 1 : 0) - (a.vencido > 0 ? 1 : 0);
+            if (atraso != 0) return atraso;
+            final aberto = b.aberto.compareTo(a.aberto);
+            if (aberto != 0) return aberto;
+            return a.nome.compareTo(b.nome);
+          });
 
     if (fornecedores.isEmpty) {
       return Center(
@@ -212,8 +230,8 @@ class _FornecedoresTab extends StatelessWidget {
             !premium
                 ? 'Boletos a pagar é Premium. Cadastre o boleto do fornecedor e o Pagô avisa antes de vencer.'
                 : state.bills.isEmpty
-                    ? 'Nenhum boleto ainda. Toque em Boletos a pagar no menu do Pagô!.'
-                    : 'Nenhuma empresa com esse nome.',
+                ? 'Nenhum boleto ainda. Toque em Boletos a pagar no menu do Pagô!.'
+                : 'Nenhuma empresa com esse nome.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(color: AppColors.mutedDark),
           ),
@@ -234,7 +252,9 @@ class _FornecedoresTab extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BillsPage(fornecedor: item.nome)),
+              MaterialPageRoute(
+                builder: (_) => BillsPage(fornecedor: item.nome),
+              ),
             ),
             child: Container(
               padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
@@ -247,7 +267,11 @@ class _FornecedoresTab extends StatelessWidget {
                   const CircleAvatar(
                     radius: 20,
                     backgroundColor: Color(0xFFF1F5F9),
-                    child: Icon(Icons.storefront_outlined, color: AppColors.text, size: 20),
+                    child: Icon(
+                      Icons.storefront_outlined,
+                      color: AppColors.text,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -296,7 +320,10 @@ class _FornecedoresTab extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.muted,
+                  ),
                 ],
               ),
             ),

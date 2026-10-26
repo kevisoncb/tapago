@@ -3,9 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/auth_page.dart';
-import 'screens/dashboard_page.dart';
 import 'screens/bills_page.dart';
 import 'screens/client_profile_page.dart';
+import 'screens/main_navigation_page.dart';
 import 'services/app_repository.dart';
 import 'services/billing_service.dart';
 import 'services/biometric_service.dart';
@@ -140,7 +140,7 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
       child: _materialApp(
         lock: true,
         navigatorKey: _navigatorKey,
-        home: const DashboardPage(),
+        home: const MainNavigationPage(),
       ),
     );
   }

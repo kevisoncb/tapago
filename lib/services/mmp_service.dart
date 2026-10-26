@@ -22,9 +22,9 @@ abstract interface class ProductMetrics {
     required int recordCount,
   });
 
-  Future<void> logPaymentRecorded({required bool settledDebt});
+  Future<void> logManualWriteOffRecorded({required bool settledReceivable});
 
-  Future<void> logPaymentReversed();
+  Future<void> logManualWriteOffCorrected();
 }
 
 class MmpService implements ProductMetrics {
@@ -42,8 +42,8 @@ class MmpService implements ProductMetrics {
   static const eventPaywallView = 'af_premium_paywall_view';
   static const eventBillCreated = 'af_bill_created';
   static const eventDebtCreated = 'pago_debt_created';
-  static const eventPaymentRecorded = 'pago_payment_recorded';
-  static const eventPaymentReversed = 'pago_payment_reversed';
+  static const eventManualWriteOffRecorded = 'pago_manual_write_off_recorded';
+  static const eventManualWriteOffCorrected = 'pago_manual_write_off_corrected';
 
   final _sdk = AppsFlyerSdk.instance;
   Future<void>? _starting;
@@ -189,11 +189,14 @@ class MmpService implements ProductMetrics {
   });
 
   @override
-  Future<void> logPaymentRecorded({required bool settledDebt}) =>
-      _log(eventPaymentRecorded, {'pago_settled_debt': settledDebt});
+  Future<void> logManualWriteOffRecorded({required bool settledReceivable}) =>
+      _log(eventManualWriteOffRecorded, {
+        'pago_settled_receivable': settledReceivable,
+      });
 
   @override
-  Future<void> logPaymentReversed() => _log(eventPaymentReversed);
+  Future<void> logManualWriteOffCorrected() =>
+      _log(eventManualWriteOffCorrected);
 
   /// Sinal de conversão para otimizar campanhas (o anúncio aprende quem
   /// assina). Não leva `af_revenue` de propósito: a receita real e o LTV

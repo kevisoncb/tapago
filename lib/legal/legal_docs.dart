@@ -98,7 +98,7 @@ class LegalDocs {
           'Caderneta: nome e telefone dos seus clientes, valores, juros, vencimentos, abatimentos e histórico.\n\n'
           'Boletos a pagar (Premium): fornecedor, valor, vencimento, parcelas e código do boleto, se você colar.\n\n'
           'Premium, quando usado: imagem de comprovante (OCR) e áudio para cadastro por voz.\n\n'
-          'Uso do app: quando a medição de atribuição estiver configurada, identificador da instalação, origem da campanha e eventos mínimos como cadastro, abertura da oferta Premium, criação de lançamento e registro de pagamento. Esses eventos não incluem nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta. No iOS, identificadores de publicidade dependem da permissão da plataforma.\n\n'
+          'Uso do app: quando a medição de atribuição estiver configurada, identificador da instalação, origem da campanha e eventos mínimos como cadastro, abertura da oferta Premium, criação de lançamento e baixa manual na caderneta. Baixa manual é uma declaração no organizador, não uma confirmação bancária. Esses eventos não incluem nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta. No iOS, identificadores de publicidade dependem da permissão da plataforma.\n\n'
           'Site: dados técnicos usuais de acesso (IP, navegador) para segurança e estatística agregada. Não vendemos a sua lista de clientes.',
     ),
     LegalSection(

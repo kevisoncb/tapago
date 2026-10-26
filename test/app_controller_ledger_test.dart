@@ -40,12 +40,14 @@ class RecordingMetrics implements ProductMetrics {
   }
 
   @override
-  Future<void> logPaymentRecorded({required bool settledDebt}) async {
-    payments.add(settledDebt);
+  Future<void> logManualWriteOffRecorded({
+    required bool settledReceivable,
+  }) async {
+    payments.add(settledReceivable);
   }
 
   @override
-  Future<void> logPaymentReversed() async => reversals++;
+  Future<void> logManualWriteOffCorrected() async => reversals++;
 }
 
 void main() {

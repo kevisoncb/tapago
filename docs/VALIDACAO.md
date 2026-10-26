@@ -12,13 +12,14 @@ Branch `develop`, base `2c987d5e7161123b511d99971a903440033d77ce`. Verificaçõe
 | Regras Firestore, projeto demo-pago | 9 testes aprovados |
 | Build web release, PAGO_DEMO=true | Compilação aprovada; renderizador local incluído |
 | Chromium, viewport 390 × 844 | Dashboard da demo abriu sem erros JavaScript nem aviso de falha de carregamento |
+| Site institucional local | HTML e `styles.css` respondem separadamente com HTTP 200; configuração dedicada aponta o Hosting `usepago` para a pasta `site` |
 | git diff --check | Sem erros de whitespace |
 
 Testes cobrem regressões existentes, parcelas e centavos, pagamento duplicado, quitação e estorno, isolamento de contas, campos imutáveis, titularidade de assinatura, falha de verificação da loja, eventos atrasados, exclusão, retomada de atribuição, recuperação de senha, notificações e layouts com texto ampliado. Testes do backend usam dependências simuladas: não comprovam configuração real das lojas.
 
 A revisão de acessibilidade agrupou título, valor e contexto dos cartões financeiros, associou os rótulos visuais aos campos editáveis, definiu ações de teclado e nomeou o seletor de vencimento. O cartão do cliente e a cobrança pelo WhatsApp são expostos como ações distintas. TalkBack e VoiceOver em aparelhos reais continuam pendentes.
 
-As métricas de produto registram somente atributos operacionais limitados depois da confirmação da escrita. O teste injetável comprova primeiro lançamento, origem CSV e conclusão de uma caderneta sem depender do SDK externo. Entrega real e visualização no AppsFlyer dependem das chaves e do painel de produção.
+As métricas de produto registram somente atributos operacionais limitados depois da confirmação da escrita. Baixa manual e correção de baixa descrevem ações no organizador; não são confirmação bancária. O teste injetável comprova primeiro lançamento, origem CSV e conclusão manual de uma caderneta sem depender do SDK externo. Entrega real e visualização no AppsFlyer dependem das chaves e do painel de produção.
 
 O build JavaScript emite aviso de incompatibilidade potencial WebAssembly em `flutter_timezone` e referência a fonte Cupertino ausente. Não foi gerado build WebAssembly. A interface usa Material Icons; suporte nativo continua dependente de validação em aparelho.
 
@@ -35,6 +36,8 @@ Os testes automatizados acima foram concluídos em 24/10; a compilação Android
 - Compartilhamento nativo, câmera/OCR e biometria em aparelho.
 - Migração de dados reais, concorrência entre aparelhos em produção e atualização coordenada de clientes antigos.
 - Implantação de regras, Functions, site ou demonstração pública.
+
+O endereço público não pôde ser consultado deste ambiente porque o proxy recusou a conexão com Firebase Hosting. A correção do diretório de publicação foi validada localmente, mas ainda precisa ser publicada para alterar o site no ar.
 
 Antes de publicar, executar a sequência de [publicação financeira](financial-data-rollout.md). A segurança de escrita nova pode recusar pagamentos de aplicativos antigos após marcação do ledger; não prometer atualização transparente. A entrega implementa uma etapa do [plano de produto](EVOLUCAO.md), não todas as propostas comerciais e bancárias.
 

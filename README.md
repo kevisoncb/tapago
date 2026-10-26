@@ -19,7 +19,7 @@ Esta implementação está na `develop`. APK Android ARM64 compilado localmente;
 - Recuperação de senha, identificação de dados em cache, tratamento de falhas de sessão e correção da leitura de comprovantes.
 - Validação de assinatura no servidor antes de concluir a compra, proteção de titularidade, renovação, reembolso e exclusão de conta.
 - Notificações com destino no app e reagendamento limitado; fila recuperável de atribuição de receita quando configurada.
-- Métricas mínimas de ativação e uso relevante, sem enviar nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta; ficam inativas quando o AppsFlyer não está configurado.
+- Métricas mínimas de ativação e uso relevante, como criação de caderneta e baixa manual, sem sugerir confirmação bancária e sem enviar nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta; ficam inativas quando o AppsFlyer não está configurado.
 
 O [plano de evolução](docs/EVOLUCAO.md) contém propostas adicionais. Integração bancária, carteira, liquidação PIX, pesquisa de mercado, precificação e aquisição de clientes continuam sendo etapas futuras. O site institucional não foi redesenhado nesta implementação.
 
@@ -58,5 +58,11 @@ Em contêiner com diretório pessoal somente leitura, configurar `PUB_CACHE`, `X
 - Armazenamento local migra para envelope único; um downgrade não lê alterações novas. Há limite de 400 pagamentos por caderneta no fluxo Firestore.
 
 O roteiro para Android/iPhone e as configurações nativas estão em [VALIDACAO-MOBILE.md](docs/VALIDACAO-MOBILE.md).
+
+O site institucional usa uma configuração separada para que uma publicação não envie por engano a pasta de redirecionamento do backend:
+
+```sh
+firebase deploy --only hosting --config firebase.site.json --project tapago-ae948
+```
 
 Consulte [SISTEMA.md](SISTEMA.md) para o contexto atual e [VALIDACAO.md](docs/VALIDACAO.md) para a evidência desta entrega.

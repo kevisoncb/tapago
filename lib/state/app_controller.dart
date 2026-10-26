@@ -289,8 +289,8 @@ class AppController extends ChangeNotifier {
     await _refreshLedger();
     final debt = debts.where((item) => item.id == payment.debtId).firstOrNull;
     unawaited(
-      _metrics.logPaymentRecorded(
-        settledDebt: debt != null && saldoOf(debt) <= 0.009,
+      _metrics.logManualWriteOffRecorded(
+        settledReceivable: debt != null && saldoOf(debt) <= 0.009,
       ),
     );
   }
@@ -360,8 +360,8 @@ class AppController extends ChangeNotifier {
       }
       final refreshed = debts.where((item) => item.id == debt.id).firstOrNull;
       unawaited(
-        _metrics.logPaymentRecorded(
-          settledDebt: refreshed != null && saldoOf(refreshed) <= 0.009,
+        _metrics.logManualWriteOffRecorded(
+          settledReceivable: refreshed != null && saldoOf(refreshed) <= 0.009,
         ),
       );
       return null;
@@ -392,7 +392,7 @@ class AppController extends ChangeNotifier {
       } catch (_) {
         errorMessage = 'Estorno salvo. Atualize para conferir o saldo antes de repetir a operação.';
       }
-      unawaited(_metrics.logPaymentReversed());
+      unawaited(_metrics.logManualWriteOffCorrected());
       return null;
     } catch (error) {
       debugPrint('Estorno: $error');

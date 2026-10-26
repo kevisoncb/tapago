@@ -98,6 +98,7 @@ service cloud.firestore {
           'telefone',
           'whatsapp_conectado',
           'notificacoes_diarias',
+          'lembretes_acompanhamento',
           'acesso_biometrico',
           'banco',
           'agencia',
@@ -119,6 +120,7 @@ service cloud.firestore {
         && optionalString(data, 'mensagem_cobranca', 2000)
         && optionalBool(data, 'whatsapp_conectado')
         && optionalBool(data, 'notificacoes_diarias')
+        && optionalBool(data, 'lembretes_acompanhamento')
         && optionalBool(data, 'acesso_biometrico')
         && optionalTimestamp(data, 'aceite_termos_em')
         && optionalTimestamp(data, 'aceite_privacidade_em')

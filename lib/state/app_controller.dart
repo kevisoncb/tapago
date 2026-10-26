@@ -8,6 +8,7 @@ import '../services/app_repository.dart';
 import '../services/asaas_client.dart';
 import '../services/billing_service.dart';
 import '../services/biometric_service.dart';
+import '../services/collection_follow_up.dart';
 import '../services/debt_balance.dart';
 import '../services/mmp_service.dart';
 import '../services/reminder_service.dart';
@@ -232,6 +233,17 @@ class AppController extends ChangeNotifier {
     notifyListeners();
     await _syncReminders();
   }
+
+  Future<bool> setFollowUpReminders(bool enabled) async {
+    if (enabled &&
+        !await (_reminders?.requestPermission() ?? Future.value(false))) {
+      return false;
+    }
+    await saveUser(user.copyWith(lembretesAcompanhamento: enabled));
+    return true;
+  }
+
+  Future<void> refreshReminders() => _syncReminders();
 
   Future<void> createDebts(List<Debt> next, {String source = 'manual'}) async {
     if (next.isEmpty) return;
@@ -569,9 +581,17 @@ class AppController extends ChangeNotifier {
 
   Future<void> _syncReminders() async {
     try {
+      final followUps = user.lembretesAcompanhamento
+          ? await CollectionFollowUpStore(
+              usesFirestore: usesFirestore,
+              userId: user.id,
+            ).list()
+          : const <CollectionFollowUp>[];
       await _reminders?.sync(
         enabled: user.notificacoesDiarias,
+        followUpsEnabled: user.lembretesAcompanhamento,
         debts: pendingDebts,
+        followUps: followUps,
         saldos: {for (final debt in pendingDebts) debt.id: saldoOf(debt)},
         chavePix: user.chavePix,
         customTemplate: user.mensagemCobranca,

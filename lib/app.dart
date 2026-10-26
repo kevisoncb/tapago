@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'screens/auth_page.dart';
 import 'screens/bills_page.dart';
 import 'screens/client_profile_page.dart';
+import 'screens/follow_ups_page.dart';
 import 'screens/main_navigation_page.dart';
 import 'services/app_repository.dart';
 import 'services/billing_service.dart';
@@ -107,7 +108,9 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
     }
     if (target.userId != null && target.userId != _controller.user.id) return;
     Widget page;
-    if (target.isBill) {
+    if (target.isFollowUp) {
+      page = const FollowUpsPage();
+    } else if (target.isBill) {
       final bill = _controller.bills
           .where((item) => item.id == target.id)
           .firstOrNull;

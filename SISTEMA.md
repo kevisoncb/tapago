@@ -37,11 +37,11 @@ Produção não abre conta local silenciosamente se Firebase falhar. Demo `PAGO_
 
 Compras nativas só inicializam em Android/iOS, sem interferir na abertura web. Compra só é concluída após validação. Backend recusa falha de verificação Google, vincula titularidade e preserva concessões administrativas válidas. Renovação/reembolso consideram origem e período. DeletedAccounts impede recriação após exclusão; registros financeiros retidos precisam de política de retenção. MmpOutbox recebe atribuição configurada e retry agendado, com entrega pelo menos uma vez. Ver `functions/README.md`.
 
-Lembretes abrem a tela do app, sem envio automático de WhatsApp. Limite de 60 notificações e janela de 14 dias, atualizados ao retomar o app. Validação em aparelho ainda necessária.
+Lembretes abrem a tela do app, sem envio automático de WhatsApp. Datas de acompanhamento são opcionais, desligadas por padrão e pedem permissão somente quando ativadas; o aviso abre a agenda. Limite conjunto de 60 notificações e janela de 14 dias, atualizados ao retomar o app. Validação em aparelho ainda necessária.
 
 ## Estado da entrega e pendências
 
-Consultar `docs/VALIDACAO.md` para resultados e limitações. Toolchain Flutter 3.47.7/Dart 3.13.5; Functions Node 22; emulador Java 21. Versão do app mantida em 2.4.0+25 até preparar o próximo envio. APK release ARM64 compilado em 26/10 com assinatura local de teste; pacote, assinatura e alinhamento 16 KB verificados. Envio do mapa Crashlytics bloqueado pela rede foi excluído apenas da execução local. Há 77 testes Flutter, 23 de backend e 9 de regras aprovados; análise estática sem problemas.
+Consultar `docs/VALIDACAO.md` para resultados e limitações. Toolchain Flutter 3.47.7/Dart 3.13.5; Functions Node 22; emulador Java 21. Versão do app mantida em 2.4.0+25 até preparar o próximo envio. APK release ARM64 compilado em 26/10 com assinatura local de teste; pacote, assinatura e alinhamento 16 KB verificados. Envio do mapa Crashlytics bloqueado pela rede foi excluído apenas da execução local. Há 78 testes Flutter, 23 de backend e 9 de regras aprovados; análise estática sem problemas.
 
 iOS: alvo mínimo ajustado para 15.5 (ML Kit), Podfile e includes CocoaPods adicionados, delegate de notificações em primeiro plano configurado. Build nativo iOS depende de macOS/Xcode e ainda não foi executado. Ver `docs/VALIDACAO-MOBILE.md`.
 

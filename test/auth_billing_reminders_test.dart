@@ -106,6 +106,15 @@ void main() {
     },
   );
 
+  test('notificação de acompanhamento abre somente a agenda', () {
+    final target = ReminderTarget.parse(
+      'acompanhamento|agenda|owner-1',
+    );
+    expect(target?.isFollowUp, isTrue);
+    expect(target?.isBill, isFalse);
+    expect(target?.userId, 'owner-1');
+  });
+
   test('compra só é concluída depois da validação', () async {
     final store = _Store();
     final billing = BillingService(store: store);

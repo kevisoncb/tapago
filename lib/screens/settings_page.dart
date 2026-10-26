@@ -240,6 +240,28 @@ class SettingsPage extends StatelessWidget {
               ),
               const Divider(height: 1, indent: 68),
               SettingsRow(
+                icon: Icons.event_available_outlined,
+                title: 'Lembretes de acompanhamento',
+                subtitle: user.lembretesAcompanhamento
+                    ? 'Avisar nas datas combinadas'
+                    : 'Desligado · ative quando quiser',
+                trailing: Switch.adaptive(
+                  value: user.lembretesAcompanhamento,
+                  onChanged: (value) async {
+                    final enabled = await context
+                        .read<AppController>()
+                        .setFollowUpReminders(value);
+                    if (context.mounted && value && !enabled) {
+                      showPagoSnack(
+                        context,
+                        'Permissão de notificação não concedida.',
+                      );
+                    }
+                  },
+                ),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
                 icon: Icons.fingerprint_rounded,
                 title: 'Acesso Biométrico',
                 subtitle: user.acessoBiometrico

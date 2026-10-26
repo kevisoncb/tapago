@@ -34,14 +34,15 @@ Incremento concluído: agenda de cobrança no Meu dia, destacando promessa venci
 
 Incremento concluído: área completa de acompanhamentos com busca por nome/WhatsApp, filtros por atrasado, hoje, próximos dias e sem contato, acesso pelo Meu dia e pelo menu Mais. A lista inclui acompanhamentos de cadernetas encerradas sem permitir nova cobrança sobre saldo inexistente.
 
-Restam quatro incrementos no plano atual:
+Incremento concluído: lembretes locais opcionais para acompanhamentos. A permissão é solicitada somente ao ativar, os avisos abrem a agenda e nunca enviam mensagem nem registram baixa automaticamente.
 
-1. Permitir lembretes locais opcionais para a data combinada, solicitando notificação somente quando o comerciante ativar o recurso.
-2. Melhorar busca e filtros de clientes por situação, último contato e faixa de vencimento.
-3. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
-4. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+Restam três incrementos no plano atual:
 
-Próximo incremento recomendado: lembretes locais opcionais para próximos contatos e datas combinadas.
+1. Melhorar busca e filtros de clientes por situação, último contato e faixa de vencimento.
+2. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
+3. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+
+Próximo incremento recomendado: filtros avançados da carteira de clientes.
 
 ## 1. Minha avaliação do potencial
 

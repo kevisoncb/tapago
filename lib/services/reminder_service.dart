@@ -6,16 +6,23 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/models.dart';
 import '../utils/formatters.dart';
+import 'collection_follow_up.dart';
 import 'whatsapp_service.dart';
 
 enum ReminderKind { amanha, hoje, atraso }
 
 /// Identificador de navegação, sem nome, valor ou chave PIX no payload.
 class ReminderTarget {
-  const ReminderTarget({required this.id, required this.isBill, this.userId});
+  const ReminderTarget({
+    required this.id,
+    required this.isBill,
+    this.isFollowUp = false,
+    this.userId,
+  });
 
   final String id;
   final bool isBill;
+  final bool isFollowUp;
   final String? userId;
 
   static ReminderTarget? parse(String? payload) {
@@ -23,12 +30,16 @@ class ReminderTarget {
     if (parts.length < 2 || parts.length > 3 || parts[1].isEmpty) return null;
     if (parts[1].contains('/') || parts[1].length > 100) return null;
     final bill = parts[0] == 'boleto';
-    if (!bill && !ReminderKind.values.any((kind) => kind.name == parts[0])) {
+    final followUp = parts[0] == 'acompanhamento';
+    if (!bill &&
+        !followUp &&
+        !ReminderKind.values.any((kind) => kind.name == parts[0])) {
       return null;
     }
     return ReminderTarget(
       id: parts[1],
       isBill: bill,
+      isFollowUp: followUp,
       userId: parts.length == 3 && parts[2].isNotEmpty ? parts[2] : null,
     );
   }
@@ -205,7 +216,9 @@ class ReminderService {
 
   Future<void> sync({
     required bool enabled,
+    bool followUpsEnabled = false,
     required List<Debt> debts,
+    List<CollectionFollowUp> followUps = const [],
     Map<String, double> saldos = const {},
     String chavePix = '',
     String customTemplate = '',
@@ -216,13 +229,16 @@ class ReminderService {
     // evita cancelAll de uma chamada apagar a agenda da chamada seguinte.
     final debtSnapshot = List<Debt>.of(debts);
     final billSnapshot = List<Bill>.of(bills);
+    final followUpSnapshot = List<CollectionFollowUp>.of(followUps);
     _syncWork = _syncWork
         .catchError((Object _) {})
         .then(
           (_) => _performSync(
             enabled: enabled,
+            followUpsEnabled: followUpsEnabled,
             debts: debtSnapshot,
             bills: billSnapshot,
+            followUps: followUpSnapshot,
           ),
         );
     return _syncWork;
@@ -230,13 +246,15 @@ class ReminderService {
 
   Future<void> _performSync({
     required bool enabled,
+    required bool followUpsEnabled,
     required List<Debt> debts,
     required List<Bill> bills,
+    required List<CollectionFollowUp> followUps,
   }) async {
     await init();
     if (!_ready) return;
     await _plugin.cancelAll();
-    if (!enabled) return;
+    if (!enabled && !followUpsEnabled) return;
 
     const androidDetails = AndroidNotificationDetails(
       'cobrancas',
@@ -269,6 +287,17 @@ class ReminderService {
       ),
       iOS: DarwinNotificationDetails(),
     );
+    const followUpDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'acompanhamentos',
+        'Acompanhamentos combinados',
+        channelDescription: 'Avisos de contatos e datas combinadas por você',
+        importance: Importance.high,
+        priority: Priority.high,
+        visibility: NotificationVisibility.private,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
 
     final now = DateTime.now();
     var slot = 0;
@@ -288,56 +317,83 @@ class ReminderService {
         9,
       );
 
-      for (final kind in ReminderKind.values) {
-        final group = debts
-            .where(
-              (debt) =>
-                  reminderKind(
-                    due: debt.dataVencimento,
-                    day: day,
-                    pago: debt.statusPago,
-                  ) ==
-                  kind,
-            )
-            .toList();
-        if (group.isEmpty) continue;
-        if (slot >= maxScheduledNotifications) return;
-        await _plugin.zonedSchedule(
-          slot,
-          _title(kind, group),
-          _body(group),
-          when,
-          details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: '${kind.name}|${group.first.id}|${group.first.userId}',
-        );
-        slot++;
-      }
+      if (enabled)
+        for (final kind in ReminderKind.values) {
+          final group = debts
+              .where(
+                (debt) =>
+                    reminderKind(
+                      due: debt.dataVencimento,
+                      day: day,
+                      pago: debt.statusPago,
+                    ) ==
+                    kind,
+              )
+              .toList();
+          if (group.isEmpty) continue;
+          if (slot >= maxScheduledNotifications) return;
+          await _plugin.zonedSchedule(
+            slot,
+            _title(kind, group),
+            _body(group),
+            when,
+            details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: '${kind.name}|${group.first.id}|${group.first.userId}',
+          );
+          slot++;
+        }
 
-      for (final kind in BillReminderKind.values) {
-        final group = bills
+      if (enabled)
+        for (final kind in BillReminderKind.values) {
+          final group = bills
+              .where(
+                (bill) =>
+                    billReminderKind(
+                      due: bill.dataVencimento,
+                      day: day,
+                      pago: bill.pago,
+                    ) ==
+                    kind,
+              )
+              .toList();
+          if (group.isEmpty) continue;
+          if (slot >= maxScheduledNotifications) return;
+          await _plugin.zonedSchedule(
+            slot,
+            billReminderTitle(kind, group),
+            billReminderBody(group),
+            when,
+            billDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: 'boleto|${group.first.id}|${group.first.userId}',
+          );
+          slot++;
+        }
+
+      if (followUpsEnabled) {
+        final scheduled = followUps
             .where(
-              (bill) =>
-                  billReminderKind(
-                    due: bill.dataVencimento,
-                    day: day,
-                    pago: bill.pago,
-                  ) ==
-                  kind,
+              (item) =>
+                  item.nextContactAt != null &&
+                  item.timingAt(day) == FollowUpTiming.today,
             )
             .toList();
-        if (group.isEmpty) continue;
-        if (slot >= maxScheduledNotifications) return;
-        await _plugin.zonedSchedule(
-          slot,
-          billReminderTitle(kind, group),
-          billReminderBody(group),
-          when,
-          billDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: 'boleto|${group.first.id}|${group.first.userId}',
-        );
-        slot++;
+        if (scheduled.isNotEmpty) {
+          if (slot >= maxScheduledNotifications) return;
+          await _plugin.zonedSchedule(
+            slot,
+            scheduled.length == 1
+                ? 'Você combinou um acompanhamento para hoje.'
+                : '${scheduled.length} acompanhamentos combinados para hoje.',
+            'Toque para abrir sua agenda. Nenhuma mensagem será enviada.',
+            when,
+            followUpDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: 'acompanhamento|agenda|${scheduled.first.userId}',
+          );
+          slot++;
+        }
       }
     }
   }

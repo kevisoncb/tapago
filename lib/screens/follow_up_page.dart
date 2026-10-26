@@ -90,10 +90,11 @@ class _FollowUpPageState extends State<FollowUpPage> {
       return;
     }
     setState(() => _saving = true);
+    final state = context.read<AppController>();
     try {
       await _store.save(
         CollectionFollowUp(
-          userId: context.read<AppController>().user.id,
+          userId: state.user.id,
           contactKey: widget.contactKey,
           clientName: widget.clientName,
           note: _note.text.trim(),
@@ -102,6 +103,7 @@ class _FollowUpPageState extends State<FollowUpPage> {
           promisedAmount: amount == null ? null : (amount * 100).round() / 100,
         ),
       );
+      await state.refreshReminders();
       if (!mounted) return;
       showPagoSnack(
         context,

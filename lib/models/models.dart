@@ -10,6 +10,7 @@ class AppUser {
     this.telefone,
     this.whatsappConectado = false,
     this.notificacoesDiarias = true,
+    this.lembretesAcompanhamento = false,
     this.acessoBiometrico = false,
     this.banco = '',
     this.agencia = '',
@@ -29,6 +30,7 @@ class AppUser {
   final String? telefone;
   final bool whatsappConectado;
   final bool notificacoesDiarias;
+  final bool lembretesAcompanhamento;
   final bool acessoBiometrico;
   final String banco;
   final String agencia;
@@ -54,6 +56,7 @@ class AppUser {
     String? telefone,
     bool? whatsappConectado,
     bool? notificacoesDiarias,
+    bool? lembretesAcompanhamento,
     bool? acessoBiometrico,
     String? banco,
     String? agencia,
@@ -73,6 +76,8 @@ class AppUser {
       telefone: telefone ?? this.telefone,
       whatsappConectado: whatsappConectado ?? this.whatsappConectado,
       notificacoesDiarias: notificacoesDiarias ?? this.notificacoesDiarias,
+      lembretesAcompanhamento:
+          lembretesAcompanhamento ?? this.lembretesAcompanhamento,
       acessoBiometrico: acessoBiometrico ?? this.acessoBiometrico,
       banco: banco ?? this.banco,
       agencia: agencia ?? this.agencia,
@@ -95,6 +100,7 @@ class AppUser {
       'telefone': telefone,
       'whatsapp_conectado': whatsappConectado,
       'notificacoes_diarias': notificacoesDiarias,
+      'lembretes_acompanhamento': lembretesAcompanhamento,
       'acesso_biometrico': acessoBiometrico,
       'banco': banco,
       'agencia': agencia,
@@ -117,6 +123,8 @@ class AppUser {
       telefone: map['telefone'] as String?,
       whatsappConectado: map['whatsapp_conectado'] as bool? ?? false,
       notificacoesDiarias: map['notificacoes_diarias'] as bool? ?? true,
+      lembretesAcompanhamento:
+          map['lembretes_acompanhamento'] as bool? ?? false,
       acessoBiometrico: map['acesso_biometrico'] as bool? ?? false,
       banco: map['banco'] as String? ?? '',
       agencia: map['agencia'] as String? ?? '',

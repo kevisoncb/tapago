@@ -8,6 +8,7 @@
 /// - telefone: string (opcional; contato do usuário)
 /// - whatsapp_conectado: boolean (opcional; default false)
 /// - notificacoes_diarias: boolean
+/// - lembretes_acompanhamento: boolean
 /// - acesso_biometrico: boolean
 /// - banco: string
 /// - agencia: string

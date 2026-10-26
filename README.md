@@ -19,6 +19,7 @@ Esta implementação está na `develop`. APK Android ARM64 compilado localmente;
 - Recuperação de senha, identificação de dados em cache, tratamento de falhas de sessão e correção da leitura de comprovantes.
 - Validação de assinatura no servidor antes de concluir a compra, proteção de titularidade, renovação, reembolso e exclusão de conta.
 - Notificações com destino no app e reagendamento limitado; fila recuperável de atribuição de receita quando configurada.
+- Métricas mínimas de ativação e uso relevante, sem enviar nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta; ficam inativas quando o AppsFlyer não está configurado.
 
 O [plano de evolução](docs/EVOLUCAO.md) contém propostas adicionais. Integração bancária, carteira, liquidação PIX, pesquisa de mercado, precificação e aquisição de clientes continuam sendo etapas futuras. O site institucional não foi redesenhado nesta implementação.
 

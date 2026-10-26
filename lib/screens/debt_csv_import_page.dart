@@ -108,7 +108,7 @@ class _DebtCsvImportPageState extends State<DebtCsvImportPage> {
       _error = null;
     });
     try {
-      await state.createDebts(_pending!);
+      await state.createDebts(_pending!, source: 'csv');
       if (!mounted) return;
       showPagoSnack(context, '${_pending!.length} lançamentos importados.');
       Navigator.pop(context);

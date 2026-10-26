@@ -14,7 +14,20 @@ import 'package:flutter/foundation.dart';
 /// Fluxo: [init] roda na primeira abertura do app (`main.dart`), depois do ATT,
 /// mesmo sem login, para a instalação ser contada. Depois do login,
 /// [setUserId] liga as ações seguintes à conta.
-class MmpService {
+abstract interface class ProductMetrics {
+  Future<void> logDebtCreated({
+    required bool firstDebt,
+    required bool installment,
+    required String source,
+    required int recordCount,
+  });
+
+  Future<void> logPaymentRecorded({required bool settledDebt});
+
+  Future<void> logPaymentReversed();
+}
+
+class MmpService implements ProductMetrics {
   MmpService._();
 
   static final instance = MmpService._();
@@ -28,6 +41,9 @@ class MmpService {
   static const eventRegistration = 'af_complete_registration';
   static const eventPaywallView = 'af_premium_paywall_view';
   static const eventBillCreated = 'af_bill_created';
+  static const eventDebtCreated = 'pago_debt_created';
+  static const eventPaymentRecorded = 'pago_payment_recorded';
+  static const eventPaymentReversed = 'pago_payment_reversed';
 
   final _sdk = AppsFlyerSdk.instance;
   Future<void>? _starting;
@@ -156,6 +172,28 @@ class MmpService {
   /// Boleto a pagar cadastrado (uso forte da ferramenta). Um evento por
   /// cadastro, mesmo que gere várias parcelas.
   Future<void> logBillCreated() => _log(eventBillCreated);
+
+  /// Atributos operacionais, sem nome, telefone, valor, vencimento ou id da
+  /// caderneta. [source] é controlado pelo app (`manual` ou `csv`).
+  @override
+  Future<void> logDebtCreated({
+    required bool firstDebt,
+    required bool installment,
+    required String source,
+    required int recordCount,
+  }) => _log(eventDebtCreated, {
+    'pago_first_debt': firstDebt,
+    'pago_installment': installment,
+    'pago_source': source == 'csv' ? 'csv' : 'manual',
+    'pago_record_count': recordCount.clamp(1, 12),
+  });
+
+  @override
+  Future<void> logPaymentRecorded({required bool settledDebt}) =>
+      _log(eventPaymentRecorded, {'pago_settled_debt': settledDebt});
+
+  @override
+  Future<void> logPaymentReversed() => _log(eventPaymentReversed);
 
   /// Sinal de conversão para otimizar campanhas (o anúncio aprende quem
   /// assina). Não leva `af_revenue` de propósito: a receita real e o LTV

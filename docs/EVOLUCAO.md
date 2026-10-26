@@ -24,7 +24,11 @@ Incremento concluído: primeiro uso com introdução curta e caminho direto para
 
 Incremento concluído: revisão de acessibilidade do fluxo principal, agrupando valores financeiros para TalkBack/VoiceOver, associando rótulos aos campos, nomeando ações de ícone e organizando a sequência do teclado. Cartão do cliente e cobrança por WhatsApp permanecem ações independentes.
 
-Próximo incremento recomendado: validação nativa orientada em Android e iOS, cobrindo leitor de tela, fonte ampliada, teclado, permissões solicitadas no contexto e os fluxos financeiros críticos em aparelhos reais.
+Incremento concluído: métricas mínimas de ativação e uso relevante para criação de caderneta, importação, pagamento e estorno. Os eventos só são emitidos após a operação persistir e não levam nome, telefone, valor, vencimento, chave PIX nem conteúdo da caderneta. Sem configuração do AppsFlyer, a instrumentação permanece inativa.
+
+Validação nativa orientada em Android e iOS permanece no roteiro de publicação, sem bloquear a evolução na `develop`.
+
+Próximo incremento recomendado: tornar o acompanhamento de cobrança mais acionável no Meu dia, destacando promessas vencendo ou quebradas e permitindo retomar o contato sem misturar acompanhamento com saldo financeiro.
 
 ## 1. Minha avaliação do potencial
 

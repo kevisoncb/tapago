@@ -21,13 +21,15 @@ class AppController extends ChangeNotifier {
     this._onSignOut,
     this._billing,
     this._reminders,
+    ProductMetrics? metrics,
     BiometricService? biometrics,
-  });
+  }) : _metrics = metrics ?? MmpService.instance;
 
   final AppRepository _repository;
   final Future<void> Function()? _onSignOut;
   final BillingService? _billing;
   final ReminderService? _reminders;
+  final ProductMetrics _metrics;
   final _uuid = const Uuid();
   StreamSubscription<AppUser>? _userSubscription;
 
@@ -231,8 +233,9 @@ class AppController extends ChangeNotifier {
     await _syncReminders();
   }
 
-  Future<void> createDebts(List<Debt> next) async {
+  Future<void> createDebts(List<Debt> next, {String source = 'manual'}) async {
     if (next.isEmpty) return;
+    final firstDebt = debts.isEmpty;
     await _repository.upsertDebts(next);
     if (_disposed) return;
     _dataRevision++;
@@ -241,9 +244,20 @@ class AppController extends ChangeNotifier {
     _updateSyncStatus();
     notifyListeners();
     await _syncReminders();
+    unawaited(
+      _metrics.logDebtCreated(
+        firstDebt: firstDebt,
+        installment:
+            next.length > 1 || next.any((debt) => debt.totalParcelas > 1),
+        source: source,
+        recordCount: next.length,
+      ),
+    );
   }
 
   Future<void> upsertDebt(Debt debt) async {
+    final existed = debts.any((item) => item.id == debt.id);
+    final firstDebt = debts.isEmpty;
     await _repository.upsertDebt(debt);
     if (_disposed) return;
     _dataRevision++;
@@ -258,11 +272,27 @@ class AppController extends ChangeNotifier {
     }
     notifyListeners();
     await _syncReminders();
+    if (!existed) {
+      unawaited(
+        _metrics.logDebtCreated(
+          firstDebt: firstDebt,
+          installment: debt.totalParcelas > 1,
+          source: 'manual',
+          recordCount: 1,
+        ),
+      );
+    }
   }
 
   Future<void> addPayment(Payment payment) async {
     await _repository.recordPayment(payment);
     await _refreshLedger();
+    final debt = debts.where((item) => item.id == payment.debtId).firstOrNull;
+    unawaited(
+      _metrics.logPaymentRecorded(
+        settledDebt: debt != null && saldoOf(debt) <= 0.009,
+      ),
+    );
   }
 
   Future<void> _refreshLedger() async {
@@ -328,6 +358,12 @@ class AppController extends ChangeNotifier {
           errorMessage = 'O pagamento foi salvo. Atualize a caderneta para conferir o saldo; não registre novamente.';
         }
       }
+      final refreshed = debts.where((item) => item.id == debt.id).firstOrNull;
+      unawaited(
+        _metrics.logPaymentRecorded(
+          settledDebt: refreshed != null && saldoOf(refreshed) <= 0.009,
+        ),
+      );
       return null;
     } catch (error) {
       debugPrint('Pagamento: $error');
@@ -356,6 +392,7 @@ class AppController extends ChangeNotifier {
       } catch (_) {
         errorMessage = 'Estorno salvo. Atualize para conferir o saldo antes de repetir a operação.';
       }
+      unawaited(_metrics.logPaymentReversed());
       return null;
     } catch (error) {
       debugPrint('Estorno: $error');

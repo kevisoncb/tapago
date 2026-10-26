@@ -1241,3 +1241,39 @@ code {
 .stores, #an-active, #an-platform, #an-origin, #rev-chart { margin-top: 14px; }
 .stat.hero .trend { color: #fff; }
 .stat.hero .trend.up, .stat.hero .trend.down { color: #fff; }
+
+.legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.legend-btn i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--c);
+}
+
+.legend-btn.off {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.legend-btn.off i { background: var(--line); }
+.legend-btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .top { flex-wrap: wrap; }
+  .top-actions { width: 100%; justify-content: flex-start; }
+  .live .small { display: inline; }
+}

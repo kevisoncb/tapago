@@ -402,3 +402,36 @@ test("admin separa receita da Google Play e da App Store", () => {
     play: 2, apple: 1, pix: 0, admin: 0,
   });
 });
+
+const adminReq = (method, route, body = {}) => ({ method, path: route, query: {}, body, get: () => "Bearer mock" });
+
+test("painel admin exige o segundo fator ligado antes de qualquer dado", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
+  const api = h.load("admin").adminApi;
+
+  for (const [method, route] of [["GET", "/overview"], ["GET", "/log"], ["POST", "/premium"], ["POST", "/delete"]]) {
+    const out = res();
+    await api(adminReq(method, route, { uid: "bob", days: 30 }), out);
+    assert.equal(out.code, 403, route);
+    assert.equal(out.body.precisa2faSetup, true, route);
+  }
+
+  const status = res();
+  await api(adminReq("GET", "/2fa/status"), status);
+  assert.equal(status.code, 200);
+  assert.equal(status.body.ativo, false);
+  assert.equal(status.body.obrigatorio, true);
+
+  const setup = res();
+  await api(adminReq("POST", "/2fa/setup"), setup);
+  assert.equal(setup.code, 200);
+  assert.ok(setup.body.secret);
+});
+
+test("segundo fator do painel não pode ser desligado", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
+  const api = h.load("admin").adminApi;
+  const out = res();
+  await api(adminReq("POST", "/2fa/disable", { code: "123456" }), out);
+  assert.notEqual(out.code, 200);
+});

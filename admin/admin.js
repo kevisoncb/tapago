@@ -98,6 +98,7 @@ const dateTimeFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2
 const dayFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" });
 const monthFmt = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
+let forcing = false;
 const state = {
   data: null,
   users: [],
@@ -115,9 +116,15 @@ onAuthStateChanged(auth, (user) => {
   $("login").hidden = !!user;
   $("app").hidden = !user;
   $("twofa").hidden = true;
+  $("twofa-setup").hidden = true;
   clearInterval(state.timer);
   if (!user) {
+    forcing = false;
     sessionStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  if (DEMO && location.search.includes("setup2fa")) {
+    forceSetup();
     return;
   }
   load();
@@ -160,6 +167,7 @@ $("twofa-form").addEventListener("submit", async (event) => {
 });
 
 $("twofa-logout").addEventListener("click", () => signOut(auth));
+$("setup-logout").addEventListener("click", () => signOut(auth));
 $("logout").addEventListener("click", () => signOut(auth));
 $("refresh").addEventListener("click", () => load());
 $("export").addEventListener("click", exportCsv);
@@ -264,9 +272,10 @@ async function api(path, body, attempt = 1) {
       $("twofa").hidden = false;
       $("twofa-code").focus();
     }
+    if (data.precisa2faSetup) forceSetup();
     const error = new Error(data.message || "Falha no servidor.");
     error.status = response.status;
-    error.twofa = !!data.precisa2fa;
+    error.twofa = !!data.precisa2fa || !!data.precisa2faSetup;
     throw error;
   }
   return data;
@@ -320,12 +329,6 @@ async function checkSecurityBanner() {
   if (securityChecked) return;
   securityChecked = true;
   const notes = [];
-  try {
-    const status = await api("/2fa/status");
-    if (!status.ativo) {
-      notes.push(`Ligue o segundo fator para proteger o painel. <button class="link" data-open-security>Ligar agora</button>`);
-    }
-  } catch (_) {}
   if (state.data && !state.data.emailLigado) {
     notes.push("O resumo diário e os alertas por e-mail estão desligados: falta a chave do Resend no servidor.");
   }
@@ -508,7 +511,7 @@ function renderAnalysis() {
   ];
   $("an-kpis").innerHTML = cards.map(statCard).join("");
 
-  $("an-legend").innerHTML = SERIES.map((item) => `<span style="--c:${item.color}"><i></i>${item.label}</span>`).join("");
+  renderLegend();
   renderLines();
 
   const platforms = stats.plataformas || {};
@@ -541,6 +544,24 @@ function renderAnalysis() {
     .join("");
 }
 
+function renderLegend() {
+  const hidden = state.hiddenSeries || (state.hiddenSeries = new Set());
+  $("an-legend").innerHTML = SERIES.map(
+    (item) => `<button type="button" class="legend-btn${hidden.has(item.key) ? " off" : ""}" data-series="${item.key}" aria-pressed="${!hidden.has(item.key)}" style="--c:${item.color}"><i></i>${item.label}</button>`,
+  ).join("") + `<span class="muted small">Clique para ocultar uma linha e ampliar as outras.</span>`;
+}
+
+$("an-legend").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-series]");
+  if (!button) return;
+  const hidden = state.hiddenSeries || (state.hiddenSeries = new Set());
+  const key = button.dataset.series;
+  if (hidden.has(key)) hidden.delete(key);
+  else if (hidden.size < SERIES.length - 1) hidden.add(key);
+  renderLegend();
+  if (state.data) renderLines();
+});
+
 function segments(rows, total) {
   const sum = Math.max(1, total || rows.reduce((acc, [, value]) => acc + value, 0));
   return `
@@ -559,13 +580,15 @@ function renderLines() {
     return;
   }
   const W = 760, H = 260, L = 44, R = 12, T = 12, B = 28;
-  const max = niceMax(Math.max(1, ...points.flatMap((point) => SERIES.map((item) => point[item.key] || 0))));
+  const hidden = state.hiddenSeries || new Set();
+  const visible = SERIES.filter((item) => !hidden.has(item.key));
+  const max = niceMax(Math.max(1, ...points.flatMap((point) => visible.map((item) => point[item.key] || 0))));
   const x = (i) => L + ((W - L - R) * i) / (points.length - 1);
   const y = (value) => T + (H - T - B) * (1 - value / max);
   const grid = [0, 0.25, 0.5, 0.75, 1]
     .map((f) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${Math.round(max * f)}</text>`)
     .join("");
-  const lines = SERIES.map((item) => {
+  const lines = visible.map((item) => {
     const path = points.map((point, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(point[item.key] || 0).toFixed(1)}`).join(" ");
     const last = points.length - 1;
     return `<path d="${path}" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(last)}" cy="${y(points[last][item.key] || 0)}" r="4" fill="${item.color}"/>`;
@@ -584,7 +607,7 @@ function renderLines() {
     const hit = event.target.closest("[data-i]");
     if (!hit) return;
     const point = points[Number(hit.dataset.i)];
-    tip.innerHTML = `<b>${point.dia.split("-").reverse().join("/")}</b>${SERIES.map((item) => `${item.label}: ${point[item.key] ?? "—"}`).join("<br>")}`;
+    tip.innerHTML = `<b>${point.dia.split("-").reverse().join("/")}</b>${visible.map((item) => `${item.label}: ${point[item.key] ?? "—"}`).join("<br>")}`;
     const rect = svg.getBoundingClientRect();
     const host = box.getBoundingClientRect();
     tip.style.left = `${rect.left - host.left + (x(Number(hit.dataset.i)) / W) * rect.width}px`;
@@ -1256,81 +1279,70 @@ function exportCsv() {
 
 async function openSecurity() {
   $("modal").hidden = false;
-  $("modal-content").innerHTML = `<div class="empty">Carregando...</div>`;
+  $("modal-content").innerHTML = `
+    <h2>Segurança</h2>
+    <p><span class="badge premium">Segundo fator ligado</span></p>
+    <p class="muted small">O segundo fator é obrigatório. Ao entrar, o painel pede o código do aplicativo autenticador, e a sessão vale 12 horas neste navegador.</p>
+    <p class="muted small">Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore. No próximo acesso o painel pede para configurar de novo.</p>`;
+}
+
+// Tela cheia, sem acesso ao painel: aparece quando o servidor diz que o segundo fator ainda não foi ligado.
+async function forceSetup() {
+  if (forcing) return;
+  forcing = true;
+  clearInterval(state.timer);
+  $("app").hidden = true;
+  $("twofa").hidden = true;
+  $("twofa-setup").hidden = false;
+  $("force-area").innerHTML = `<div class="empty">Preparando...</div>`;
   try {
-    const status = await api("/2fa/status");
-    if (status.ativo) {
-      $("modal-content").innerHTML = `
-        <h2>Segurança</h2>
-        <p><span class="badge premium">Segundo fator ligado</span></p>
-        <p class="muted small">Ao entrar, o painel pede o código do aplicativo autenticador. A sessão vale 12 horas neste navegador.</p>
-        <form id="disable-form" class="note-form">
-          <label>Para desligar, digite um código atual<input id="disable-code" inputmode="numeric" maxlength="6" required /></label>
-          <button class="btn danger" type="submit">Desligar segundo fator</button>
-        </form>`;
-      $("disable-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        try {
-          await api("/2fa/disable", { code: $("disable-code").value });
-          sessionStorage.removeItem(SESSION_KEY);
-          toast("Segundo fator desligado.");
-          openSecurity();
-        } catch (error) {
-          toast(error.message);
-        }
-      });
-      return;
-    }
-    $("modal-content").innerHTML = `
-      <h2>Ligar o segundo fator</h2>
-      <p class="muted small">Além da senha, o painel vai pedir um código de 6 números que muda a cada 30 segundos. Use o Google Authenticator ou o Microsoft Authenticator no celular.</p>
-      <button class="btn primary" id="setup-btn">Gerar código QR</button>
-      <div id="setup-area"></div>`;
-    $("setup-btn").addEventListener("click", startSetup);
+    await setupFlow($("force-area"), async (result) => {
+      sessionStorage.setItem(SESSION_KEY, result.sessao);
+      forcing = false;
+      $("twofa-setup").hidden = true;
+      $("app").hidden = false;
+      toast("Segundo fator ligado.");
+      await load();
+      state.timer = setInterval(() => {
+        if (document.visibilityState === "visible" && !$("app").hidden) load({ quiet: true });
+      }, AUTO_REFRESH_MS);
+    });
   } catch (error) {
-    if (!error.twofa) $("modal-content").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+    forcing = false;
+    $("force-area").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
 }
 
-async function startSetup() {
-  $("setup-btn").disabled = true;
+async function setupFlow(area, onEnabled) {
+  const data = await api("/2fa/setup", {});
+  let qr = "";
   try {
-    const data = await api("/2fa/setup", {});
-    let qr = "";
-    try {
-      const { default: QRCode } = await import("https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm");
-      qr = `<img class="qr" alt="Código QR" src="${await QRCode.toDataURL(data.uri, { margin: 1, width: 220 })}" />`;
-    } catch (_) {
-      qr = "";
-    }
-    $("setup-area").innerHTML = `
-      <ol class="steps">
-        <li>No aplicativo autenticador, toque em adicionar conta e leia o código QR${qr ? `:<br>${qr}` : " (não carregou: use a chave abaixo)"}.</li>
-        <li>Ou digite a chave manualmente: <code>${escapeHtml(data.secret.replace(/(.{4})/g, "$1 ").trim())}</code></li>
-        <li>Digite o código que aparecer no aplicativo:</li>
-      </ol>
-      <form id="enable-form" class="note-form">
-        <input id="enable-code" inputmode="numeric" maxlength="6" placeholder="000000" required />
-        <button class="btn primary" type="submit">Ligar</button>
-      </form>
-      <p class="muted small">Guarde a chave num lugar seguro. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore para desligar.</p>`;
-    $("enable-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      try {
-        const result = await api("/2fa/enable", { code: $("enable-code").value });
-        sessionStorage.setItem(SESSION_KEY, result.sessao);
-        toast("Segundo fator ligado.");
-        securityChecked = false;
-        checkSecurityBanner();
-        openSecurity();
-      } catch (error) {
-        toast(error.message);
-      }
-    });
-  } catch (error) {
-    toast(error.message);
-    $("setup-btn").disabled = false;
+    const { default: QRCode } = await import("https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm");
+    qr = `<img class="qr" alt="Código QR" src="${await QRCode.toDataURL(data.uri, { margin: 1, width: 220 })}" />`;
+  } catch (_) {
+    qr = "";
   }
+  area.innerHTML = `
+    <ol class="steps">
+      <li>No aplicativo autenticador (Google ou Microsoft Authenticator), toque em adicionar conta e leia o código QR${qr ? `:<br>${qr}` : " (não carregou: use a chave abaixo)"}.</li>
+      <li>Ou digite a chave manualmente: <code>${escapeHtml(data.secret.replace(/(.{4})/g, "$1 ").trim())}</code></li>
+      <li>Digite o código de 6 números que aparecer no aplicativo:</li>
+    </ol>
+    <form id="enable-form" class="note-form">
+      <input id="enable-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required />
+      <button class="btn primary" type="submit">Ligar e entrar</button>
+    </form>
+    <p id="enable-error" class="error" role="alert"></p>
+    <p class="muted small">Guarde a chave num lugar seguro. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore.</p>`;
+  area.querySelector("#enable-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      const result = await api("/2fa/enable", { code: area.querySelector("#enable-code").value });
+      await onEnabled(result);
+    } catch (error) {
+      area.querySelector("#enable-error").textContent = error.message;
+    }
+  });
 }
 
 function relative(ms) {

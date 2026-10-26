@@ -33,11 +33,13 @@ const OWNED_COLLECTIONS = [
   ["MmpOutbox", "uid"],
 ];
 const OPEN_2FA_ROUTES = new Set(["/2fa/status", "/2fa/verify"]);
+// O segundo fator é obrigatório: enquanto não estiver ligado, só estas rotas respondem.
+const SETUP_2FA_ROUTES = new Set(["/2fa/status", "/2fa/setup", "/2fa/enable"]);
 
 function adminEmails() {
   let raw = "";
   try {
-    raw = adminEmailsParam.value();
+    raw = adminEmailsParam.value() || process.env.ADMIN_EMAILS || "";
   } catch (_) {
     raw = process.env.ADMIN_EMAILS || "";
   }
@@ -57,6 +59,10 @@ exports.adminApi = onRequest(
       const caller = await requireAdmin(req);
       const route = String(req.path || "/").replace(/\/+$/, "") || "/";
       const security = await securityOf(caller.uid);
+      if (!security.ativo && !SETUP_2FA_ROUTES.has(route)) {
+        res.status(403).json({ message: "Ligue o segundo fator para usar o painel.", precisa2faSetup: true });
+        return;
+      }
       if (security.ativo && !OPEN_2FA_ROUTES.has(route)) {
         if (!totp.checkSession(security.secret, caller.uid, req.get("x-admin-2fa"))) {
           res.status(401).json({ message: "Digite o código do autenticador.", precisa2fa: true });
@@ -69,7 +75,7 @@ exports.adminApi = onRequest(
           "/overview": () => overview(),
           "/user": () => userFile(String(req.query.uid || "").trim()),
           "/log": () => actionLog(),
-          "/2fa/status": () => ({ ativo: security.ativo }),
+          "/2fa/status": () => ({ ativo: security.ativo, obrigatorio: true }),
         }[route];
         if (!handler) throw httpError(404, "Rota não encontrada.");
         res.status(200).json(await handler());
@@ -237,11 +243,7 @@ async function twoFactor(route, caller, security, body) {
     return { sessao: totp.signSession(security.secret, caller.uid, SESSION_MS) };
   }
   if (route === "/2fa/disable") {
-    if (!security.ativo) return { ok: true };
-    if (!totp.verifyCode(security.secret, code)) throw httpError(400, "Código errado.");
-    await security.ref.delete();
-    await logAction(caller, "2fa_desligado", null, "");
-    return { ok: true };
+    throw httpError(400, "O segundo fator é obrigatório e não pode ser desligado pelo painel.");
   }
   throw httpError(404, "Rota não encontrada.");
 }

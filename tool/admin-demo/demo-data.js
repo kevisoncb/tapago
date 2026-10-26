@@ -135,7 +135,9 @@ function overview() {
 let cached = null;
 export function demoApi(path) {
   if (path === "/overview") return Promise.resolve((cached ??= overview()));
-  if (path === "/2fa/status") return Promise.resolve({ ativo: true });
+  if (path === "/2fa/status") return Promise.resolve({ ativo: true, obrigatorio: true });
+  if (path === "/2fa/setup") return Promise.resolve({ secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", uri: "otpauth://totp/Pago:demo?secret=JBSWY3DPEHPK3PXP" });
+  if (path === "/2fa/enable") return Promise.resolve({ ok: true, sessao: "demo" });
   if (path === "/log") return Promise.resolve({ itens: [{ em: NOW - 3600000, por: "demo@pago.app", acao: "premium", alvo: "Marina Souza", uid: "demo1", detalhe: "+30 dias" }] });
   return Promise.reject(new Error("Modo demonstração: esta ação não está disponível."));
 }

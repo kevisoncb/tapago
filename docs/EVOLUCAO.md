@@ -28,7 +28,17 @@ Incremento concluído: métricas mínimas de ativação e uso relevante para cri
 
 Validação nativa orientada em Android e iOS permanece no roteiro de publicação, sem bloquear a evolução na `develop`.
 
-Próximo incremento recomendado: tornar o acompanhamento de cobrança mais acionável no Meu dia, destacando promessas vencendo ou quebradas e permitindo retomar o contato sem misturar acompanhamento com saldo financeiro.
+Incremento concluído: agenda de cobrança no Meu dia, destacando promessa vencida, contato atrasado, compromissos de hoje, próximos sete dias e clientes vencidos ainda sem contato. A agenda abre o WhatsApp por ação do comerciante e reutiliza o acompanhamento privado, sem movimentar nem confirmar valores.
+
+### Próximos incrementos preparados
+
+1. Criar uma área com todos os acompanhamentos e filtros por atrasado, hoje e próximos dias, além dos quatro itens prioritários do Meu dia.
+2. Permitir lembretes locais opcionais para a data combinada, solicitando notificação somente quando o comerciante ativar o recurso.
+3. Melhorar busca e filtros de clientes por situação, último contato e faixa de vencimento.
+4. Consolidar indicadores de rotina: clientes acompanhados, ainda sem contato e promessas a revisar, sem tratar promessa ou baixa manual como dinheiro bancário confirmado.
+5. Revisar os limites do plano gratuito e a apresentação do Premium com base no uso real das funções já entregues.
+
+Próximo incremento recomendado: área completa de acompanhamentos com filtros, busca e acesso pelo menu principal.
 
 ## 1. Minha avaliação do potencial
 

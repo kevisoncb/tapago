@@ -2,7 +2,7 @@ const { test, before, after, beforeEach } = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('../tool/rules/node_modules/@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, serverTimestamp } = require('../tool/rules/node_modules/firebase/firestore');
+const { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, serverTimestamp } = require('../tool/rules/node_modules/firebase/firestore');
 
 let env;
 const date = Timestamp.fromDate(new Date('2026-10-23T12:00:00Z'));
@@ -96,6 +96,8 @@ test('collection followups are owned, immutable by contact, and not money moveme
   const db = dbFor('a');
   const followup = {user_id:'a',contact_key:'phone:11999999999',client_name:'Cliente',note:'Combinou sexta',last_contacted_at:null,next_contact_at:date,promised_amount:50,updated_at:serverTimestamp()};
   await assertSucceeds(setDoc(doc(db,'CollectionFollowUps/f'),followup));
+  await assertSucceeds(getDocs(query(collection(db,'CollectionFollowUps'),where('user_id','==','a'))));
+  await assertFails(getDocs(query(collection(dbFor('b'),'CollectionFollowUps'),where('user_id','==','a'))));
   await assertFails(getDoc(doc(dbFor('b'),'CollectionFollowUps/f')));
   await assertFails(updateDoc(doc(db,'CollectionFollowUps/f'),{contact_key:'outro',updated_at:serverTimestamp()}));
   await assertFails(updateDoc(doc(db,'CollectionFollowUps/f'),{promised_amount:-1,updated_at:serverTimestamp()}));

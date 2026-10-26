@@ -27,6 +27,16 @@ void main() {
       expect(restored?.promisedAmount, 50);
       expect(restored?.nextContactAt, date);
       expect(
+        restored?.timingAt(DateTime(2026, 10, 29)),
+        FollowUpTiming.upcoming,
+      );
+      expect(restored?.timingAt(DateTime(2026, 10, 30)), FollowUpTiming.today);
+      expect(
+        restored?.timingAt(DateTime(2026, 10, 31)),
+        FollowUpTiming.overdue,
+      );
+      expect(await store.list(), hasLength(1));
+      expect(
         await CollectionFollowUpStore(
           usesFirestore: false,
           userId: 'b',

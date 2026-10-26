@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum FollowUpTiming { overdue, today, upcoming }
+
 /// A user's private note about a conversation. It never records a payment.
 class CollectionFollowUp {
   const CollectionFollowUp({
@@ -26,6 +28,16 @@ class CollectionFollowUp {
 
   String get id =>
       sha256.convert(utf8.encode('$userId|$contactKey')).toString();
+
+  FollowUpTiming? timingAt(DateTime now) {
+    final next = nextContactAt;
+    if (next == null) return null;
+    final day = DateTime(now.year, now.month, now.day);
+    final scheduled = DateTime(next.year, next.month, next.day);
+    if (scheduled.isBefore(day)) return FollowUpTiming.overdue;
+    if (scheduled == day) return FollowUpTiming.today;
+    return FollowUpTiming.upcoming;
+  }
 
   Map<String, dynamic> toMap() => {
     'user_id': userId,
@@ -93,6 +105,37 @@ class CollectionFollowUpStore {
     return data == null
         ? null
         : CollectionFollowUp.fromMap(Map<String, dynamic>.from(data as Map));
+  }
+
+  Future<List<CollectionFollowUp>> list() async {
+    final List<CollectionFollowUp> values;
+    if (usesFirestore) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('CollectionFollowUps')
+          .where('user_id', isEqualTo: userId)
+          .get(const GetOptions(source: Source.server));
+      values = [
+        for (final document in snapshot.docs)
+          CollectionFollowUp.fromMap(document.data()),
+      ];
+    } else {
+      final preferences = await SharedPreferences.getInstance();
+      final raw = preferences.getString(_key);
+      if (raw == null) return const [];
+      final records = jsonDecode(raw) as Map<String, dynamic>;
+      values = [
+        for (final data in records.values)
+          CollectionFollowUp.fromMap(Map<String, dynamic>.from(data as Map)),
+      ];
+    }
+    return values.where((item) => item.userId == userId).toList()..sort((a, b) {
+      final left = a.nextContactAt;
+      final right = b.nextContactAt;
+      if (left == null && right == null) return 0;
+      if (left == null) return 1;
+      if (right == null) return -1;
+      return left.compareTo(right);
+    });
   }
 
   Future<void> save(CollectionFollowUp followUp) async {

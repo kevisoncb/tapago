@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/client_match.dart';
+import '../services/collection_follow_up.dart';
 import '../services/daily_overview.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
@@ -14,6 +16,7 @@ import 'add_debt_page.dart';
 import 'bills_page.dart';
 import 'caderneta_page.dart';
 import 'client_profile_page.dart';
+import 'follow_up_page.dart';
 import 'premium_page.dart';
 import 'settings_page.dart';
 
@@ -26,6 +29,43 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   DailyFocus _focus = DailyFocus.today;
+  Future<List<CollectionFollowUp>>? _followUps;
+  String? _followUpsUserId;
+
+  Future<List<CollectionFollowUp>> _loadFollowUps(AppController state) {
+    return CollectionFollowUpStore(
+      usesFirestore: state.usesFirestore,
+      userId: state.user.id,
+    ).list();
+  }
+
+  void _ensureFollowUps(AppController state) {
+    if (_followUpsUserId == state.user.id && _followUps != null) return;
+    _followUpsUserId = state.user.id;
+    _followUps = _loadFollowUps(state);
+  }
+
+  Future<void> _refresh(AppController state) async {
+    await state.load();
+    final next = _loadFollowUps(state);
+    if (mounted) setState(() => _followUps = next);
+    await next;
+  }
+
+  Future<void> _openFollowUp(
+    AppController state,
+    String contactKey,
+    String clientName,
+  ) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            FollowUpPage(contactKey: contactKey, clientName: clientName),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _followUps = _loadFollowUps(state));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final selected = debtsForFocus(pending, _focus);
     final firstLoad =
         state.loading && state.debts.isEmpty && state.payments.isEmpty;
+    _ensureFollowUps(state);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -46,7 +87,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: state.load,
+          onRefresh: () => _refresh(state),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -110,6 +151,23 @@ class _DashboardPageState extends State<DashboardPage> {
                         _ReceivablesCard(state: state),
                         const SizedBox(height: 20),
                         const _QuickActions(),
+                        const SizedBox(height: 24),
+                        FutureBuilder<List<CollectionFollowUp>>(
+                          future: _followUps,
+                          builder: (context, snapshot) => _CollectionAgenda(
+                            state: state,
+                            followUps: snapshot.data,
+                            loading:
+                                snapshot.connectionState ==
+                                ConnectionState.waiting,
+                            failed: snapshot.hasError,
+                            onRetry: () => setState(
+                              () => _followUps = _loadFollowUps(state),
+                            ),
+                            onOpen: (contactKey, clientName) =>
+                                _openFollowUp(state, contactKey, clientName),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         _SectionHeading(
                           title: 'Próximo passo',
@@ -562,6 +620,294 @@ class _QuickActions extends StatelessWidget {
   );
 }
 
+class _CollectionAgenda extends StatelessWidget {
+  const _CollectionAgenda({
+    required this.state,
+    required this.followUps,
+    required this.loading,
+    required this.failed,
+    required this.onRetry,
+    required this.onOpen,
+  });
+
+  final AppController state;
+  final List<CollectionFollowUp>? followUps;
+  final bool loading;
+  final bool failed;
+  final VoidCallback onRetry;
+  final void Function(String contactKey, String clientName) onOpen;
+
+  List<_AgendaEntry> _entries() {
+    final now = DateTime.now();
+    final limit = DateTime(now.year, now.month, now.day + 7);
+    final records = {
+      for (final followUp in followUps ?? const <CollectionFollowUp>[])
+        followUp.contactKey: followUp,
+    };
+    final entries = <_AgendaEntry>[];
+    for (final contact in groupContacts(state.pendingDebts)) {
+      final open =
+          contact.debts.where((debt) => state.saldoOf(debt) > 0.009).toList()
+            ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+      if (open.isEmpty) continue;
+      final debt = open.first;
+      final followUp = records[contact.key];
+      final next = followUp?.nextContactAt;
+      final scheduledSoon = next != null && !next.isAfter(limit);
+      final needsFirstContact =
+          debt.isOverdue && followUp?.lastContactedAt == null;
+      if (!scheduledSoon && !needsFirstContact) continue;
+      entries.add(
+        _AgendaEntry(
+          contact: contact,
+          debt: debt,
+          followUp: followUp,
+          needsFirstContact: needsFirstContact && next == null,
+          now: now,
+        ),
+      );
+    }
+    entries.sort((a, b) {
+      final priority = a.priority.compareTo(b.priority);
+      if (priority != 0) return priority;
+      final left = a.followUp?.nextContactAt ?? a.debt.dataVencimento;
+      final right = b.followUp?.nextContactAt ?? b.debt.dataVencimento;
+      return left.compareTo(right);
+    });
+    return entries.take(4).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const LinearProgressIndicator(
+        semanticsLabel: 'Carregando acompanhamentos de cobrança',
+      );
+    }
+    if (failed) {
+      return _AgendaMessage(
+        icon: Icons.cloud_off_outlined,
+        title: 'Acompanhamentos indisponíveis',
+        detail: 'Sua caderneta continua disponível. Tente carregar novamente.',
+        action: 'Tentar novamente',
+        onAction: onRetry,
+      );
+    }
+    final entries = _entries();
+    if (entries.isEmpty) {
+      return const _AgendaMessage(
+        icon: Icons.task_alt_rounded,
+        title: 'Nenhuma cobrança pendente para acompanhar',
+        detail: 'Promessas e próximos contatos marcados aparecerão aqui, separados das baixas da caderneta.',
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Cobranças para acompanhar'),
+        const SizedBox(height: 4),
+        Text(
+          'Contato e promessa não alteram o saldo da caderneta.',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AppColors.mutedDark),
+        ),
+        const SizedBox(height: 12),
+        for (final entry in entries) ...[
+          _AgendaCard(entry: entry, onOpen: onOpen),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _AgendaEntry {
+  const _AgendaEntry({
+    required this.contact,
+    required this.debt,
+    required this.followUp,
+    required this.needsFirstContact,
+    required this.now,
+  });
+
+  final CadernetaContact contact;
+  final Debt debt;
+  final CollectionFollowUp? followUp;
+  final bool needsFirstContact;
+  final DateTime now;
+
+  FollowUpTiming? get timing => followUp?.timingAt(now);
+
+  int get priority {
+    if (timing == FollowUpTiming.overdue) return 0;
+    if (needsFirstContact) return 1;
+    if (timing == FollowUpTiming.today) return 2;
+    return 3;
+  }
+
+  String get status {
+    final promise = followUp?.promisedAmount != null;
+    switch (timing) {
+      case FollowUpTiming.overdue:
+        return promise ? 'Promessa vencida' : 'Contato atrasado';
+      case FollowUpTiming.today:
+        return promise ? 'Promessa para hoje' : 'Retomar contato hoje';
+      case FollowUpTiming.upcoming:
+        final date = followUp!.nextContactAt!;
+        return promise
+            ? 'Promessa para ${Dates.due(date)}'
+            : 'Retomar em ${Dates.due(date)}';
+      case null:
+        return 'Em atraso · sem contato registrado';
+    }
+  }
+
+  Color get color => timing == FollowUpTiming.overdue || needsFirstContact
+      ? AppColors.danger
+      : timing == FollowUpTiming.today
+      ? AppColors.warning
+      : AppColors.primary;
+}
+
+class _AgendaCard extends StatelessWidget {
+  const _AgendaCard({required this.entry, required this.onOpen});
+
+  final _AgendaEntry entry;
+  final void Function(String contactKey, String clientName) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final followUp = entry.followUp;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.schedule_rounded, size: 20, color: entry.color),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.contact.nome,
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      entry.status,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: entry.color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (followUp?.lastContactedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Último contato: ${Dates.full(followUp!.lastContactedAt!)}',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.mutedDark),
+            ),
+          ],
+          if (followUp?.promisedAmount != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Valor combinado: ${Money.full(followUp!.promisedAmount!)} · não altera o saldo',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.mutedDark),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (entry.contact.telefone.trim().isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      chargeOnWhatsApp(context: context, debt: entry.debt),
+                  icon: const WhatsAppMark(size: 18),
+                  label: const Text('Abrir WhatsApp'),
+                ),
+              TextButton.icon(
+                onPressed: () => onOpen(entry.contact.key, entry.contact.nome),
+                icon: const Icon(Icons.event_note_outlined, size: 18),
+                label: const Text('Atualizar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgendaMessage extends StatelessWidget {
+  const _AgendaMessage({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    this.action,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.line),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(
+                detail,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark),
+              ),
+              if (action != null) ...[
+                const SizedBox(height: 6),
+                TextButton(onPressed: onAction, child: Text(action!)),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title, this.action, this.onAction});
   final String title;
@@ -746,7 +1092,7 @@ class _RecentPayments extends StatelessWidget {
         const _SectionHeading(title: 'Últimos registros'),
         const SizedBox(height: 6),
         Text(
-          'Pagamentos registrados por você.',
+          'Baixas manuais informadas por você.',
           style: Theme.of(context).textTheme.bodySmall
               ?.copyWith(color: AppColors.mutedDark),
         ),
@@ -801,7 +1147,7 @@ class _PaymentRow extends StatelessWidget {
                         : AppColors.success,
                   ),
                   Text(
-                    debt?.nome ?? 'Pagamento registrado',
+                    debt?.nome ?? 'Baixa manual registrada',
                     style: Theme.of(context).textTheme.bodyMedium
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -809,7 +1155,7 @@ class _PaymentRow extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                '${payment.estornado ? 'Estorno' : 'Pagamento'} de ${Money.full(payment.valor)} · ${Dates.full(payment.estornadoEm ?? payment.data)}',
+                '${payment.estornado ? 'Correção de baixa' : 'Baixa manual'} de ${Money.full(payment.valor)} · ${Dates.full(payment.estornadoEm ?? payment.data)}',
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: AppColors.mutedDark),
               ),

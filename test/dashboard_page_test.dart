@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pago_app/models/models.dart';
 import 'package:pago_app/screens/dashboard_page.dart';
+import 'package:pago_app/services/collection_follow_up.dart';
 import 'package:pago_app/services/local_repository.dart';
 import 'package:pago_app/state/app_controller.dart';
 import 'package:pago_app/theme/app_theme.dart';
@@ -120,14 +121,44 @@ void main() {
       await tester.ensureVisible(find.text('Em atraso'));
       await tester.tap(find.text('Em atraso'));
       await tester.pumpAndSettle();
-      expect(find.text('Cliente em atraso'), findsOneWidget);
-      expect(find.text('Cliente de hoje'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DebtTile),
+          matching: find.text('Cliente em atraso'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DebtTile),
+          matching: find.text('Cliente de hoje'),
+        ),
+        findsNothing,
+      );
       expect(find.textContaining('Score'), findsNothing);
       await tester.tap(find.text('Próximos 7 dias'));
       await tester.pumpAndSettle();
-      expect(find.text('Cliente de hoje'), findsOneWidget);
-      expect(find.text('Cliente futuro'), findsOneWidget);
-      expect(find.text('Cliente em atraso'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DebtTile),
+          matching: find.text('Cliente de hoje'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DebtTile),
+          matching: find.text('Cliente futuro'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DebtTile),
+          matching: find.text('Cliente em atraso'),
+        ),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -153,4 +184,39 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Meu dia destaca promessa vencida sem alterar a caderneta', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await CollectionFollowUpStore(
+      usesFirestore: false,
+      userId: 'dashboard-test',
+    ).save(
+      CollectionFollowUp(
+        userId: 'dashboard-test',
+        contactKey: 'n:cliente em atraso',
+        clientName: 'Cliente em atraso',
+        lastContactedAt: DateTime.now().subtract(const Duration(days: 3)),
+        nextContactAt: DateTime.now().subtract(const Duration(days: 1)),
+        promisedAmount: 80,
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Cobranças para acompanhar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Promessa vencida'), findsOneWidget);
+    expect(find.textContaining('não altera o saldo'), findsWidgets);
+    expect(find.text('Abrir WhatsApp'), findsNothing);
+    expect(find.text('Atualizar'), findsOneWidget);
+    expect(controller.payments, isEmpty);
+  });
 }

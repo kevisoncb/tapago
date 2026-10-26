@@ -105,7 +105,7 @@ class _FollowUpPageState extends State<FollowUpPage> {
       if (!mounted) return;
       showPagoSnack(
         context,
-        'Acompanhamento salvo. Nenhum pagamento foi registrado.',
+        'Acompanhamento salvo. Nenhuma baixa foi registrada.',
       );
       Navigator.pop(context);
     } catch (_) {
@@ -237,7 +237,7 @@ class _FollowUpPageState extends State<FollowUpPage> {
                 decoration: const InputDecoration(
                   labelText: 'Valor prometido (opcional)',
                   prefixText: 'R\$ ',
-                  helperText: 'Uma promessa não é um pagamento recebido.',
+                  helperText: 'Uma promessa não é uma baixa na caderneta.',
                 ),
               ),
               const SizedBox(height: 28),

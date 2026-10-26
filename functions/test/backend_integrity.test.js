@@ -365,3 +365,40 @@ test("deleted account cannot regain attribution identifiers", async () => {
   await h.load("mmp_s2s").rememberDevice("alice", "android", "device-123");
   assert.equal(h.db.docs.has("MmpIds/alice"), false);
 });
+
+test("admin separa receita da Google Play e da App Store", () => {
+  const h = harness({});
+  const { summarizeRevenue, platformCounts, originCounts } = h.load("admin")._test;
+  const at = Date.UTC(2026, 9, 20, 12);
+  const event = (loja, tipo, valor, em, extra = {}) => ({
+    id: `${loja}${tipo}${em}`, uid: "u", nome: "", tipo, cobranca: valor > 0, valor, teste: false, loja, em, ...extra,
+  });
+  const summary = summarizeRevenue([
+    event("play", "COMPRA", 20, Date.UTC(2026, 9, 2)),
+    event("app_store", "COMPRA", 20, Date.UTC(2026, 9, 3)),
+    event("app_store", "RENOVADA", 20, Date.UTC(2026, 9, 4)),
+    event("app_store", "CANCELADA", 0, Date.UTC(2026, 9, 5)),
+    event("play", "COMPRA", 20, Date.UTC(2026, 9, 6), { teste: true }),
+    event("play", "COMPRA", 20, Date.UTC(2026, 8, 10)),
+  ], at);
+
+  assert.equal(summary.mesAtual.bruto, 60);
+  assert.equal(summary.mesAtual.porLoja.play.bruto, 20);
+  assert.equal(summary.mesAtual.porLoja.app_store.bruto, 40);
+  assert.equal(summary.mesAtual.porLoja.app_store.liquido, 34);
+  assert.equal(summary.mesAtual.liquido, 51);
+  assert.equal(summary.mesAtual.novas, 2);
+  assert.equal(summary.mesAtual.cancelamentos, 1);
+  assert.equal(summary.mesAnterior.bruto, 20);
+  assert.equal(summary.meses.length, 6);
+  assert.equal(summary.meses.at(-1).app_store, 40);
+
+  const plain = (value) => JSON.parse(JSON.stringify(value));
+  assert.deepEqual(
+    plain(platformCounts([{ plataforma: "android" }, { plataforma: "iOS" }, { plataforma: "iOS" }, { plataforma: "web" }, {}])),
+    { android: 1, ios: 2, web: 1, outras: 0, semDado: 1 },
+  );
+  assert.deepEqual(plain(originCounts([{ premiumOrigem: "apple" }, { premiumOrigem: "play" }, { premiumOrigem: "" }])), {
+    play: 2, apple: 1, pix: 0, admin: 0,
+  });
+});

@@ -12,6 +12,10 @@ const REGION = "southamerica-east1";
 const TIME_ZONE = "America/Sao_Paulo";
 const PREMIUM_VALUE = 39.9;
 const PLAY_FEE = 0.15;
+// Taxa de cada loja sobre a cobrança. A Apple usa 15% no Small Business Program
+// (até US$ 1 milhão por ano); sem ele, 30%. Ajuste aqui se o programa não valer.
+const STORE_FEES = { play: PLAY_FEE, app_store: 0.15 };
+const STORES = ["play", "app_store"];
 const ONLINE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PREMIUM_DAYS = 366;
@@ -310,6 +314,8 @@ async function overview() {
     premiumCortesia: premium.length - paying.length,
     premiumVence7d: premium.filter((user) => user.premiumAte - at <= 7 * DAY_MS).length,
     receitaEstimada: Math.round(paying.length * PREMIUM_VALUE * 100) / 100,
+    plataformas: platformCounts(people),
+    premiumPorOrigem: originCounts(premium),
     cadastros14d: signups,
   };
 
@@ -320,47 +326,85 @@ async function overview() {
 }
 
 async function revenue(at, nameById) {
-  const monthStart = startOfMonth(at);
-  const previousStart = startOfMonth(monthStart - DAY_MS);
+  const since = startOfMonth(addMonths(at, -5));
   const snap = await db()
     .collection("PlayEvents")
-    .where("em", ">=", admin.firestore.Timestamp.fromMillis(previousStart))
+    .where("em", ">=", admin.firestore.Timestamp.fromMillis(since))
     .get();
-  const eventos = snap.docs
-    .map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        uid: data.uid || "",
-        nome: nameById.get(data.uid) || "",
-        tipo: data.tipo,
-        cobranca: data.cobranca === true,
-        valor: Number(data.valor || 0),
-        teste: data.teste === true,
-        em: toMillis(data.em) || 0,
-      };
-    })
-    .sort((a, b) => b.em - a.em);
+  const eventos = snap.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      uid: data.uid || "",
+      nome: nameById.get(data.uid) || "",
+      tipo: data.tipo,
+      cobranca: data.cobranca === true,
+      valor: Number(data.valor || 0),
+      teste: data.teste === true,
+      loja: data.loja === "app_store" ? "app_store" : "play",
+      em: toMillis(data.em) || 0,
+    };
+  });
+  return summarizeRevenue(eventos, at);
+}
+
+/** Receita por loja a partir dos eventos (PlayEvents guarda Google Play e App Store). */
+function summarizeRevenue(events, at) {
+  const eventos = [...events].sort((a, b) => b.em - a.em);
+  const monthStart = startOfMonth(at);
+  const previousStart = startOfMonth(addMonths(at, -1));
 
   const period = (from, to) => {
     const list = eventos.filter((item) => !item.teste && item.em >= from && item.em < to);
-    const charges = list.filter((item) => item.cobranca);
-    const bruto = round2(charges.reduce((sum, item) => sum + item.valor, 0));
+    const count = (items) => {
+      const charges = items.filter((item) => item.cobranca);
+      return {
+        bruto: round2(charges.reduce((sum, item) => sum + item.valor, 0)),
+        cobrancas: charges.length,
+        novas: items.filter((item) => item.tipo === "COMPRA").length,
+        renovacoes: items.filter((item) => item.tipo === "RENOVADA" || item.tipo === "RECUPERADA").length,
+        cancelamentos: items.filter((item) => item.tipo === "CANCELADA").length,
+        falhas: items.filter((item) => ["SUSPENSA", "PERIODO_DE_CARENCIA"].includes(item.tipo)).length,
+      };
+    };
+    const porLoja = {};
+    for (const store of STORES) {
+      const part = count(list.filter((item) => item.loja === store));
+      porLoja[store] = { ...part, liquido: round2(part.bruto * (1 - STORE_FEES[store])) };
+    }
+    const sum = (key) => STORES.reduce((total, store) => total + porLoja[store][key], 0);
     return {
-      bruto,
-      liquido: round2(bruto * (1 - PLAY_FEE)),
-      cobrancas: charges.length,
-      novas: list.filter((item) => item.tipo === "COMPRA").length,
-      renovacoes: list.filter((item) => item.tipo === "RENOVADA" || item.tipo === "RECUPERADA").length,
-      cancelamentos: list.filter((item) => item.tipo === "CANCELADA").length,
-      falhas: list.filter((item) => ["SUSPENSA", "PERIODO_DE_CARENCIA"].includes(item.tipo)).length,
+      bruto: round2(sum("bruto")),
+      liquido: round2(sum("liquido")),
+      cobrancas: sum("cobrancas"),
+      novas: sum("novas"),
+      renovacoes: sum("renovacoes"),
+      cancelamentos: sum("cancelamentos"),
+      falhas: sum("falhas"),
+      porLoja,
     };
   };
 
+  const meses = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const start = startOfMonth(addMonths(at, -i));
+    const end = startOfMonth(addMonths(at, -i + 1));
+    const month = period(start, end);
+    meses.push({
+      mes: start,
+      play: month.porLoja.play.bruto,
+      app_store: month.porLoja.app_store.bruto,
+      bruto: month.bruto,
+      liquido: month.liquido,
+    });
+  }
+
   return {
     taxaPlay: PLAY_FEE,
+    taxas: STORE_FEES,
     mesAtual: period(monthStart, Number.MAX_SAFE_INTEGER),
     mesAnterior: period(previousStart, monthStart),
+    meses,
     eventos: eventos.slice(0, 40),
   };
 }
@@ -376,6 +420,8 @@ async function saveSnapshot(at, stats) {
       ativos30d: stats.ativos30d,
       premium: stats.premium,
       premiumPagantes: stats.premiumPagantes,
+      android: stats.plataformas.android,
+      ios: stats.plataformas.ios,
       atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
     },
     { merge: true },
@@ -391,6 +437,8 @@ async function saveSnapshot(at, stats) {
         ativos30d: data.ativos30d,
         premium: data.premium,
         premiumPagantes: data.premiumPagantes,
+        android: data.android ?? null,
+        ios: data.ios ?? null,
       };
     })
     .sort((a, b) => a.dia.localeCompare(b.dia));
@@ -400,7 +448,7 @@ async function userFile(uid) {
   if (!uid) throw httpError(400, "Informe a pessoa.");
   const record = await admin.auth().getUser(uid).catch(() => null);
   if (!record) throw httpError(404, "Pessoa não encontrada.");
-  const [profile, presence, debts, payments, bills, subs, events, notes, log, contact] = await Promise.all([
+  const [profile, presence, debts, payments, bills, subs, events, appleSubs, notes, log, contact] = await Promise.all([
     db().collection("Users").doc(uid).get(),
     db().collection("Presence").doc(uid).get(),
     db().collection("Debts").where("user_id", "==", uid).select("created_at", "status_pago").get(),
@@ -408,6 +456,7 @@ async function userFile(uid) {
     db().collection("Bills").where("user_id", "==", uid).select("pago").get(),
     db().collection("PlaySubscriptions").where("uid", "==", uid).get(),
     db().collection("PlayEvents").where("uid", "==", uid).get(),
+    db().collection("AppleSubscriptions").where("uid", "==", uid).get(),
     db().collection("AdminNotes").where("uid", "==", uid).get(),
     db().collection("AdminLog").where("uid", "==", uid).get(),
     db().collection("AdminContacts").doc(uid).get(),
@@ -432,7 +481,7 @@ async function userFile(uid) {
   const historico = [
     ...events.docs.map((doc) => {
       const data = doc.data();
-      return { em: toMillis(data.em), origem: "play", tipo: data.tipo, detalhe: data.cobranca ? money(data.valor) : "", teste: data.teste === true };
+      return { em: toMillis(data.em), origem: data.loja === "app_store" ? "apple" : "play", tipo: data.tipo, detalhe: data.cobranca ? money(data.valor) : "", teste: data.teste === true };
     }),
     ...log.docs.map((doc) => {
       const data = doc.data();
@@ -467,17 +516,10 @@ async function userFile(uid) {
       boletosEmAberto: bills.docs.filter((doc) => doc.data().pago !== true).length,
       porMes: months.map(({ mes, total }) => ({ mes, total })),
     },
-    assinaturas: subs.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        estado: data.estado || "",
-        verificada: data.verificada === true,
-        venceEm: toMillis(data.venceEm),
-        renovaSozinha: data.renovaSozinha === true,
-        valor: data.valor || null,
-        teste: data.teste === true,
-      };
-    }),
+    assinaturas: [
+      ...subs.docs.map((doc) => subscriptionRow(doc.data(), "play")),
+      ...appleSubs.docs.map((doc) => subscriptionRow(doc.data(), "app_store")),
+    ],
     historico,
     anotacoes: notes.docs
       .map((doc) => ({ id: doc.id, texto: doc.data().texto, por: doc.data().por, em: toMillis(doc.data().em) }))
@@ -661,6 +703,40 @@ async function deleteWhere(query) {
   }
 }
 
+function subscriptionRow(data, loja) {
+  return {
+    loja,
+    estado: data.estado || "",
+    verificada: data.verificada === true,
+    venceEm: toMillis(data.venceEm),
+    renovaSozinha: data.renovaSozinha === true,
+    valor: data.valor || null,
+    teste: data.teste === true,
+  };
+}
+
+function platformCounts(people) {
+  const counts = { android: 0, ios: 0, web: 0, outras: 0, semDado: 0 };
+  for (const user of people) {
+    const name = String(user.plataforma || "").toLowerCase();
+    if (!name) counts.semDado += 1;
+    else if (name === "android") counts.android += 1;
+    else if (name === "ios") counts.ios += 1;
+    else if (name === "web") counts.web += 1;
+    else counts.outras += 1;
+  }
+  return counts;
+}
+
+function originCounts(premium) {
+  const counts = { play: 0, apple: 0, pix: 0, admin: 0 };
+  for (const user of premium) {
+    const origin = user.premiumOrigem || "play";
+    counts[origin] = (counts[origin] || 0) + 1;
+  }
+  return counts;
+}
+
 function premiumOrigin(transactionId) {
   const id = String(transactionId || "");
   if (!id) return "";
@@ -721,4 +797,4 @@ function httpError(status, message) {
   return error;
 }
 
-module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId } };
+module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts } };

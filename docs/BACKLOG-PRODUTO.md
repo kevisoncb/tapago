@@ -8,8 +8,9 @@ O comerciante abre o Pagô para responder três perguntas: quem me deve, quanto,
 
 ## Hoje (tela inicial)
 
-- **Tirar:** qualquer número que pareça saldo bancário ou lucro; dois resumos que repetem a mesma informação.
-- **Mudar:** a primeira dobra mostra só "para cobrar hoje" (com nome, valor, atraso e botão de WhatsApp) e o total a receber da semana. Histórico e filtros descem.
+- **Manter:** os números são a razão de abrir o painel (a receber, vencido, recebido). Não esconder nem simplificar demais. O que muda é o rótulo: "a receber", "vencido" e "recebido informado", nunca "saldo" ou "lucro", para não parecer extrato de banco.
+- **Tirar:** dois resumos que repetem a mesma informação.
+- **Mudar:** a primeira dobra reúne os números principais e a lista "para cobrar hoje" (nome, valor, atraso e botão de WhatsApp). Histórico e filtros descem.
 - **Adicionar:** estado vazio útil ("nada para cobrar hoje") com atalho para lançar; um aviso discreto quando há promessas vencidas.
 - **Testar:** com 0, 3 e 40 clientes; se dá para cobrar um cliente em até 2 toques.
 
@@ -75,3 +76,9 @@ O comerciante abre o Pagô para responder três perguntas: quem me deve, quanto,
 4. Assinatura.
 5. Lembretes.
 6. Site com o app público.
+
+## Painel administrativo e preço
+
+- O preço cobrado de verdade fica no produto da Google Play (e da App Store). O app mostra o preço da loja; R$ 39,90 só aparece como valor reserva no app, nos textos legais e no site, e como estimativa fixa de receita no painel admin.
+- O admin hoje permite: visão geral e receita da Play, lista de pessoas, dar ou tirar Premium por dias, anotações, marcar "já chamei", excluir conta e registro de ações, com autenticação em dois fatores opcional.
+- Pendências: tornar o 2FA obrigatório; guardar o preço de referência em um só lugar (usado pelo admin, textos e site); mudar o preço na loja, não no admin.

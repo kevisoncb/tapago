@@ -405,8 +405,8 @@ test("admin separa receita da Google Play e da App Store", () => {
 
 const adminReq = (method, route, body = {}) => ({ method, path: route, query: {}, body, get: () => "Bearer mock" });
 
-test("painel admin exige o segundo fator ligado antes de qualquer dado", async () => {
-  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
+test("painel admin exige o segundo fator quando ADMIN_REQUIRE_2FA está ligado", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test", ADMIN_REQUIRE_2FA: "true" } });
   const api = h.load("admin").adminApi;
 
   for (const [method, route] of [["GET", "/overview"], ["GET", "/log"], ["POST", "/premium"], ["POST", "/delete"]]) {
@@ -428,10 +428,22 @@ test("painel admin exige o segundo fator ligado antes de qualquer dado", async (
   assert.ok(setup.body.secret);
 });
 
-test("segundo fator do painel não pode ser desligado", async () => {
+test("por padrão o painel admin não exige o segundo fator", async () => {
   const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
   const api = h.load("admin").adminApi;
+  const status = res();
+  await api(adminReq("GET", "/2fa/status"), status);
+  assert.equal(status.code, 200);
+  assert.equal(status.body.ativo, false);
+  assert.equal(status.body.obrigatorio, false);
   const out = res();
-  await api(adminReq("POST", "/2fa/disable", { code: "123456" }), out);
+  await api(adminReq("GET", "/log"), out);
+  assert.notEqual(out.code, 403);
+});
+
+test("com o segundo fator obrigatório ele não pode ser desligado", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test", ADMIN_REQUIRE_2FA: "true" } });
+  const out = res();
+  await h.load("admin").adminApi(adminReq("POST", "/2fa/disable", { code: "123456" }), out);
   assert.notEqual(out.code, 200);
 });

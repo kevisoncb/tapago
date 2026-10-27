@@ -1285,11 +1285,56 @@ function exportCsv() {
 
 async function openSecurity() {
   $("modal").hidden = false;
-  $("modal-content").innerHTML = `
-    <h2>Segurança</h2>
-    <p><span class="badge premium">Segundo fator ligado</span></p>
-    <p class="muted small">O segundo fator é obrigatório. Ao entrar, o painel pede o código do aplicativo autenticador, e a sessão vale 12 horas neste navegador.</p>
-    <p class="muted small">Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore. No próximo acesso o painel pede para configurar de novo.</p>`;
+  $("modal-content").innerHTML = `<div class="empty">Carregando...</div>`;
+  try {
+    const status = await api("/2fa/status");
+    if (status.ativo) {
+      $("modal-content").innerHTML = `
+        <h2>Segurança</h2>
+        <p><span class="badge premium">Segundo fator ligado</span></p>
+        <p class="muted small">Ao entrar, o painel pede o código do aplicativo autenticador. A sessão vale 12 horas neste navegador.</p>
+        ${
+          status.obrigatorio
+            ? `<p class="muted small">O segundo fator é obrigatório. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore.</p>`
+            : `<form id="disable-form" class="note-form">
+          <label>Para desligar, digite um código atual<input id="disable-code" inputmode="numeric" maxlength="6" required /></label>
+          <button class="btn danger" type="submit">Desligar segundo fator</button>
+        </form>`
+        }`;
+      $("disable-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          await api("/2fa/disable", { code: $("disable-code").value });
+          sessionStorage.removeItem(SESSION_KEY);
+          toast("Segundo fator desligado.");
+          openSecurity();
+        } catch (error) {
+          toast(error.message);
+        }
+      });
+      return;
+    }
+    $("modal-content").innerHTML = `
+      <h2>Ligar o segundo fator</h2>
+      <p class="muted small">Além da senha, o painel vai pedir um código de 6 números que muda a cada 30 segundos. Use o Google Authenticator ou o Microsoft Authenticator no celular.</p>
+      <button class="btn primary" id="setup-btn">Gerar código QR</button>
+      <div id="setup-area"></div>`;
+    $("setup-btn").addEventListener("click", async () => {
+      $("setup-btn").disabled = true;
+      try {
+        await setupFlow($("setup-area"), async (result) => {
+          sessionStorage.setItem(SESSION_KEY, result.sessao);
+          toast("Segundo fator ligado.");
+          openSecurity();
+        });
+      } catch (error) {
+        toast(error.message);
+        $("setup-btn").disabled = false;
+      }
+    });
+  } catch (error) {
+    if (!error.twofa) $("modal-content").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+  }
 }
 
 // Tela cheia, sem acesso ao painel: aparece quando o servidor diz que o segundo fator ainda não foi ligado.

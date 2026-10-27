@@ -183,6 +183,23 @@ class ReminderService {
       settings,
       onDidReceiveNotificationResponse: _onNotificationResponse,
     );
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      // O push do servidor usa este canal; criá-lo garante prioridade alta.
+      await android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'cobrancas',
+          'Lembretes de cobrança',
+          description: 'Avisos no dia anterior e no vencimento',
+          importance: Importance.high,
+        ),
+      );
+    } catch (error) {
+      debugPrint('Canal de notificação: $error');
+    }
     _ready = true;
     final launch = await _plugin.getNotificationAppLaunchDetails();
     final response = launch?.notificationResponse;
@@ -224,6 +241,7 @@ class ReminderService {
     String customTemplate = '',
     bool isPremium = false,
     List<Bill> bills = const [],
+    bool serverPush = false,
   }) {
     // Atualizações de perfil e lançamentos podem chegar juntas. Serializar
     // evita cancelAll de uma chamada apagar a agenda da chamada seguinte.
@@ -239,6 +257,7 @@ class ReminderService {
             debts: debtSnapshot,
             bills: billSnapshot,
             followUps: followUpSnapshot,
+            serverPush: serverPush,
           ),
         );
     return _syncWork;
@@ -250,11 +269,14 @@ class ReminderService {
     required List<Debt> debts,
     required List<Bill> bills,
     required List<CollectionFollowUp> followUps,
+    required bool serverPush,
   }) async {
     await init();
     if (!_ready) return;
     await _plugin.cancelAll();
-    if (!enabled && !followUpsEnabled) return;
+    // Com o push do servidor ativo, o aparelho não agenda avisos próprios:
+    // evita aviso duplicado.
+    if (serverPush || (!enabled && !followUpsEnabled)) return;
 
     const androidDetails = AndroidNotificationDetails(
       'cobrancas',

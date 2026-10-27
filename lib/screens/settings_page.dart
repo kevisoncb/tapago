@@ -227,13 +227,24 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.notifications_outlined,
                 title: 'Notificações Diárias',
-                subtitle: 'Lembretes de cobrança',
+                subtitle: 'Resumo de cobranças todo dia às 9h',
                 trailing: Switch.adaptive(
                   value: user.notificacoesDiarias,
-                  onChanged: (value) {
-                    context.read<AppController>().saveUser(
-                      user.copyWith(notificacoesDiarias: value),
-                    );
+                  onChanged: (value) async {
+                    final controller = context.read<AppController>();
+                    if (!value) {
+                      await controller.saveUser(
+                        user.copyWith(notificacoesDiarias: false),
+                      );
+                      return;
+                    }
+                    final enabled = await controller.enableDailyReminders();
+                    if (context.mounted && !enabled) {
+                      showPagoSnack(
+                        context,
+                        'Permissão de notificação não concedida. Ative nas configurações do aparelho.',
+                      );
+                    }
                   },
                 ),
               ),

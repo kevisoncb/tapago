@@ -103,6 +103,13 @@
         }
       },
       {
+        "source": "/api/devices/register",
+        "function": {
+          "functionId": "registerDevice",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "/api/account/delete",
         "function": {
           "functionId": "deleteMyAccount",

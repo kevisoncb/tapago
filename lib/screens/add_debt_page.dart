@@ -353,12 +353,18 @@ class _AddDebtPageState extends State<AddDebtPage> {
   Future<void> _persist(AppController state, List<Debt> next) async {
     setState(() => _saving = true);
     try {
+      var firstEver = false;
       if (widget.debt != null) {
         await state.upsertDebt(next.single);
       } else {
+        firstEver = state.debts.isEmpty;
         await state.createDebts(next);
       }
       if (!mounted) return;
+      if (firstEver && state.canOfferDailyReminders) {
+        await _offerDailyReminders(state);
+        if (!mounted) return;
+      }
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
@@ -366,6 +372,37 @@ class _AddDebtPageState extends State<AddDebtPage> {
       showPagoSnack(
         context,
         'Não foi possível confirmar o salvamento. Seus dados foram mantidos; tente salvar novamente.',
+      );
+    }
+  }
+
+  /// Depois do primeiro lançamento: o momento em que o aviso faz sentido.
+  Future<void> _offerDailyReminders(AppController state) async {
+    final accept = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Receber o resumo das 9h?'),
+        content: const Text(
+          'Todo dia às 9h o Pagô avisa quantas cobranças vencem hoje e amanhã e quantas estão atrasadas. Você pode desligar quando quiser em Configurações.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Agora não'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ligar avisos'),
+          ),
+        ],
+      ),
+    );
+    if (accept != true) return;
+    final enabled = await state.enableDailyReminders();
+    if (mounted && !enabled) {
+      showPagoSnack(
+        context,
+        'Permissão de notificação não concedida. Ative nas configurações do aparelho.',
       );
     }
   }

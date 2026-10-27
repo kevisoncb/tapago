@@ -11,6 +11,7 @@ import '../services/biometric_service.dart';
 import '../services/collection_follow_up.dart';
 import '../services/debt_balance.dart';
 import '../services/mmp_service.dart';
+import '../services/push_service.dart';
 import '../services/reminder_service.dart';
 import '../services/store_ids.dart';
 import '../utils/constants.dart';
@@ -22,6 +23,7 @@ class AppController extends ChangeNotifier {
     this._onSignOut,
     this._billing,
     this._reminders,
+    this._push,
     ProductMetrics? metrics,
     BiometricService? biometrics,
   }) : _metrics = metrics ?? MmpService.instance;
@@ -30,6 +32,8 @@ class AppController extends ChangeNotifier {
   final Future<void> Function()? _onSignOut;
   final BillingService? _billing;
   final ReminderService? _reminders;
+  final PushRegistrar? _push;
+  bool _pushActive = false;
   final ProductMetrics _metrics;
   final _uuid = const Uuid();
   StreamSubscription<AppUser>? _userSubscription;
@@ -504,6 +508,12 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    try {
+      await _push?.unregister();
+    } catch (error) {
+      debugPrint('Push: $error');
+    }
+    _pushActive = false;
     await _reminders?.sync(enabled: false, debts: const []);
     await _onSignOut?.call();
   }
@@ -579,8 +589,39 @@ class AppController extends ChangeNotifier {
     await saveUser(next);
   }
 
+  /// Registra o aparelho no push do servidor quando há avisos ligados e a
+  /// permissão já foi dada. Sem confirmação do servidor, os avisos locais
+  /// continuam valendo.
+  Future<void> _syncPush({bool askPermission = false}) async {
+    final push = _push;
+    if (push == null) return;
+    final wanted = user.notificacoesDiarias || user.lembretesAcompanhamento;
+    if (!wanted) {
+      _pushActive = false;
+      await push.unregister();
+      return;
+    }
+    _pushActive = await push.register(askPermission: askPermission);
+  }
+
+  /// Liga os lembretes diários: pede a permissão do sistema e registra o
+  /// aparelho para o aviso das 9h. Retorna `false` se a permissão for negada.
+  Future<bool> enableDailyReminders() async {
+    final allowed = await (_reminders?.requestPermission() ??
+        Future.value(true));
+    if (!allowed) return false;
+    await saveUser(user.copyWith(notificacoesDiarias: true));
+    await _syncPush(askPermission: true);
+    await _syncReminders();
+    return true;
+  }
+
+  /// Pode oferecer o aviso das 9h: há serviço de avisos e ainda não está ativo.
+  bool get canOfferDailyReminders => _reminders != null && !_pushActive;
+
   Future<void> _syncReminders() async {
     try {
+      await _syncPush();
       final followUps = user.lembretesAcompanhamento
           ? await CollectionFollowUpStore(
               usesFirestore: usesFirestore,
@@ -597,6 +638,7 @@ class AppController extends ChangeNotifier {
         customTemplate: user.mensagemCobranca,
         isPremium: user.premiumAtivo,
         bills: user.premiumAtivo ? pendingBills : const [],
+        serverPush: _pushActive,
       );
     } catch (error) {
       debugPrint('Lembretes: $error');

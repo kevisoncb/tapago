@@ -10,6 +10,7 @@ import 'screens/main_navigation_page.dart';
 import 'services/app_repository.dart';
 import 'services/billing_service.dart';
 import 'services/biometric_service.dart';
+import 'services/push_service.dart';
 import 'services/reminder_service.dart';
 import 'services/session_gate.dart';
 import 'state/app_controller.dart';
@@ -102,6 +103,7 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
       onSignOut: widget.onSignOut,
       billing: _billing,
       reminders: ReminderService(onOpen: _onReminder),
+      push: PushService(),
       biometrics: BiometricService(),
     );
     _load();

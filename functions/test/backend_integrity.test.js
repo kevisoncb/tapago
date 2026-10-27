@@ -56,7 +56,13 @@ class Query {
   async add(data) { const ref = this.doc(`auto-${this.db.docs.size}`); await ref.set(data); return ref; }
   async get() {
     const docs = [...this.db.docs.entries()].filter(([key, data]) => key.startsWith(`${this.name}/`) &&
-      this.filters.every(([field, op, value]) => op === "in" ? value.includes(data[field]) : data[field] === value))
+      this.filters.every(([field, op, value]) => {
+        const ms = (v) => (v && v.toMillis ? v.toMillis() : v);
+        if (op === "in") return value.includes(data[field]);
+        if (op === ">=") return data[field] != null && ms(data[field]) >= ms(value);
+        if (op === "<") return data[field] != null && ms(data[field]) < ms(value);
+        return data[field] === value;
+      }))
       .slice(0, this.max).map(([key]) => this.db.snapshot(new Ref(this.db, key)));
     return { docs, empty: docs.length === 0, size: docs.length };
   }
@@ -446,4 +452,82 @@ test("com o segundo fator obrigatório ele não pode ser desligado", async () =>
   const out = res();
   await h.load("admin").adminApi(adminReq("POST", "/2fa/disable", { code: "123456" }), out);
   assert.notEqual(out.code, 200);
+});
+
+
+test("resumo diário das 9h leva só contagens e respeita as preferências", async () => {
+  const h = harness({});
+  const { buildReminder, emptyCounts } = h.load("reminders")._test;
+  assert.equal(buildReminder(emptyCounts()), null);
+  const text = buildReminder({ ...emptyCounts(), cobrancasHoje: 2, cobrancasAmanha: 1, cobrancasAtraso: 3, boletosTresDias: 1 });
+  assert.equal(text.title, "Hoje tem o que cobrar");
+  assert.equal(text.body, "2 cobranças vencem hoje · 3 cobranças em atraso · 1 vence amanhã · 1 boleto vence em 3 dias. Toque para abrir.");
+  assert.equal(buildReminder({ ...emptyCounts(), cobrancasAmanha: 1 }).title, "Atenção para amanhã");
+});
+
+test("sendDailyReminders envia uma vez por dia, remove token inválido e ignora quem desligou", async () => {
+  const now = Date.UTC(2026, 9, 28, 12); // 9h em Brasília
+  const day = (offset) => stamp(Date.UTC(2026, 9, 28 + offset, 3));
+  const h = harness({
+    "Users/u1": { nome: "A" },
+    "Users/u2": { nome: "B", is_premium: true, premium_vence_em: stamp(now + 86400000 * 20) },
+    "Users/u3": { nome: "C", notificacoes_diarias: false },
+    "Users/u4": { nome: "D" },
+    "Debts/a": { user_id: "u1", status_pago: false, data_vencimento: day(0) },
+    "Debts/b": { user_id: "u1", status_pago: false, data_vencimento: day(-4) },
+    "Debts/c": { user_id: "u1", status_pago: false, data_vencimento: day(1) },
+    "Debts/d": { user_id: "u1", status_pago: true, data_vencimento: day(0) },
+    "Debts/e": { user_id: "u1", status_pago: false, data_vencimento: day(5) },
+    "Debts/f": { user_id: "u3", status_pago: false, data_vencimento: day(0) },
+    "Debts/g": { user_id: "u4", status_pago: false, data_vencimento: day(0) },
+    "Bills/x": { user_id: "u2", pago: false, data_vencimento: day(3) },
+    "Bills/y": { user_id: "u1", pago: false, data_vencimento: day(0) },
+    "Devices/t1": { uid: "u1", token: "token-bom-u1-aaaaaaaaaaaa" },
+    "Devices/t2": { uid: "u1", token: "token-ruim-u1-aaaaaaaaaaa" },
+    "Devices/t3": { uid: "u2", token: "token-bom-u2-aaaaaaaaaaaa" },
+    "Devices/t5": { uid: "u3", token: "token-u3-aaaaaaaaaaaaaaaaa" },
+  });
+  const sent = [];
+  const messaging = {
+    sendEach: async (messages) => {
+      sent.push(...messages);
+      return {
+        responses: messages.map((m) => (m.token.includes("ruim")
+          ? { success: false, error: { code: "messaging/registration-token-not-registered" } }
+          : { success: true })),
+      };
+    },
+  };
+  const { runDailyReminders } = h.load("reminders");
+  const stats = await runDailyReminders({ db: h.db, messaging, now });
+
+  const byToken = Object.fromEntries(sent.map((m) => [m.token, m]));
+  assert.equal(byToken["token-bom-u1-aaaaaaaaaaaa"].notification.body,
+    "1 cobrança vence hoje · 1 cobrança em atraso · 1 vence amanhã. Toque para abrir.");
+  assert.equal(byToken["token-bom-u2-aaaaaaaaaaaa"].notification.body, "1 boleto vence em 3 dias. Toque para abrir.");
+  assert.equal(byToken["token-bom-u1-aaaaaaaaaaaa"].android.notification.channelId, "cobrancas");
+  assert.equal(byToken["token-u3-aaaaaaaaaaaaaaaaa"], undefined, "quem desligou os avisos não recebe");
+  assert.equal(stats.tokensRemovidos, 1);
+  assert.equal(stats.semAparelho, 1, "u4 não tem aparelho");
+  assert.ok(!h.db.docs.has("Devices/t2"), "token inválido é apagado");
+
+  const again = await runDailyReminders({ db: h.db, messaging, now });
+  assert.equal(again.enviados, 0, "segunda execução no mesmo dia não repete");
+});
+
+test("registro de aparelho valida token, plataforma e conta excluída", async () => {
+  const h = harness({ "DeletedAccounts/gone": {} });
+  const { registerDevice, unregisterDevice } = h.load("reminders");
+  const token = "x".repeat(40);
+  await registerDevice("u1", { token, platform: "Android" }, h.db);
+  const doc = [...h.db.docs.entries()].find(([key]) => key.startsWith("Devices/"));
+  assert.equal(doc[1].uid, "u1");
+  assert.equal(doc[1].platform, "android");
+  await assert.rejects(registerDevice("u1", { token: "curto", platform: "android" }, h.db), /Token inválido/);
+  await assert.rejects(registerDevice("u1", { token, platform: "web" }, h.db), /Plataforma inválida/);
+  await assert.rejects(registerDevice("gone", { token, platform: "android" }, h.db), /Conta excluída/);
+  await unregisterDevice("outro", { token }, h.db);
+  assert.ok([...h.db.docs.keys()].some((k) => k.startsWith("Devices/")), "outro usuário não remove");
+  await unregisterDevice("u1", { token }, h.db);
+  assert.ok(![...h.db.docs.keys()].some((k) => k.startsWith("Devices/")));
 });

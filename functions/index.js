@@ -13,12 +13,19 @@ const apple = require("./apple");
 const mmp = require("./mmp_s2s");
 const { sendEmail, escapeHtml } = require("./alerts");
 const adminModule = require("./admin");
+const reminders = require("./reminders");
 
 exports.adminApi = adminModule.adminApi;
 exports.adminDailyDigest = adminModule.adminDailyDigest;
 exports.retryMmpRevenue = onSchedule(
   { schedule: "every 15 minutes", region: "southamerica-east1", timeoutSeconds: 540, maxInstances: 1 },
   () => mmp.flushRevenueOutbox(),
+);
+
+// Resumo diário às 9h (Brasília) para todos os usuários, por push.
+exports.sendDailyReminders = onSchedule(
+  { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", region: "southamerica-east1", timeoutSeconds: 540, maxInstances: 1 },
+  () => reminders.runDailyReminders(),
 );
 
 const asaasKeyParam = defineString("ASAAS_API_KEY");
@@ -315,6 +322,22 @@ async function alertAppleEvent(result) {
 }
 
 const RECENT_LOGIN_SECONDS = 5 * 60;
+
+exports.registerDevice = onRequest(httpOptions, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Use POST" });
+    return;
+  }
+  try {
+    const user = await requireUser(req);
+    const body = req.body || {};
+    res.status(200).json(body.remove === true
+      ? await reminders.unregisterDevice(user.uid, body)
+      : await reminders.registerDevice(user.uid, body));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "Não foi possível registrar o aparelho." });
+  }
+});
 
 exports.deleteMyAccount = onRequest(httpOptions, async (req, res) => {
   if (req.method !== "POST") {

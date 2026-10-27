@@ -33,6 +33,8 @@ const OWNED_COLLECTIONS = [
   ["AdminNotes", "uid"],
   ["CollectionFollowUps", "user_id"],
   ["MmpOutbox", "uid"],
+  ["Devices", "uid"],
+  ["RemindersSent", "uid"],
 ];
 const OPEN_2FA_ROUTES = new Set(["/2fa/status", "/2fa/verify"]);
 // Quando ADMIN_REQUIRE_2FA=true e o segundo fator não está ligado, só estas rotas respondem.

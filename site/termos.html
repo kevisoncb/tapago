@@ -1,81 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Termos de Uso — Pagô</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg" />
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="./index.html">
-        <img src="./assets/pago-icon.jpg" width="36" height="36" alt="" />
-        Pagô
-      </a>
-    </header>
-    <article class="legal">
-      <p class="eyebrow">Documento</p>
-      <h1>Termos de Uso</h1>
-      <p>Última atualização: 5 de outubro de 2026.</p>
-      <p>
-        Estes Termos regulam o aplicativo e o site Pagô. Ao criar uma conta
-        você declara ter 18 anos ou mais e aceita também a
-        <a href="./privacidade.html">Política de Privacidade</a>. O aceite
-        eletrônico vale como manifestação de vontade (Lei nº 12.965/2014 e MP
-        nº 2.200-2/2001).
-      </p>
-      <h2>1. O serviço</h2>
-      <p>
-        O Pagô é caderneta digital para fiado, venda a prazo ou empréstimo
-        entre você e os clientes que cadastra. Não somos instituição financeira,
-        não concedemos crédito em nome próprio e não intermediamos o pagamento
-        ao seu cliente, salvo no fluxo de assinatura Premium quando indicado.
-        Juros são opcionais. Mensagens de cobrança abrem no WhatsApp da sua
-        conta (wa.me); o Pagô não dispara em nome próprio. A caderneta fica
-        no banco de dados da conta, no grátis e no Premium.
-      </p>
-      <h2>2. Conta</h2>
-      <p>
-        Você responde pelos dados informados e pela guarda da senha. Podemos
-        suspender contas em fraude, abuso ou violação da lei. Pedidos de
-        exclusão: WhatsApp de suporte (<a href="./ajuda.html">Ajuda</a>).
-      </p>
-      <h2>3. Seus clientes e cobrança</h2>
-      <p>
-        Você é o controlador dos dados que lança na caderneta e deve ter base
-        legal para tratá-los. Cobranças devem respeitar o CDC (Lei nº
-        8.078/1990), em especial o art. 42: é vedado constranger, ameaçar ou
-        expor o consumidor a ridículo. Assédio, fraude e cobrança ilegal são
-        proibidos.
-      </p>
-      <h2>4. Assinatura Premium</h2>
-      <p>
-        R$ 39,90 por mês, assinado pela loja do aparelho (Google Play no Android,
-        App Store no iPhone). A assinatura renova automaticamente todo mês até o
-        cancelamento, feito na própria loja até 24 horas antes do fim do período.
-        O Premium é cadastro por voz, leitura de recibos, mensagem de cobrança no
-        seu texto e boletos a pagar. O cancelamento vale para o ciclo seguinte e o
-        período pago continua disponível. Reembolsos seguem as regras da loja em
-        que a assinatura foi feita. No app, "Restaurar Compras" recupera uma
-        assinatura já feita.
-      </p>
-      <h2>5. Responsabilidade</h2>
-      <p>
-        O serviço é prestado como disponível. Não respondemos por inadimplência
-        do seu cliente, bloqueio de WhatsApp ou falha de terceiros (Google,
-        WhatsApp, Asaas), sem prejuízo de direitos irrenunciáveis do CDC quando
-        você for consumidor do app.
-      </p>
-      <h2>6. Lei e contato</h2>
-      <p>
-        Legislação brasileira. Encarregado e dúvidas: WhatsApp de suporte
-        (<a href="./ajuda.html">Ajuda</a>).
-        <a href="./ajuda.html">Ajuda</a> ·
-        <a href="./privacidade.html">Privacidade</a> ·
-        <a href="./lgpd.html">LGPD</a>.
-      </p>
-      <p><a href="./index.html">Voltar ao site</a></p>
-    </article>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Termos de Uso — Pagô</title>
+<meta name="description" content="Regras de uso do aplicativo e do site do Pagô: o serviço, a conta, a cobrança dos seus clientes e a assinatura Premium.">
+<link rel="canonical" href="https://usepago.web.app/termos">
+<meta name="theme-color" content="#2f6bff">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Pagô">
+<meta property="og:title" content="Termos de Uso — Pagô">
+<meta property="og:description" content="Regras de uso do aplicativo e do site do Pagô: o serviço, a conta, a cobrança dos seus clientes e a assinatura Premium.">
+<meta property="og:url" content="https://usepago.web.app/termos">
+<meta property="og:image" content="https://usepago.web.app/assets/pago-icon.jpg">
+<link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="./legal.css">
+</head>
+<body>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+<header class="top">
+  <div class="in">
+    <a class="brand" href="./" aria-label="Pagô, página inicial"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="114" fill="#2F6BFF"/><path d="M132 268 L228 364 L348 176" fill="none" stroke="#fff" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><circle cx="402" cy="110" r="32" fill="#fff"/></svg>Pagô</a>
+    <nav aria-label="Páginas do site"><a href="./ajuda">Ajuda</a><a href="./privacidade">Privacidade</a><a href="./termos" aria-current="page">Termos</a><a href="./lgpd">LGPD</a><a href="./excluir-conta">Excluir conta</a></nav>
+  </div>
+</header>
+<main id="conteudo">
+<article class="doc">
+<p class="eyebrow">Documento</p>
+<h1>Termos de Uso</h1>
+<p class="updated">Última atualização: 27 de outubro de 2026.</p>
+<div class="summary"><h2>Em resumo</h2><ul><li>O Pagô organiza o seu fiado e as suas cobranças. Não é banco e não movimenta dinheiro.</li><li>A mensagem de cobrança sai do seu WhatsApp, quando você decide enviar.</li><li>Cobre com respeito: ameaça, constrangimento e cobrança indevida são proibidos.</li><li>O Premium é cobrado pela loja, renova todo mês e pode ser cancelado na própria loja.</li></ul></div>
+<nav class="toc" aria-label="Neste documento"><h2>Neste documento</h2><ol><li><a href="#aceite">Aceite e quem pode usar</a></li><li><a href="#servico">O serviço</a></li><li><a href="#conta">Sua conta</a></li><li><a href="#uso">Uso permitido</a></li><li><a href="#clientes">Seus clientes e a cobrança</a></li><li><a href="#premium">Assinatura Premium</a></li><li><a href="#disponibilidade">Disponibilidade e mudanças</a></li><li><a href="#propriedade">Propriedade intelectual</a></li><li><a href="#responsabilidade">Responsabilidade</a></li><li><a href="#encerramento">Encerramento</a></li><li><a href="#lei">Lei aplicável e contato</a></li></ol></nav>
+
+<h2 id="aceite">1. Aceite e quem pode usar</h2>
+<p>Estes Termos regulam o uso do aplicativo e do site do Pagô. Ao criar uma conta você declara ter 18 anos ou mais e aceita estes Termos e a <a href="./privacidade">Política de Privacidade</a>. O aceite eletrônico vale como manifestação de vontade (Lei nº 12.965/2014, Marco Civil da Internet, e MP nº 2.200-2/2001).</p>
+
+<h2 id="servico">2. O serviço</h2>
+<p>O Pagô é uma caderneta digital para organizar fiado, vendas a prazo e empréstimos entre você e os clientes que você cadastra. Ele ajuda a registrar valores, vencimentos e pagamentos e a preparar mensagens de cobrança.</p>
+<div class="note"><p><strong>O Pagô não é banco, carteira digital nem meio de pagamento.</strong> Não somos instituição financeira, não concedemos crédito, não consultamos contas bancárias, não confirmamos transferências e não movimentamos dinheiro. Os pagamentos registrados no app são informados por você.</p></div>
+<p>As mensagens de cobrança abrem no WhatsApp do seu aparelho. O envio é seu: o Pagô não manda mensagens em nome próprio nem em seu nome. Juros são opcionais e definidos por você.</p>
+
+<h2 id="conta">3. Sua conta</h2>
+<p>Você responde pelos dados que informa e pela guarda da sua senha. Avise-nos se suspeitar de uso indevido da conta. Podemos suspender ou encerrar contas em caso de fraude, abuso ou violação da lei, com aviso quando possível.</p>
+
+<h2 id="uso">4. Uso permitido</h2>
+<p>Você não pode usar o Pagô para fraude, para cobrar dívidas que não existem, para assediar pessoas, para tratar dados sem base legal ou para violar direitos de terceiros ou a lei. Também não pode tentar acessar contas ou dados de outras pessoas, nem interferir no funcionamento do serviço.</p>
+
+<h2 id="clientes">5. Seus clientes e a cobrança</h2>
+<p>Os dados dos clientes que você lança na caderneta são de sua responsabilidade: você é o controlador e precisa ter base legal para tratá-los (LGPD). Informe só o necessário.</p>
+<p>A cobrança deve respeitar o Código de Defesa do Consumidor (Lei nº 8.078/1990), em especial o art. 42: é proibido constranger, ameaçar ou expor o consumidor ao ridículo. Assédio, ameaça e cobrança de valor indevido são proibidos.</p>
+
+<h2 id="premium">6. Assinatura Premium</h2>
+<ul>
+  <li><strong>O que inclui:</strong> lançamento por voz, leitura de comprovante por foto, mensagem de cobrança com o seu texto e boletos de fornecedores. O plano gratuito continua com a caderneta essencial.</li>
+  <li><strong>Preço:</strong> o valor mensal é exibido na loja antes da confirmação da compra (atualmente R$ 39,90 por mês). O valor da loja prevalece, e mudanças de preço são comunicadas pela loja antes de valerem para você.</li>
+  <li><strong>Cobrança e renovação:</strong> a assinatura é feita pela loja do aparelho (Google Play no Android, App Store no iPhone) e renova automaticamente todo mês até você cancelar.</li>
+  <li><strong>Cancelamento:</strong> feito na própria loja, antes da data de renovação (na App Store, pelo menos 24 horas antes do fim do período). O cancelamento vale para o ciclo seguinte e o período já pago continua disponível. Excluir a conta no Pagô não cancela a assinatura na loja.</li>
+  <li><strong>Reembolso:</strong> segue as regras da loja em que você assinou. Quando se aplicar, vale também o direito de arrependimento de 7 dias para contratações feitas fora do estabelecimento comercial (CDC, art. 49), que você exerce pela loja ou pelo nosso suporte.</li>
+  <li><strong>Restaurar compras:</strong> no app, “Restaurar compras” recupera uma assinatura já feita com a mesma conta da loja.</li>
+</ul>
+
+<h2 id="disponibilidade">7. Disponibilidade e mudanças</h2>
+<p>Trabalhamos para manter o serviço no ar, mas ele pode ficar indisponível por manutenção ou falhas de terceiros. Podemos melhorar, alterar ou descontinuar recursos, avisando com antecedência razoável quando a mudança afetar o que você usa.</p>
+
+<h2 id="propriedade">8. Propriedade intelectual</h2>
+<p>O app, a marca Pagô, o design e o código são nossos ou licenciados a nós. Você ganha uma licença pessoal, limitada e revogável para usar o app. Os dados que você lança na caderneta continuam sendo seus.</p>
+
+<h2 id="responsabilidade">9. Responsabilidade</h2>
+<p>O serviço é prestado como está disponível. Não respondemos pela inadimplência dos seus clientes, por bloqueios no seu WhatsApp ou por falhas de terceiros (como Google, Apple e WhatsApp), sem prejuízo dos direitos que o Código de Defesa do Consumidor garante a você quando você for consumidor do app.</p>
+
+<h2 id="encerramento">10. Encerramento</h2>
+<p>Você pode parar de usar o Pagô e <a href="./excluir-conta">excluir a conta</a> quando quiser. Depois da exclusão, os dados são apagados conforme a <a href="./privacidade#retencao">Política de Privacidade</a>.</p>
+
+<h2 id="lei">11. Lei aplicável e contato</h2>
+<p>Estes Termos seguem a legislação brasileira. Para consumidores, fica garantido o foro do domicílio do consumidor. Dúvidas: <a href="https://wa.me/5527999019162?text=Oi%2C%20vim%20pelo%20Pag%C3%B4%20e%20quero%20tirar%20uma%20d%C3%BAvida.">WhatsApp de suporte</a>. Veja também a <a href="./ajuda">Ajuda</a> e a página de <a href="./lgpd">LGPD</a>.</p>
+
+</article>
+</main>
+<footer>
+  <div class="in">
+    <a href="./">Início</a>
+    <a href="./ajuda">Ajuda</a>
+    <a href="./privacidade">Privacidade</a>
+    <a href="./termos">Termos</a>
+    <a href="./lgpd">LGPD</a>
+    <a href="./excluir-conta">Excluir conta</a>
+    <p class="legal">Pagô é uma ferramenta de organização. Não é banco, carteira digital nem meio de pagamento.</p>
+  </div>
+</footer>
+</body>
 </html>

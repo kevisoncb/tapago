@@ -78,7 +78,7 @@ void main() {
       find.descendant(of: navigation, matching: find.text('Mais')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Configurações'), findsOneWidget);
+    expect(find.text('Conta, cobrança e preferências'), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsNothing);
     await tester.tap(find.text('Acompanhamentos'));
     await tester.pumpAndSettle();

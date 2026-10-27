@@ -499,10 +499,18 @@ class CadernetaContactTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$phone · $extra',
+                      phone,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: AppColors.mutedDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      extra,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.muted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -155,9 +155,7 @@ class ContactHistoryPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 26),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          _ActionPair(
             children: [
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
@@ -376,6 +374,39 @@ class _HistoryRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Duas ações lado a lado; em telas estreitas ou com texto ampliado, empilhadas.
+class _ActionPair extends StatelessWidget {
+  const _ActionPair({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final stacked =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            children[i],
+          ],
+        ],
+      );
+    }
+    return Row(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(child: children[i]),
+        ],
+      ],
     );
   }
 }

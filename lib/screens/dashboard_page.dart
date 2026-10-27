@@ -920,17 +920,17 @@ class _SectionHeading extends StatelessWidget {
   final VoidCallback? onAction;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    alignment: WrapAlignment.spaceBetween,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    spacing: 12,
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
-      Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontSize: 19,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -.4,
+      Expanded(
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -.4,
+          ),
         ),
       ),
       if (action != null) TextButton(onPressed: onAction, child: Text(action!)),

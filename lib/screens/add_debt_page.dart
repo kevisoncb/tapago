@@ -674,7 +674,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
         children: [
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            title: const Text('Parcelar a receber'),
+            title: Text(
+              'Parcelar a receber',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             subtitle: Text(
               state.user.premiumAtivo
                   ? 'Escolha o 1º vencimento e em quantas vezes dividir'

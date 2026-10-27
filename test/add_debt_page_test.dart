@@ -94,15 +94,22 @@ void main() {
     final repository = _SaveRepository();
     final controller = await _open(tester, repository);
 
+    final semantics = tester.ensureSemantics();
     final fields = tester
         .widgetList<TextField>(find.byType(TextField))
         .toList();
-    expect(fields[0].decoration?.labelText, 'Nome do Cliente');
+    String labelOf(int index) =>
+        tester.getSemantics(find.byType(TextField).at(index)).label;
+    expect(labelOf(0), contains('Nome do Cliente'));
     expect(fields[0].textInputAction, TextInputAction.next);
-    expect(fields[1].decoration?.labelText, 'WhatsApp');
+    expect(labelOf(1), contains('WhatsApp'));
     expect(fields[1].textInputAction, TextInputAction.next);
-    expect(fields[3].decoration?.labelText, 'Juros (%)');
+    expect(labelOf(3), contains('Juros (%)'));
     expect(fields[3].textInputAction, TextInputAction.done);
+    // O rótulo fica só acima do campo; dentro dele aparece o exemplo.
+    expect(fields[0].decoration?.labelText, isNull);
+    expect(fields[0].decoration?.hintText, isNotEmpty);
+    semantics.dispose();
     expect(find.byTooltip('Selecionar data de vencimento'), findsOneWidget);
     controller.dispose();
   });

@@ -208,7 +208,7 @@ class BillTile extends StatelessWidget {
       if (bill.parcelado) bill.parcelaLabel,
       bill.pago && bill.pagoEm != null
           ? 'Pago em ${Dates.due(bill.pagoEm!)}'
-          : 'Vence em ${Dates.due(bill.dataVencimento)}',
+          : '${overdue ? 'Venceu' : 'Vence'} em ${Dates.due(bill.dataVencimento)}',
     ].join(' · ');
 
     return Material(

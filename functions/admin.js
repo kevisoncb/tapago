@@ -35,6 +35,7 @@ const OWNED_COLLECTIONS = [
   ["MmpOutbox", "uid"],
   ["Devices", "uid"],
   ["RemindersSent", "uid"],
+  ["Acquisition", "uid"],
 ];
 const OPEN_2FA_ROUTES = new Set(["/2fa/status", "/2fa/verify"]);
 // Quando ADMIN_REQUIRE_2FA=true e o segundo fator não está ligado, só estas rotas respondem.
@@ -89,6 +90,7 @@ exports.adminApi = onRequest(
           "/overview": () => overview(),
           "/user": () => userFile(String(req.query.uid || "").trim()),
           "/log": () => actionLog(),
+          "/spend": () => spendList(),
           "/2fa/status": () => ({ ativo: security.ativo, obrigatorio: require2fa() }),
         }[route];
         if (!handler) throw httpError(404, "Rota não encontrada.");
@@ -100,6 +102,26 @@ exports.adminApi = onRequest(
       const body = req.body || {};
       if (route.startsWith("/2fa/")) {
         res.status(200).json(await twoFactor(route, caller, security, body));
+        return;
+      }
+
+      if (route === "/spend") {
+        const entry = parseSpend(body);
+        const ref = await db().collection("AdminSpend").add({
+          ...entry,
+          por: caller.email || "",
+          em: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        await logAction(caller, "investimento", null, `${entry.mes} · ${entry.canal} · ${money(entry.valor)}`);
+        res.status(200).json({ ok: true, id: ref.id });
+        return;
+      }
+      if (route === "/spend/delete") {
+        const id = String(body.id || "").trim();
+        if (!id) throw httpError(400, "Informe o lançamento.");
+        await db().collection("AdminSpend").doc(id).delete();
+        await logAction(caller, "investimento_removido", null, id);
+        res.status(200).json({ ok: true });
         return;
       }
 
@@ -268,12 +290,21 @@ async function twoFactor(route, caller, security, body) {
 }
 
 async function overview() {
-  const [authUsers, profiles, presence, contacts] = await Promise.all([
+  const [authUsers, profiles, presence, contacts, acquisitions, charges] = await Promise.all([
     listAuthUsers(),
     db().collection("Users").get(),
     db().collection("Presence").get(),
     db().collection("AdminContacts").get(),
+    db().collection("Acquisition").get(),
+    db().collection("PlayEvents").where("cobranca", "==", true).get(),
   ]);
+  const acquisitionById = new Map(acquisitions.docs.map((doc) => [doc.id, doc.data()]));
+  const grossById = new Map();
+  for (const doc of charges.docs) {
+    const data = doc.data();
+    if (data.teste === true || !data.uid) continue;
+    grossById.set(data.uid, (grossById.get(data.uid) || 0) + Number(data.valor || 0));
+  }
 
   const profileById = new Map(profiles.docs.map((doc) => [doc.id, doc.data()]));
   const seenById = new Map(presence.docs.map((doc) => [doc.id, doc.data()]));
@@ -302,6 +333,8 @@ async function overview() {
       admin: allowed.includes(String(record.email || "").toLowerCase()),
       desativado: record.disabled === true,
       chamadoEm: contact ? toMillis(contact.em) : null,
+      origem: originOf(acquisitionById.get(record.uid)),
+      receitaBruta: round2(grossById.get(record.uid) || 0),
     };
   });
 
@@ -724,6 +757,49 @@ async function deleteWhere(query) {
   }
 }
 
+function originOf(data) {
+  if (!data) return { fonte: "", meio: "", campanha: "" };
+  return { fonte: data.source || "", meio: data.medium || "", campanha: data.campaign || "" };
+}
+
+/** Valida um lançamento de investimento em anúncios (valores em reais). */
+function parseSpend(body) {
+  const month = String(body.mes || "").trim();
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw httpError(400, "Informe o mês no formato AAAA-MM.");
+  const channel = String(body.canal || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  if (!channel) throw httpError(400, "Informe o canal (por exemplo google, instagram, tiktok).");
+  const value = Number(body.valor);
+  if (!Number.isFinite(value) || value < 0 || value > 10000000) throw httpError(400, "Valor inválido.");
+  const installs = body.instalacoes === undefined || body.instalacoes === "" || body.instalacoes === null ? null : Number(body.instalacoes);
+  if (installs !== null && (!Number.isInteger(installs) || installs < 0 || installs > 100000000)) {
+    throw httpError(400, "Instalações inválidas.");
+  }
+  return {
+    mes: month,
+    canal: channel,
+    campanha: String(body.campanha || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64),
+    valor: round2(value),
+    instalacoes: installs,
+    nota: String(body.nota || "").trim().slice(0, 200),
+  };
+}
+
+async function spendList() {
+  const snap = await db().collection("AdminSpend").get();
+  return {
+    itens: snap.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id, mes: data.mes, canal: data.canal, campanha: data.campanha || "",
+          valor: Number(data.valor || 0), instalacoes: data.instalacoes ?? null, nota: data.nota || "",
+          por: data.por || "", em: toMillis(data.em),
+        };
+      })
+      .sort((a, b) => String(b.mes).localeCompare(String(a.mes)) || (b.em || 0) - (a.em || 0)),
+  };
+}
+
 function subscriptionRow(data, loja) {
   return {
     loja,
@@ -818,4 +894,4 @@ function httpError(status, message) {
   return error;
 }
 
-module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts } };
+module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts, parseSpend } };

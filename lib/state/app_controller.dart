@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
 import '../services/app_repository.dart';
+import '../services/analytics_service.dart';
 import '../services/asaas_client.dart';
 import '../services/billing_service.dart';
 import '../services/biometric_service.dart';
@@ -26,7 +27,9 @@ class AppController extends ChangeNotifier {
     this._push,
     ProductMetrics? metrics,
     BiometricService? biometrics,
-  }) : _metrics = metrics ?? MmpService.instance;
+  }) : _metrics =
+           metrics ??
+           MetricsFanOut([MmpService.instance, AnalyticsService.instance]);
 
   final AppRepository _repository;
   final Future<void> Function()? _onSignOut;
@@ -565,12 +568,10 @@ class AppController extends ChangeNotifier {
         );
       }
       if (update.outcome == PurchaseOutcome.purchased) {
-        unawaited(
-          MmpService.instance.logFrontendPurchase(
-            _billing?.price ?? AppConstants.premiumPrice,
-            _billing?.currency ?? 'BRL',
-          ),
-        );
+        final price = _billing?.price ?? AppConstants.premiumPrice;
+        final currency = _billing?.currency ?? 'BRL';
+        unawaited(MmpService.instance.logFrontendPurchase(price, currency));
+        unawaited(AnalyticsService.instance.logPurchase(price, currency));
       }
       final verifiedUser = await _repository.getCurrentUser();
       if (_disposed || user.id != expectedUserId) {
@@ -613,6 +614,7 @@ class AppController extends ChangeNotifier {
     await saveUser(user.copyWith(notificacoesDiarias: true));
     await _syncPush(askPermission: true);
     await _syncReminders();
+    unawaited(AnalyticsService.instance.logRemindersEnabled());
     return true;
   }
 

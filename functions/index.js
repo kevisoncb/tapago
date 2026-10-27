@@ -14,6 +14,7 @@ const mmp = require("./mmp_s2s");
 const { sendEmail, escapeHtml } = require("./alerts");
 const adminModule = require("./admin");
 const reminders = require("./reminders");
+const acquisition = require("./acquisition");
 
 exports.adminApi = adminModule.adminApi;
 exports.adminDailyDigest = adminModule.adminDailyDigest;
@@ -336,6 +337,19 @@ exports.registerDevice = onRequest(httpOptions, async (req, res) => {
       : await reminders.registerDevice(user.uid, body));
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || "Não foi possível registrar o aparelho." });
+  }
+});
+
+exports.registerAcquisition = onRequest(httpOptions, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Use POST" });
+    return;
+  }
+  try {
+    const user = await requireUser(req);
+    res.status(200).json(await acquisition.registerAcquisition(user.uid, req.body || {}));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "Não foi possível registrar a origem." });
   }
 });
 

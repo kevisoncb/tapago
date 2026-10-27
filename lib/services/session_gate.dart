@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/seed_data.dart';
 import '../models/models.dart';
 import '../utils/constants.dart';
+import 'acquisition_service.dart';
+import 'analytics_service.dart';
 import 'app_repository.dart';
 import 'asaas_client.dart';
 import 'auth_messages.dart';
@@ -221,10 +223,12 @@ class SessionGate extends ChangeNotifier {
   Future<void> _trackRegistration(String? uid) async {
     if (uid != null) await MmpService.instance.setUserId(uid);
     await MmpService.instance.logRegistrationComplete();
+    unawaited(AnalyticsService.instance.logSignUp());
   }
 
   Future<void> signOut() async {
     unawaited(MmpService.instance.clearUserId());
+    unawaited(AnalyticsService.instance.setUser(null));
     if (_firebaseReady) {
       await FirebaseAuth.instance.signOut();
       return;
@@ -320,6 +324,8 @@ class SessionGate extends ChangeNotifier {
       bootError = null;
       PresenceService.instance.start(user.uid);
       unawaited(MmpService.instance.setUserId(user.uid));
+      unawaited(AnalyticsService.instance.setUser(user.uid));
+      unawaited(AcquisitionService.instance.registerOnce(user.uid));
     } catch (error, stack) {
       if (generation != _sessionGeneration) return;
       repository = null;

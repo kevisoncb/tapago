@@ -531,3 +531,49 @@ test("registro de aparelho valida token, plataforma e conta excluída", async ()
   await unregisterDevice("u1", { token }, h.db);
   assert.ok(![...h.db.docs.keys()].some((k) => k.startsWith("Devices/")));
 });
+
+
+test("origem da instalação: só o primeiro registro vale e o texto é saneado", async () => {
+  const h = harness({ "DeletedAccounts/gone": {} });
+  const { registerAcquisition } = h.load("acquisition");
+  const first = await registerAcquisition("u1", { source: "Instagram!!", medium: "CPC", campaign: "Lançamento_Out/26", platform: "Android" }, h.db);
+  assert.equal(first.registrado, true);
+  const saved = h.db.docs.get("Acquisition/u1");
+  assert.equal(saved.source, "instagram");
+  assert.equal(saved.medium, "cpc");
+  assert.equal(saved.campaign, "lanamento_out26");
+  const second = await registerAcquisition("u1", { source: "google", medium: "cpc", platform: "android" }, h.db);
+  assert.equal(second.registrado, false);
+  assert.equal(h.db.docs.get("Acquisition/u1").source, "instagram");
+  const organic = await registerAcquisition("u2", { platform: "android" }, h.db);
+  assert.equal(organic.registrado, true);
+  assert.equal(h.db.docs.get("Acquisition/u2").source, "organico");
+  await assert.rejects(registerAcquisition("u3", { source: "x", platform: "web" }, h.db), /Plataforma inválida/);
+  await assert.rejects(registerAcquisition("gone", { platform: "android" }, h.db), /Conta excluída/);
+});
+
+
+test("investimento em anúncios: valida, grava, lista e remove", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
+  const api = h.load("admin").adminApi;
+  const call = async (method, route, body) => { const out = res(); await api(adminReq(method, route, body), out); return out; };
+
+  const bad = await call("POST", "/spend", { mes: "2026-13", canal: "google", valor: 10 });
+  assert.equal(bad.code, 400);
+  assert.equal((await call("POST", "/spend", { mes: "2026-10", canal: "!!!", valor: 10 })).code, 400);
+  assert.equal((await call("POST", "/spend", { mes: "2026-10", canal: "google", valor: -1 })).code, 400);
+  assert.equal((await call("POST", "/spend", { mes: "2026-10", canal: "google", valor: 10, instalacoes: 1.5 })).code, 400);
+
+  const ok = await call("POST", "/spend", { mes: "2026-10", canal: "Google Ads", valor: "150.5", instalacoes: 40, nota: "teste" });
+  assert.equal(ok.code, 200);
+  const list = await call("GET", "/spend");
+  assert.equal(list.code, 200);
+  assert.equal(list.body.itens.length, 1);
+  assert.equal(list.body.itens[0].canal, "googleads");
+  assert.equal(list.body.itens[0].valor, 150.5);
+  assert.equal(list.body.itens[0].instalacoes, 40);
+
+  const removed = await call("POST", "/spend/delete", { id: list.body.itens[0].id });
+  assert.equal(removed.code, 200);
+  assert.equal((await call("GET", "/spend")).body.itens.length, 0);
+});

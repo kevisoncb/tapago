@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/analytics_service.dart';
 import '../services/mmp_service.dart';
 import '../services/plan_catalog.dart';
 import '../services/store_ids.dart';
@@ -27,6 +28,7 @@ class _PremiumPageState extends State<PremiumPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(MmpService.instance.logPremiumPaywallView());
+      unawaited(AnalyticsService.instance.logPaywallView());
       context.read<AppController>().loadStorePrice();
     });
   }

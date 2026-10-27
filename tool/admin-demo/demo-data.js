@@ -22,6 +22,16 @@ const addMonths = (ms, n) => {
 const NAMES = ["Marina Souza", "Carlos Lima", "Ana Paula", "Rogério Alves", "Fernanda Costa", "João Batista", "Luciana Reis", "Pedro Henrique", "Camila Duarte", "Tiago Moreira", "Patrícia Gomes", "Eduardo Nunes", "Sônia Ribeiro", "Marcos Vinícius", "Aline Barros", "Roberto Dias"];
 const PRICE = 19.9;
 
+function pickOrigin() {
+  const r = rand();
+  if (r < 0.3) return { fonte: "instagram", meio: "cpc", campanha: "lancamento-out" };
+  if (r < 0.52) return { fonte: "google", meio: "cpc", campanha: "app-instalacao" };
+  if (r < 0.62) return { fonte: "tiktok", meio: "cpc", campanha: "video1" };
+  if (r < 0.68) return { fonte: "influenciador", meio: "social", campanha: "parceria-ana" };
+  if (r < 0.9) return { fonte: "organico", meio: "organico", campanha: "" };
+  return { fonte: "", meio: "", campanha: "" };
+}
+
 function buildUsers() {
   const users = [];
   for (let i = 0; i < 180; i += 1) {
@@ -47,6 +57,8 @@ function buildUsers() {
       desativado: false,
       chamadoEm: null,
       uso: { lancamentos: Math.floor(rand() * rand() * 60), pagamentos: Math.floor(rand() * 30), boletos: Math.floor(rand() * 8) },
+      origem: pickOrigin(),
+      receitaBruta: premium && origem !== "admin" ? Math.round((1 + Math.floor(rand() * 3)) * PRICE * 100) / 100 : 0,
     });
   }
   return users;
@@ -141,12 +153,37 @@ function legacy(data) {
   delete copy.receita.taxas;
   for (const key of ["mesAtual", "mesAnterior"]) delete copy.receita[key].porLoja;
   copy.receita.eventos.forEach((event) => delete event.loja);
+  copy.users.forEach((user) => { delete user.origem; delete user.receitaBruta; });
   copy.historico.forEach((item) => { delete item.android; delete item.ios; });
   return copy;
 }
 
+const month = (offset) => {
+  const d = new Date(NOW);
+  return new Date(d.getFullYear(), d.getMonth() + offset, 1).toISOString().slice(0, 7);
+};
+let spend = [
+  { id: "s1", mes: month(0), canal: "instagram", campanha: "lancamento-out", valor: 320, instalacoes: 210, nota: "Reels", por: "demo", em: NOW },
+  { id: "s2", mes: month(0), canal: "google", campanha: "app-instalacao", valor: 480, instalacoes: 305, nota: "", por: "demo", em: NOW },
+  { id: "s3", mes: month(0), canal: "tiktok", campanha: "video1", valor: 150, instalacoes: 120, nota: "", por: "demo", em: NOW },
+  { id: "s4", mes: month(0), canal: "influenciador", campanha: "parceria-ana", valor: 200, instalacoes: null, nota: "Pagamento único", por: "demo", em: NOW },
+  { id: "s5", mes: month(-1), canal: "google", campanha: "teste", valor: 250, instalacoes: 150, nota: "", por: "demo", em: NOW - 30 * DAY },
+];
+
 let cached = null;
-export function demoApi(path) {
+export function demoApi(path, body) {
+  if (globalThis.location?.search.includes("legacy") && path.startsWith("/spend")) {
+    return Promise.reject(Object.assign(new Error("Rota não encontrada."), { status: 404 }));
+  }
+  if (path === "/spend" && !body) return Promise.resolve({ itens: [...spend] });
+  if (path === "/spend") {
+    spend = [{ id: `s${Date.now()}`, mes: body.mes, canal: String(body.canal).toLowerCase(), campanha: body.campanha || "", valor: Number(body.valor), instalacoes: body.instalacoes === "" ? null : Number(body.instalacoes), nota: body.nota || "", por: "demo", em: Date.now() }, ...spend];
+    return Promise.resolve({ ok: true });
+  }
+  if (path === "/spend/delete") {
+    spend = spend.filter((item) => item.id !== body.id);
+    return Promise.resolve({ ok: true });
+  }
   if (path === "/overview") {
     cached ??= overview();
     return Promise.resolve(globalThis.location?.search.includes("legacy") ? legacy(cached) : cached);

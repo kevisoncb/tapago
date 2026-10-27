@@ -40,6 +40,8 @@ const ACTION_LABELS = {
   excluir: "excluiu a conta",
   excluiu_a_propria_conta: "excluiu a própria conta pelo app",
   anotacao: "anotou",
+  investimento: "registrou investimento",
+  investimento_removido: "removeu um investimento",
   chamado: "marcou como chamado",
   "2fa_ativado": "ligou o segundo fator",
   "2fa_desligado": "desligou o segundo fator",
@@ -204,6 +206,7 @@ $("tabs").addEventListener("click", (event) => {
   document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
   document.querySelectorAll("[data-page]").forEach((page) => (page.hidden = page.dataset.page !== state.tab));
   if (state.tab === "registro") loadLog();
+  if (state.tab === "marketing") loadSpend();
 });
 
 $("search").addEventListener("input", (event) => {
@@ -316,6 +319,7 @@ function renderAll() {
   renderRevenue(data.receita);
   renderRevenuePage(data.receita);
   renderAnalysis();
+  renderMarketing();
   renderMonthly();
   renderFunnel();
   renderRetention();
@@ -495,6 +499,237 @@ function niceMax(value) {
 function compactMoney(value) {
   return value >= 1000 ? `R$ ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(value)}`;
 }
+
+// ===== Marketing: retorno por canal =====
+const PLAY_URL = "https://play.google.com/store/apps/details?id=app.usepago";
+const SITE_URL = "https://usepago.web.app/";
+
+function monthKey(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function marketingPeriod() {
+  const now = Date.now();
+  const thisMonth = startOfMonth(now);
+  const prevMonth = startOfMonth(thisMonth - DAY);
+  const range = state.mkRange || "month";
+  if (range === "prev") return { from: prevMonth, to: thisMonth, months: new Set([monthKey(prevMonth)]), label: "mês passado" };
+  if (range === "all") return { from: 0, to: Infinity, months: null, label: "todo o período" };
+  return { from: thisMonth, to: Infinity, months: new Set([monthKey(thisMonth)]), label: "este mês" };
+}
+
+function channelRows() {
+  const period = marketingPeriod();
+  const now = Date.now();
+  const fee = state.data?.receita?.taxas?.play ?? state.data?.receita?.taxaPlay ?? 0.15;
+  const rows = new Map();
+  const row = (key, label) => {
+    if (!rows.has(key)) rows.set(key, { key, label, gasto: 0, instalacoes: 0, cadastros: 0, lancou: 0, ativos: 0, pagantes: 0, bruta: 0 });
+    return rows.get(key);
+  };
+  const known = state.users.some((user) => user.origem !== undefined);
+  for (const user of state.users) {
+    if (user.admin || user.desativado) continue;
+    if (!user.criadoEm || user.criadoEm < period.from || user.criadoEm >= period.to) continue;
+    const source = !known ? "sem-dado" : user.origem?.fonte || "sem-registro";
+    const label = { organico: "Orgânico", "sem-registro": "Sem origem registrada", "sem-dado": "Sem origem registrada" }[source] || source;
+    const item = row(source, label);
+    item.cadastros += 1;
+    if ((user.uso?.lancamentos || 0) > 0) item.lancou += 1;
+    if (user.ultimoAcesso && now - user.ultimoAcesso <= 7 * DAY) item.ativos += 1;
+    if ((user.receitaBruta || 0) > 0) item.pagantes += 1;
+    item.bruta += user.receitaBruta || 0;
+  }
+  for (const entry of state.spend?.itens || []) {
+    if (period.months && !period.months.has(entry.mes)) continue;
+    const item = row(entry.canal, entry.canal);
+    item.gasto += entry.valor;
+    item.instalacoes += entry.instalacoes || 0;
+  }
+  const list = [...rows.values()].map((item) => {
+    const liquido = item.bruta * (1 - fee);
+    const per = (value, count) => (item.gasto > 0 && count > 0 ? value / count : null);
+    return {
+      ...item,
+      liquido,
+      cpaCadastro: per(item.gasto, item.cadastros),
+      cpaLancamento: per(item.gasto, item.lancou),
+      cac: per(item.gasto, item.pagantes),
+      retorno: item.gasto > 0 ? liquido / item.gasto : null,
+      resultado: item.gasto > 0 ? liquido - item.gasto : null,
+    };
+  });
+  list.sort((a, b) => b.gasto - a.gasto || b.cadastros - a.cadastros);
+  const best = list.filter((item) => item.cpaLancamento != null).sort((a, b) => a.cpaLancamento - b.cpaLancamento)[0];
+  if (best) best.melhor = true;
+  return list;
+}
+
+function renderMarketing() {
+  if (!state.data) return;
+  const rows = channelRows();
+  const paid = rows.filter((item) => item.gasto > 0);
+  const total = (list, key) => list.reduce((sum, item) => sum + item[key], 0);
+  const spend = total(paid, "gasto");
+  const signups = total(rows, "cadastros");
+  const paidSignups = total(paid, "cadastros");
+  const paidLaunched = total(paid, "lancou");
+  const paidLiquid = total(paid, "liquido");
+  const ratio = (a, b) => (b > 0 && a > 0 ? money.format(a / b) : "—");
+  const cards = [
+    { label: "Investido", value: money.format(spend), hint: marketingPeriod().label, hero: true },
+    { label: "Cadastros", value: signups, hint: `${paidSignups} vieram de canais pagos` },
+    { label: "Custo por cadastro", value: ratio(spend, paidSignups), hint: "canais com investimento" },
+    { label: "Custo por 1º lançamento", value: ratio(spend, paidLaunched), hint: "quem realmente usou" },
+    { label: "Retorno", value: spend > 0 ? `${(paidLiquid / spend).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x` : "—", hint: "receita líquida ÷ investimento" },
+  ];
+  $("mk-kpis").innerHTML = cards.map(statCard).join("");
+
+  const known = state.users.some((user) => user.origem !== undefined);
+  $("mk-note").textContent = !known
+    ? "O servidor ainda não envia a origem das contas (atualize as Functions). Os números por canal aparecem depois disso."
+    : "A origem vem do link da Play usado na instalação. Contas criadas antes da medição ficam em \"Sem origem registrada\". Use o mesmo nome de canal no link e no investimento.";
+
+  const cell = (value, fmt = (v) => v) => (value == null ? `<span class="muted">—</span>` : fmt(value));
+  $("mk-table").innerHTML = rows.length
+    ? `<table class="table">
+        <thead><tr><th>Canal</th><th>Gasto</th><th>Instalações</th><th>Cadastros</th><th>1º lançamento</th><th>Ativos 7d</th><th>Pagantes</th><th>Receita</th><th>Custo/cadastro</th><th>Custo/1º lanç.</th><th>Custo/pagante</th><th>Retorno</th></tr></thead>
+        <tbody>${rows
+          .map(
+            (item) => `<tr>
+          <td><b>${escapeHtml(item.label)}</b>${item.melhor ? ` <span class="badge" style="--store:var(--c-play)">melhor custo</span>` : ""}</td>
+          <td>${item.gasto ? money.format(item.gasto) : "—"}</td>
+          <td>${item.instalacoes || "—"}</td>
+          <td>${item.cadastros}</td>
+          <td>${item.lancou}${item.cadastros ? ` <span class="muted small">${Math.round((item.lancou / item.cadastros) * 100)}%</span>` : ""}</td>
+          <td>${item.ativos}</td>
+          <td>${item.pagantes}</td>
+          <td>${item.bruta ? money.format(item.bruta) : "—"}</td>
+          <td>${cell(item.cpaCadastro, money.format)}</td>
+          <td>${cell(item.cpaLancamento, money.format)}</td>
+          <td>${cell(item.cac, money.format)}</td>
+          <td>${item.retorno == null ? `<span class="muted">—</span>` : `<b class="${item.retorno >= 1 ? "good" : "bad"}">${item.retorno.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x</b>`}</td>
+        </tr>`,
+          )
+          .join("")}</tbody></table>`
+    : `<div class="empty">Sem cadastros nem investimento neste período.</div>`;
+
+  renderSpendList();
+  renderLinks();
+}
+
+function renderSpendList() {
+  const box = $("spend-list");
+  if (state.spendError) {
+    box.innerHTML = `<div class="empty">${escapeHtml(state.spendError)}</div>`;
+    return;
+  }
+  const items = state.spend?.itens || [];
+  box.innerHTML = items.length
+    ? items
+        .slice(0, 30)
+        .map(
+          (item) => `<div class="feed-item">
+        <span class="feed-dot"></span>
+        <div><b>${escapeHtml(item.canal)}</b>${item.campanha ? ` · ${escapeHtml(item.campanha)}` : ""} · ${escapeHtml(item.mes)} · ${money.format(item.valor)}${item.instalacoes != null ? ` · ${item.instalacoes} instalações` : ""}${item.nota ? ` <span class="muted">(${escapeHtml(item.nota)})</span>` : ""}</div>
+        <button class="link" data-spend-delete="${escapeHtml(item.id)}">remover</button>
+      </div>`,
+        )
+        .join("")
+    : `<div class="empty">Nenhum investimento registrado ainda.</div>`;
+}
+
+async function loadSpend() {
+  try {
+    state.spend = await api("/spend");
+    state.spendError = "";
+  } catch (error) {
+    if (error.twofa) return;
+    state.spend = null;
+    state.spendError = error.status === 404 ? "Disponível depois que as Functions forem atualizadas." : error.message;
+  }
+  if (state.data) renderMarketing();
+}
+
+$("mk-range").addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-range]");
+  if (!chip) return;
+  state.mkRange = chip.dataset.range;
+  $("mk-range").querySelectorAll(".chip").forEach((item) => item.classList.toggle("active", item === chip));
+  renderMarketing();
+});
+
+$("spend-month").value = monthKey(Date.now());
+$("spend-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.target.querySelector("button[type=submit]");
+  button.disabled = true;
+  try {
+    await api("/spend", {
+      mes: $("spend-month").value,
+      canal: $("spend-channel").value,
+      campanha: $("spend-campaign").value,
+      valor: $("spend-value").value.replace(/\./g, "").replace(",", "."),
+      instalacoes: $("spend-installs").value,
+      nota: $("spend-note").value,
+    });
+    toast("Investimento registrado.");
+    for (const id of ["spend-value", "spend-installs", "spend-note"]) $(id).value = "";
+    await loadSpend();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("spend-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-spend-delete]");
+  if (!button) return;
+  button.disabled = true;
+  try {
+    await api("/spend/delete", { id: button.dataset.spendDelete });
+    toast("Investimento removido.");
+    await loadSpend();
+  } catch (error) {
+    toast(error.message);
+    button.disabled = false;
+  }
+});
+
+function utmQuery() {
+  const clean = (id) => $(id).value.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  const pairs = [["utm_source", clean("link-source")], ["utm_medium", clean("link-medium")], ["utm_campaign", clean("link-campaign")], ["utm_content", clean("link-content")]];
+  return pairs.filter(([, value]) => value).map(([key, value]) => `${key}=${value}`).join("&");
+}
+
+function renderLinks() {
+  const query = utmQuery();
+  if (!query) {
+    $("link-out").innerHTML = `<div class="empty">Preencha pelo menos o canal.</div>`;
+    return;
+  }
+  const links = [
+    ["Link da Google Play", `${PLAY_URL}&referrer=${encodeURIComponent(query)}`],
+    ["Link do site", `${SITE_URL}?${query}`],
+  ];
+  $("link-out").innerHTML = links
+    .map(([label, url]) => `<div class="link-row"><span class="muted small">${label}</span><code>${escapeHtml(url)}</code><button class="btn ghost" type="button" data-copy="${escapeHtml(url)}">Copiar</button></div>`)
+    .join("");
+}
+
+$("link-form").addEventListener("input", renderLinks);
+$("link-out").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-copy]");
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    toast("Link copiado.");
+  } catch (_) {
+    toast("Selecione o link e copie manualmente.");
+  }
+});
 
 const SERIES = [
   { key: "total", label: "Cadastros", color: "var(--primary)" },

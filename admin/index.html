@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="admin.css?v=6" />
+    <link rel="stylesheet" href="admin.css?v=7" />
   </head>
   <body>
     <main id="login" class="login" hidden>
@@ -59,6 +59,7 @@
           <button data-tab="geral" class="tab active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z"/></svg><span>Visão geral</span></button>
           <button data-tab="receita" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Receita</span></button>
           <button data-tab="analise" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></svg><span>Análise</span></button>
+          <button data-tab="marketing" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Zm13-2a4 4 0 0 1 0 6m2.5-9a8 8 0 0 1 0 12"/></svg><span>Marketing</span></button>
           <button data-tab="pessoas" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 20v-1a4 4 0 0 0-3-3.9M15 4.1a3.5 3.5 0 0 1 0 6.8"/></svg><span>Pessoas</span></button>
           <button data-tab="registro" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Registro</span></button>
           </nav>
@@ -181,6 +182,50 @@
           <div id="an-active"></div>
         </section>
       </div>
+      <div data-page="marketing" hidden>
+        <section class="stats" id="mk-kpis"></section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Retorno por canal</h2>
+            <div class="chips tight" id="mk-range">
+              <button data-range="month" class="chip active">Este mês</button>
+              <button data-range="prev" class="chip">Mês passado</button>
+              <button data-range="all" class="chip">Tudo</button>
+            </div>
+          </div>
+          <p class="muted small" id="mk-note"></p>
+          <div id="mk-table" class="scroll-x"></div>
+        </section>
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Registrar investimento</h2><span class="muted small">O que você gastou em anúncios e influenciadores.</span></div>
+            <form id="spend-form" class="spend-form">
+              <label>Mês<input id="spend-month" type="month" required /></label>
+              <label>Canal
+                <input id="spend-channel" list="spend-channels" placeholder="google, instagram, tiktok..." required />
+                <datalist id="spend-channels"><option value="google"><option value="instagram"><option value="facebook"><option value="tiktok"><option value="influenciador"><option value="indicacao"></datalist>
+              </label>
+              <label>Campanha (opcional)<input id="spend-campaign" placeholder="lancamento-out" /></label>
+              <label>Valor gasto (R$)<input id="spend-value" inputmode="decimal" placeholder="150,00" required /></label>
+              <label>Instalações informadas (opcional)<input id="spend-installs" inputmode="numeric" placeholder="Do Google Ads, Meta etc." /></label>
+              <label>Nota (opcional)<input id="spend-note" maxlength="200" /></label>
+              <button class="btn primary" type="submit">Registrar</button>
+            </form>
+            <div id="spend-list" class="feed"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Gerador de links</h2><span class="muted small">Cada link marca a origem das instalações.</span></div>
+            <form id="link-form" class="spend-form">
+              <label>Canal (utm_source)<input id="link-source" placeholder="instagram" value="instagram" /></label>
+              <label>Meio (utm_medium)<input id="link-medium" placeholder="cpc, social, influenciador" value="social" /></label>
+              <label>Campanha (utm_campaign)<input id="link-campaign" placeholder="lancamento-out" /></label>
+              <label>Conteúdo (opcional)<input id="link-content" placeholder="video1" /></label>
+            </form>
+            <div id="link-out" class="link-out"></div>
+            <p class="muted small">Campanhas de aplicativo do Google Ads se atribuem sozinhas: use o link só para Instagram, TikTok, influenciadores, QR e parceiros.</p>
+          </section>
+        </div>
+      </div>
       <div data-page="pessoas" hidden>
         <section class="panel">
           <div class="panel-head">
@@ -233,6 +278,6 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="admin.js?v=6"></script>
+    <script type="module" src="admin.js?v=7"></script>
   </body>
 </html>

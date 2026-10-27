@@ -346,7 +346,7 @@ function renderStats(stats, receita) {
       label: "Receita do mês (lojas)",
       value: money.format(receita.mesAtual.bruto),
       hint: receita.mesAtual.cobrancas
-        ? `Play ${money.format(receita.mesAtual.porLoja.play.bruto)} · iPhone ${money.format(receita.mesAtual.porLoja.app_store.bruto)}`
+        ? `Play ${money.format(stores(receita.mesAtual).play.bruto)} · iPhone ${money.format(stores(receita.mesAtual).app_store.bruto)}`
         : `estimada: ${money.format(stats.receitaEstimada)}/mês`,
     },
     { label: "Premium vence em 7 dias", value: stats.premiumVence7d, hint: "podem não renovar" },
@@ -361,6 +361,12 @@ function renderStats(stats, receita) {
       </div>`,
     )
     .join("");
+}
+
+// Backend antigo não separa as lojas: trata tudo como Google Play até as Functions serem atualizadas.
+function stores(period) {
+  const empty = { bruto: 0, liquido: 0, cobrancas: 0, novas: 0, renovacoes: 0, cancelamentos: 0, falhas: 0 };
+  return period.porLoja || { play: { ...empty, ...period }, app_store: empty };
 }
 
 const STORE_NAME = { play: "Google Play", app_store: "App Store" };
@@ -396,7 +402,7 @@ function renderRevenue(receita) {
 function renderRevenuePage(receita) {
   const now = receita.mesAtual;
   const before = receita.mesAnterior;
-  const iosShare = now.bruto ? Math.round((now.porLoja.app_store.bruto / now.bruto) * 100) : 0;
+  const iosShare = now.bruto ? Math.round((stores(now).app_store.bruto / now.bruto) * 100) : 0;
   const cards = [
     { label: "Bruto do mês", value: money.format(now.bruto), hint: `${trend(now.bruto, before.bruto) || "sem comparação"} vs. mês passado`, hero: true },
     { label: "Líquido do mês", value: money.format(now.liquido), hint: "depois das taxas das lojas" },
@@ -408,7 +414,7 @@ function renderRevenuePage(receita) {
 
   $("stores").innerHTML = ["play", "app_store"]
     .map((store) => {
-      const part = now.porLoja[store];
+      const part = stores(now)[store];
       const rate = Math.round((receita.taxas?.[store] ?? receita.taxaPlay) * 100);
       return `
         <article class="store ${store === "play" ? "play" : "apple"}">
@@ -437,7 +443,7 @@ function renderRevenuePage(receita) {
           (item) => `
         <div class="feed-item ${item.loja === "app_store" ? "apple" : "play"}">
           <span class="feed-dot"></span>
-          <div><button class="link" data-file="${escapeHtml(item.uid)}">${escapeHtml(item.nome || "Assinante")}</button> ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo.toLowerCase())}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""} <span class="badge" style="--store:${STORE_COLOR[item.loja]}">${STORE_SHORT[item.loja]}</span></div>
+          <div><button class="link" data-file="${escapeHtml(item.uid)}">${escapeHtml(item.nome || "Assinante")}</button> ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo.toLowerCase())}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""} <span class="badge" style="--store:${STORE_COLOR[item.loja || "play"]}">${STORE_SHORT[item.loja || "play"]}</span></div>
           <span class="muted small">${relative(item.em)}</span>
         </div>`,
         )
@@ -455,7 +461,7 @@ function statCard(card) {
 }
 
 function stackedBars(months) {
-  if (!months.length) return `<div class="empty">Sem dados.</div>`;
+  if (!months.length) return `<div class="empty">O gráfico mensal aparece quando as Functions forem atualizadas.</div>`;
   const W = 520, H = 220, L = 44, B = 28, T = 12;
   const max = niceMax(Math.max(1, ...months.map((m) => m.bruto)));
   const slot = (W - L) / months.length;
@@ -522,7 +528,7 @@ function renderAnalysis() {
     ["Outras", platforms.outras, "var(--c-admin)"],
     ["Sem registro de acesso", platforms.semDado, "var(--line)"],
   ].filter(([, value]) => value > 0);
-  $("an-platform").innerHTML = segments(platformRows, stats.total);
+  $("an-platform").innerHTML = platformRows.length ? segments(platformRows, stats.total) : `<div class="empty">Sem dados de plataforma ainda.</div>`;
 
   const origins = stats.premiumPorOrigem || {};
   const originRows = [

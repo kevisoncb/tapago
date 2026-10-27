@@ -132,9 +132,25 @@ function overview() {
   return { geradoEm: NOW, stats, receita: buildRevenue(), historico: buildHistory(), emailLigado: true, users };
 }
 
+// ?legacy simula o servidor antigo (sem separação por loja) para testar a compatibilidade.
+function legacy(data) {
+  const copy = JSON.parse(JSON.stringify(data));
+  delete copy.stats.plataformas;
+  delete copy.stats.premiumPorOrigem;
+  delete copy.receita.meses;
+  delete copy.receita.taxas;
+  for (const key of ["mesAtual", "mesAnterior"]) delete copy.receita[key].porLoja;
+  copy.receita.eventos.forEach((event) => delete event.loja);
+  copy.historico.forEach((item) => { delete item.android; delete item.ios; });
+  return copy;
+}
+
 let cached = null;
 export function demoApi(path) {
-  if (path === "/overview") return Promise.resolve((cached ??= overview()));
+  if (path === "/overview") {
+    cached ??= overview();
+    return Promise.resolve(globalThis.location?.search.includes("legacy") ? legacy(cached) : cached);
+  }
   if (path === "/2fa/status") return Promise.resolve({ ativo: true, obrigatorio: true });
   if (path === "/2fa/setup") return Promise.resolve({ secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", uri: "otpauth://totp/Pago:demo?secret=JBSWY3DPEHPK3PXP" });
   if (path === "/2fa/enable") return Promise.resolve({ ok: true, sessao: "demo" });

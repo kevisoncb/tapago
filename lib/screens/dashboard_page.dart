@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/cash_summary.dart';
+import '../services/client_match.dart';
+import '../services/collection_follow_up.dart';
+import '../services/daily_overview.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
@@ -15,160 +17,286 @@ import 'add_debt_page.dart';
 import 'bills_page.dart';
 import 'caderneta_page.dart';
 import 'client_profile_page.dart';
+import 'follow_up_page.dart';
+import 'follow_ups_page.dart';
 import 'premium_page.dart';
 import 'settings_page.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  DailyFocus _focus = DailyFocus.today;
+  Future<List<CollectionFollowUp>>? _followUps;
+  String? _followUpsUserId;
+
+  Future<List<CollectionFollowUp>> _loadFollowUps(AppController state) {
+    return CollectionFollowUpStore(
+      usesFirestore: state.usesFirestore,
+      userId: state.user.id,
+    ).list();
+  }
+
+  void _ensureFollowUps(AppController state) {
+    if (_followUpsUserId == state.user.id && _followUps != null) return;
+    _followUpsUserId = state.user.id;
+    _followUps = _loadFollowUps(state);
+  }
+
+  Future<void> _refresh(AppController state) async {
+    await state.load();
+    final next = _loadFollowUps(state);
+    if (mounted) setState(() => _followUps = next);
+    await next;
+  }
+
+  Future<void> _openFollowUp(
+    AppController state,
+    String contactKey,
+    String clientName,
+  ) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            FollowUpPage(contactKey: contactKey, clientName: clientName),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _followUps = _loadFollowUps(state));
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final pending = state.pendingDebts;
+    final selected = debtsForFocus(pending, _focus);
+    final firstLoad =
+        state.loading && state.debts.isEmpty && state.payments.isEmpty;
+    _ensureFollowUps(state);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _NewDebtFab(
-        onTap: () {
-          Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const AddDebtPage()));
-        },
+      backgroundColor: AppColors.bg,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'dashboard-new-debt',
+        onPressed: () => _open(context, const AddDebtPage()),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Novo lançamento'),
+        tooltip: 'Cadastrar uma venda, fiado ou empréstimo',
       ),
       body: SafeArea(
-        child: state.loading
-            ? const Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _Header(user: state.user),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _MetricCard(
-                                  icon: Icons.trending_up_rounded,
-                                  label: 'Saldo aberto',
-                                  value: Money.compact(state.saldoAberto),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _MetricCard(
-                                  icon: Icons.calendar_month_rounded,
-                                  label: 'Recebe esta semana',
-                                  value: Money.compact(state.aReceberNaSemana),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _MetricCard(
-                            icon: state.aReceberVencido > 0
-                                ? Icons.warning_amber_rounded
-                                : Icons.check_circle_outline_rounded,
-                            label: state.aReceberVencido > 0
-                                ? 'Vencido a receber'
-                                : 'Nada vencido a receber',
-                            value: Money.compact(state.aReceberVencido),
-                            compact: true,
-                            danger: state.aReceberVencido > 0,
-                          ),
-                          if (!state.user.isPremium) ...[
-                            const SizedBox(height: 16),
-                            const _PremiumBanner(),
-                          ],
-                          const SizedBox(height: 12),
-                          const _BillsEntry(),
-                          const SizedBox(height: 12),
-                          const _CashSummaryCard(),
-                          const SizedBox(height: 22),
-                          Row(
-                            children: [
-                              Text(
-                                'Na caderneta',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const Spacer(),
-                              GestureDetector(
-                                onTap: () => _openAll(context),
-                                child: Text(
-                                  'Ver todos',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                        ],
+        child: RefreshIndicator(
+          onRefresh: () => _refresh(state),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _Header(user: state.user),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Meu dia',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1,
+                            ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'O que entra. O que vence. Tudo no seu controle.',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: AppColors.mutedDark),
+                      ),
+                      const SizedBox(height: 12),
+                      _SyncStatus(state: state),
+                      if (state.errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        _LoadError(
+                          message: state.errorMessage!,
+                          onRetry: state.load,
+                        ),
+                      ],
+                      if (state.loading && !firstLoad) ...[
+                        const SizedBox(height: 16),
+                        const LinearProgressIndicator(
+                          semanticsLabel: 'Atualizando os registros',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              if (firstLoad)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: 'Carregando sua caderneta',
                     ),
                   ),
-                  if (pending.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Text(
-                          'Nada na caderneta. Toque em Novo lançamento para começar.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.mutedDark,
+                )
+              else ...[
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ReceivablesCard(state: state),
+                        const SizedBox(height: 20),
+                        const _QuickActions(),
+                        const SizedBox(height: 24),
+                        FutureBuilder<List<CollectionFollowUp>>(
+                          future: _followUps,
+                          builder: (context, snapshot) => _CollectionAgenda(
+                            state: state,
+                            followUps: snapshot.data,
+                            loading:
+                                snapshot.connectionState ==
+                                ConnectionState.waiting,
+                            failed: snapshot.hasError,
+                            onRetry: () => setState(
+                              () => _followUps = _loadFollowUps(state),
+                            ),
+                            onOpen: (contactKey, clientName) =>
+                                _openFollowUp(state, contactKey, clientName),
                           ),
                         ),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 108),
-                      sliver: SliverList.separated(
-                        itemCount: pending.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final debt = pending[index];
-                          return DebtTile(
-                            debt: debt,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ClientProfilePage(debt: debt),
+                        const SizedBox(height: 24),
+                        _SectionHeading(
+                          title: 'Próximo passo',
+                          action: 'Ver clientes',
+                          onAction: () => _open(context, const CadernetaPage()),
+                        ),
+                        Text(
+                          'Escolha o período para acompanhar os recebimentos.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.mutedDark),
+                        ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final focus in DailyFocus.values)
+                              ChoiceChip(
+                                label: Text(focus.label),
+                                selected: _focus == focus,
+                                onSelected: (_) =>
+                                    setState(() => _focus = focus),
+                                showCheckmark: false,
+                                selectedColor: AppColors.primary,
+                                backgroundColor: Colors.white,
+                                labelStyle: TextStyle(
+                                  color: _focus == focus
+                                      ? Colors.white
+                                      : AppColors.mutedDark,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                              );
-                            },
-                          );
-                        },
+                                side: BorderSide(
+                                  color: _focus == focus
+                                      ? AppColors.primary
+                                      : AppColors.line,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                    ),
+                  ),
+                ),
+                if (selected.isEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverToBoxAdapter(
+                      child: _EmptyFocus(
+                        focus: _focus,
+                        hasPending: pending.isNotEmpty,
+                        onShowAll: () =>
+                            setState(() => _focus = DailyFocus.all),
                       ),
                     ),
-                ],
-              ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverList.separated(
+                      itemCount: selected.length > 6 ? 6 : selected.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final debt = selected[index];
+                        return DebtTile(
+                          debt: debt,
+                          onTap: () =>
+                              _open(context, ClientProfilePage(debt: debt)),
+                        );
+                      },
+                    ),
+                  ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (selected.length > 6)
+                          TextButton(
+                            onPressed: () =>
+                                _open(context, const CadernetaPage()),
+                            child: Text(
+                              'Ver os ${selected.length} lançamentos na caderneta',
+                            ),
+                          ),
+                        const SizedBox(height: 26),
+                        if (state.user.premiumAtivo) ...[
+                          const _CashSummaryCard(),
+                          const SizedBox(height: 24),
+                        ],
+                        const _BillsEntry(),
+                        const SizedBox(height: 24),
+                        _RecentPayments(state: state),
+                        if (!state.user.premiumAtivo) ...[
+                          const SizedBox(height: 24),
+                          const _PremiumEntry(),
+                        ],
+                        const SizedBox(height: 110),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
+}
 
-  void _openAll(BuildContext context) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const CadernetaPage()));
-  }
+void _open(BuildContext context, Widget page) {
+  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 }
 
 class _Header extends StatelessWidget {
   const _Header({required this.user});
-
   final AppUser user;
 
   @override
   Widget build(BuildContext context) {
+    final name = firstNameOf(user.nome);
     return Row(
       children: [
         Expanded(
@@ -176,30 +304,35 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá, ${user.nome.split(' ').first}',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.mutedDark,
-                ),
+                name.isEmpty ? 'Sua caderneta, organizada.' : 'Olá, $name',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark),
               ),
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: () => showPagoMenu(context),
-                behavior: HitTestBehavior.opaque,
-                child: Semantics(
-                  button: true,
-                  label: 'Menu do Pagô',
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      PagoWordmark(markSize: 28, fontSize: 24),
-                      SizedBox(width: 2),
-                      Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.mutedDark,
+              const SizedBox(height: 3),
+              Semantics(
+                button: true,
+                label: 'Abrir menu do Pagô',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => showPagoMenu(context),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 9),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PagoWordmark(markSize: 27, fontSize: 25),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.expand_more_rounded,
+                            color: AppColors.mutedDark,
+                            size: 20,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -207,96 +340,69 @@ class _Header extends StatelessWidget {
           ),
         ),
         IconButton(
-          onPressed: () {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const SettingsPage()));
-          },
-          icon: const Icon(Icons.settings_outlined),
+          tooltip: 'Buscar cliente',
+          onPressed: () =>
+              _open(context, const CadernetaPage(focusSearch: true)),
+          icon: const Icon(Icons.search_rounded),
         ),
         const SizedBox(width: 4),
-        GestureDetector(
-          onTap: () => showPagoMenu(context),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary,
-            child: Text(
-              initialsOf(user.nome),
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
+        IconButton.filledTonal(
+          tooltip: 'Configurações da conta',
+          onPressed: () => _open(context, const SettingsPage()),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.limeSoft,
+            foregroundColor: AppColors.text,
           ),
+          icon: const Icon(Icons.tune_rounded),
         ),
       ],
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.compact = false,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool compact;
-  final bool danger;
+class _SyncStatus extends StatelessWidget {
+  const _SyncStatus({required this.state});
+  final AppController state;
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : AppColors.primary;
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        18,
-        compact ? 14 : 18,
-        18,
-        compact ? 14 : 18,
-      ),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.28),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
+    final warning = state.syncWarning;
+    final syncedAt = state.lastSyncedAt;
+    final String label;
+    final IconData icon;
+    if (state.loading) {
+      label = 'Atualizando seus registros…';
+      icon = Icons.sync_rounded;
+    } else if (warning != null) {
+      label = warning;
+      icon = Icons.cloud_off_rounded;
+    } else if (!state.usesFirestore) {
+      label = 'Dados neste aparelho';
+      icon = Icons.phone_android_rounded;
+    } else if (syncedAt != null) {
+      label =
+          'Última atualização às ${TimeOfDay.fromDateTime(syncedAt).format(context)} · arraste para atualizar';
+      icon = Icons.cloud_done_outlined;
+    } else {
+      label = 'Arraste para atualizar seus registros';
+      icon = Icons.sync_rounded;
+    }
+    return Semantics(
+      liveRegion: true,
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white, size: compact ? 20 : 22),
-          SizedBox(height: compact ? 8 : 18),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withValues(alpha: 0.86),
-              fontSize: compact ? 12 : 13,
-              fontWeight: FontWeight.w600,
-            ),
+          Icon(
+            icon,
+            size: 16,
+            color: warning == null ? AppColors.mutedDark : AppColors.warning,
           ),
-          const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
+          const SizedBox(width: 6),
+          Expanded(
             child: Text(
-              value,
-              maxLines: 1,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: compact ? 22 : 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.6,
-              ),
+              label,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(fontSize: 11, color: AppColors.mutedDark),
             ),
           ),
         ],
@@ -305,73 +411,592 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _PremiumBanner extends StatelessWidget {
-  const _PremiumBanner();
+class _LoadError extends StatelessWidget {
+  const _LoadError({required this.message, required this.onRetry});
+  final String message;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F8FF),
-        borderRadius: BorderRadius.circular(22),
+        color: AppColors.dangerSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.dangerBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.workspace_premium_rounded,
-              color: AppColors.text,
+          const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.danger),
+          ),
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Tentar novamente'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceivablesCard extends StatelessWidget {
+  const _ReceivablesCard({required this.state});
+  final AppController state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Semantics(
+          container: true,
+          label:
+              'A receber, ${Money.full(state.saldoAberto)}. Total em aberto na caderneta. Não é saldo bancário.',
+          child: ExcludeSemantics(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.south_west_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'A receber',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    Money.full(state.saldoAberto),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Total em aberto na caderneta. Não é saldo bancário.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked =
+                constraints.maxWidth < 330 ||
+                MediaQuery.textScalerOf(context).scale(14) > 20;
+            final values = [
+              _SmallMetric(
+                label: 'Previsto em 7 dias',
+                value: Money.full(state.aReceberNaSemana),
+                icon: Icons.event_available_outlined,
+                color: AppColors.text,
+              ),
+              _SmallMetric(
+                label: 'Vencido a receber',
+                value: Money.full(state.aReceberVencido),
+                icon: Icons.schedule_rounded,
+                color: state.aReceberVencido > 0
+                    ? AppColors.danger
+                    : AppColors.mutedDark,
+              ),
+            ];
+            if (stacked) {
+              return Column(
+                children: [values[0], const SizedBox(height: 10), values[1]],
+              );
+            }
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Assine o Premium',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  'Voz e leitura de recibos na caderneta',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    color: AppColors.mutedDark,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Expanded(child: values[0]),
+                const SizedBox(width: 10),
+                Expanded(child: values[1]),
               ],
-            ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _SmallMetric extends StatelessWidget {
+  const _SmallMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: '$label, $value',
+      child: ExcludeSemantics(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.line),
           ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 19, color: color),
+              const SizedBox(height: 9),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark, fontSize: 11),
               ),
-              textStyle: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 12.5,
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
-            child: const Text('Ver Planos'),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      OutlinedButton.icon(
+        onPressed: () => _open(context, const CadernetaPage()),
+        icon: const Icon(Icons.people_outline_rounded, size: 19),
+        label: const Text('Clientes'),
+      ),
+      OutlinedButton.icon(
+        onPressed: () => _open(context, const BillsPage()),
+        icon: const Icon(Icons.receipt_long_outlined, size: 19),
+        label: const Text('Boletos'),
+      ),
+    ],
+  );
+}
+
+class _CollectionAgenda extends StatelessWidget {
+  const _CollectionAgenda({
+    required this.state,
+    required this.followUps,
+    required this.loading,
+    required this.failed,
+    required this.onRetry,
+    required this.onOpen,
+  });
+
+  final AppController state;
+  final List<CollectionFollowUp>? followUps;
+  final bool loading;
+  final bool failed;
+  final VoidCallback onRetry;
+  final void Function(String contactKey, String clientName) onOpen;
+
+  List<_AgendaEntry> _entries() {
+    final now = DateTime.now();
+    final limit = DateTime(now.year, now.month, now.day + 7);
+    final records = {
+      for (final followUp in followUps ?? const <CollectionFollowUp>[])
+        followUp.contactKey: followUp,
+    };
+    final entries = <_AgendaEntry>[];
+    for (final contact in groupContacts(state.pendingDebts)) {
+      final open =
+          contact.debts.where((debt) => state.saldoOf(debt) > 0.009).toList()
+            ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+      if (open.isEmpty) continue;
+      final debt = open.first;
+      final followUp = records[contact.key];
+      final next = followUp?.nextContactAt;
+      final scheduledSoon = next != null && !next.isAfter(limit);
+      final needsFirstContact =
+          debt.isOverdue && followUp?.lastContactedAt == null;
+      if (!scheduledSoon && !needsFirstContact) continue;
+      entries.add(
+        _AgendaEntry(
+          contact: contact,
+          debt: debt,
+          followUp: followUp,
+          needsFirstContact: needsFirstContact && next == null,
+          now: now,
+        ),
+      );
+    }
+    entries.sort((a, b) {
+      final priority = a.priority.compareTo(b.priority);
+      if (priority != 0) return priority;
+      final left = a.followUp?.nextContactAt ?? a.debt.dataVencimento;
+      final right = b.followUp?.nextContactAt ?? b.debt.dataVencimento;
+      return left.compareTo(right);
+    });
+    return entries.take(4).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const LinearProgressIndicator(
+        semanticsLabel: 'Carregando acompanhamentos de cobrança',
+      );
+    }
+    if (failed) {
+      return _AgendaMessage(
+        icon: Icons.cloud_off_outlined,
+        title: 'Acompanhamentos indisponíveis',
+        detail: 'Sua caderneta continua disponível. Tente carregar novamente.',
+        action: 'Tentar novamente',
+        onAction: onRetry,
+      );
+    }
+    final entries = _entries();
+    if (entries.isEmpty) {
+      return const _AgendaMessage(
+        icon: Icons.task_alt_rounded,
+        title: 'Nenhuma cobrança pendente para acompanhar',
+        detail: 'Promessas e próximos contatos marcados aparecerão aqui, separados das baixas da caderneta.',
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeading(
+          title: 'Cobranças para acompanhar',
+          action: 'Ver todos',
+          onAction: () => _open(context, const FollowUpsPage()),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Contato e promessa não alteram o saldo da caderneta.',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AppColors.mutedDark),
+        ),
+        const SizedBox(height: 12),
+        for (final entry in entries) ...[
+          _AgendaCard(entry: entry, onOpen: onOpen),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _AgendaEntry {
+  const _AgendaEntry({
+    required this.contact,
+    required this.debt,
+    required this.followUp,
+    required this.needsFirstContact,
+    required this.now,
+  });
+
+  final CadernetaContact contact;
+  final Debt debt;
+  final CollectionFollowUp? followUp;
+  final bool needsFirstContact;
+  final DateTime now;
+
+  FollowUpTiming? get timing => followUp?.timingAt(now);
+
+  int get priority {
+    if (timing == FollowUpTiming.overdue) return 0;
+    if (needsFirstContact) return 1;
+    if (timing == FollowUpTiming.today) return 2;
+    return 3;
+  }
+
+  String get status {
+    final promise = followUp?.promisedAmount != null;
+    switch (timing) {
+      case FollowUpTiming.overdue:
+        return promise ? 'Promessa vencida' : 'Contato atrasado';
+      case FollowUpTiming.today:
+        return promise ? 'Promessa para hoje' : 'Retomar contato hoje';
+      case FollowUpTiming.upcoming:
+        final date = followUp!.nextContactAt!;
+        return promise
+            ? 'Promessa para ${Dates.due(date)}'
+            : 'Retomar em ${Dates.due(date)}';
+      case null:
+        return 'Em atraso · sem contato registrado';
+    }
+  }
+
+  Color get color => timing == FollowUpTiming.overdue || needsFirstContact
+      ? AppColors.danger
+      : timing == FollowUpTiming.today
+      ? AppColors.warning
+      : AppColors.primary;
+}
+
+class _AgendaCard extends StatelessWidget {
+  const _AgendaCard({required this.entry, required this.onOpen});
+
+  final _AgendaEntry entry;
+  final void Function(String contactKey, String clientName) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final followUp = entry.followUp;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.schedule_rounded, size: 20, color: entry.color),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.contact.nome,
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      entry.status,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: entry.color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (followUp?.lastContactedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Último contato: ${Dates.full(followUp!.lastContactedAt!)}',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.mutedDark),
+            ),
+          ],
+          if (followUp?.promisedAmount != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Valor combinado: ${Money.full(followUp!.promisedAmount!)} · não altera o saldo',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.mutedDark),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (entry.contact.telefone.trim().isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      chargeOnWhatsApp(context: context, debt: entry.debt),
+                  icon: const WhatsAppMark(size: 18),
+                  label: const Text('Abrir WhatsApp'),
+                ),
+              TextButton.icon(
+                onPressed: () => onOpen(entry.contact.key, entry.contact.nome),
+                icon: const Icon(Icons.event_note_outlined, size: 18),
+                label: const Text('Atualizar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgendaMessage extends StatelessWidget {
+  const _AgendaMessage({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    this.action,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.line),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(
+                detail,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark),
+              ),
+              if (action != null) ...[
+                const SizedBox(height: 6),
+                TextButton(onPressed: onAction, child: Text(action!)),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title, this.action, this.onAction});
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Expanded(
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -.4,
+          ),
+        ),
+      ),
+      if (action != null) TextButton(onPressed: onAction, child: Text(action!)),
+    ],
+  );
+}
+
+class _EmptyFocus extends StatelessWidget {
+  const _EmptyFocus({
+    required this.focus,
+    required this.hasPending,
+    required this.onShowAll,
+  });
+  final DailyFocus focus;
+  final bool hasPending;
+  final VoidCallback onShowAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            hasPending ? Icons.task_alt_rounded : Icons.menu_book_outlined,
+            color: AppColors.primary,
+            size: 30,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hasPending ? focus.emptyLabel : 'Sua próxima venda começa aqui',
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasPending
+                ? 'Você pode acompanhar os outros períodos ou abrir todos os clientes.'
+                : 'Cadastre um lançamento para acompanhar o que falta receber.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.mutedDark, height: 1.6),
+          ),
+          const SizedBox(height: 10),
+          if (hasPending)
+            TextButton(
+              onPressed: onShowAll,
+              child: const Text('Ver todos em aberto'),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () => _open(context, const AddDebtPage()),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Cadastrar primeira venda'),
+            ),
         ],
       ),
     );
@@ -380,86 +1005,169 @@ class _PremiumBanner extends StatelessWidget {
 
 class _BillsEntry extends StatelessWidget {
   const _BillsEntry();
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
-    final premium = state.user.premiumAtivo;
-    final overdue = state.overdueBills.length;
-    final mutedStyle = GoogleFonts.plusJakartaSans(
-      fontSize: 11.5,
-      color: AppColors.mutedDark,
-      fontWeight: FontWeight.w500,
-    );
-    final Widget subtitle;
-    if (!premium) {
-      subtitle = Text(
-        'Premium · parcelas e aviso antes de vencer',
-        style: mutedStyle,
-      );
-    } else if (state.pendingBills.isEmpty) {
-      subtitle = Text('Cadastre o boleto do fornecedor', style: mutedStyle);
-    } else if (overdue > 0) {
-      subtitle = Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text:
-                  '${Money.full(state.aPagarAtrasado)} vencido${overdue > 1 ? 's' : ''}',
-              style: mutedStyle.copyWith(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            TextSpan(text: ' · ${Money.full(state.aPagarAberto)} no total'),
-          ],
-        ),
-        style: mutedStyle,
-      );
-    } else {
-      subtitle = Text(
-        '${Money.full(state.aPagarNaSemana)} esta semana · ${Money.full(state.aPagarAberto)} no total',
-        style: mutedStyle,
-      );
-    }
-
+    final count = state.pendingBills.length;
     return Material(
-      color: const Color(0xFFF8FAFC),
+      color: Colors.white,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const BillsPage())),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
+        onTap: () => _open(context, const BillsPage()),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.line),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.receipt_long_rounded,
-                color: overdue > 0 ? AppColors.danger : AppColors.text,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Boletos a pagar',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.north_east_rounded,
+                    color: AppColors.text,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'A pagar · fornecedores',
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    subtitle,
-                  ],
-                ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.mutedDark,
+                  ),
+                ],
               ),
-              Icon(
-                premium
-                    ? Icons.chevron_right_rounded
-                    : Icons.lock_outline_rounded,
-                color: AppColors.mutedDark,
+              const SizedBox(height: 12),
+              Text(
+                Money.full(state.aPagarAberto),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                count == 0
+                    ? 'Nenhum boleto em aberto cadastrado.'
+                    : '$count ${count == 1 ? 'boleto em aberto' : 'boletos em aberto'}. ${Money.full(state.aPagarNaSemana)} previstos em 7 dias.',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark, height: 1.5),
+              ),
+              if (state.aPagarAtrasado > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '${Money.full(state.aPagarAtrasado)} vencidos',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+              if (!state.user.premiumAtivo) ...[
+                const SizedBox(height: 9),
+                const Text(
+                  'Premium para cadastrar e editar. Seu histórico continua acessível.',
+                  style: TextStyle(fontSize: 11, color: AppColors.mutedDark),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentPayments extends StatelessWidget {
+  const _RecentPayments({required this.state});
+  final AppController state;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = state.payments.toList()
+      ..sort(
+        (a, b) => (b.estornadoEm ?? b.data).compareTo(a.estornadoEm ?? a.data),
+      );
+    if (recent.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Últimos registros'),
+        const SizedBox(height: 6),
+        Text(
+          'Baixas manuais informadas por você.',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AppColors.mutedDark),
+        ),
+        const SizedBox(height: 10),
+        for (final payment in recent.take(4))
+          _PaymentRow(state: state, payment: payment),
+      ],
+    );
+  }
+}
+
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({required this.state, required this.payment});
+  final AppController state;
+  final Payment payment;
+
+  @override
+  Widget build(BuildContext context) {
+    final debt = state.debts
+        .where((item) => item.id == payment.debtId)
+        .firstOrNull;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.line),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: debt == null
+            ? null
+            : () => _open(context, ClientProfilePage(debt: debt)),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Icon(
+                    payment.estornado
+                        ? Icons.undo_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 17,
+                    color: payment.estornado
+                        ? AppColors.warning
+                        : AppColors.success,
+                  ),
+                  Text(
+                    debt?.nome ?? 'Baixa manual registrada',
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                '${payment.estornado ? 'Correção de baixa' : 'Baixa manual'} de ${Money.full(payment.valor)} · ${Dates.full(payment.estornadoEm ?? payment.data)}',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.mutedDark),
               ),
             ],
           ),
@@ -469,51 +1177,42 @@ class _BillsEntry extends StatelessWidget {
   }
 }
 
-class _NewDebtFab extends StatelessWidget {
-  const _NewDebtFab({required this.onTap});
-
-  final VoidCallback onTap;
-
+class _PremiumEntry extends StatelessWidget {
+  const _PremiumEntry();
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.38),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: AppColors.limeSoft,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Seu tempo também vale.',
+          style: Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w800),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, color: Colors.white, size: 22),
-            const SizedBox(width: 6),
-            Text(
-              'Novo lançamento',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ),
-            ),
-          ],
+        const SizedBox(height: 6),
+        Text(
+          'Conheça voz, leitura de recibos, mensagens próprias e boletos a pagar.',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AppColors.mutedDark),
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: () => _open(context, const PremiumPage()),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+          label: const Text('Conhecer o Premium'),
+        ),
+      ],
+    ),
+  );
 }
 
 class DebtTile extends StatelessWidget {
   const DebtTile({super.key, required this.debt, required this.onTap});
-
   final Debt debt;
   final VoidCallback onTap;
 
@@ -521,70 +1220,81 @@ class DebtTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final saldo = context.watch<AppController>().saldoOf(debt);
     final overdue = debt.isOverdue;
-    final accent = overdue ? AppColors.danger : AppColors.primary;
-    final bg = overdue ? AppColors.dangerSoft : Colors.white;
-    final border = overdue ? AppColors.dangerBorder : const Color(0xFFF0F3F8);
-
+    final due = isSameDay(debt.dataVencimento, DateTime.now());
+    final label = overdue
+        ? 'Vencido em ${Dates.due(debt.dataVencimento)}'
+        : due
+        ? 'Vence hoje'
+        : 'Vence em ${Dates.due(debt.dataVencimento)}';
     return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
+        excludeFromSemantics: true,
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(15, 15, 8, 15),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: border),
-            boxShadow: overdue
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: overdue ? AppColors.dangerBorder : AppColors.line,
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.error_rounded, color: accent, size: 22),
-              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      debt.nome,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
+                child: Semantics(
+                  button: true,
+                  label: '${debt.nome}, $label, ${Money.full(saldo)}',
+                  onTap: onTap,
+                  child: ExcludeSemantics(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          debt.nome,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          label,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: overdue
+                                    ? AppColors.danger
+                                    : AppColors.mutedDark,
+                                fontSize: 11,
+                              ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          Money.full(saldo),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.text,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Vence em ${Dates.due(debt.dataVencimento)}   Score: ${debt.scoreStars}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: AppColors.mutedDark,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              Text(
-                Money.full(saldo),
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: overdue ? AppColors.danger : AppColors.text,
-                ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Preparar cobrança de ${debt.nome} pelo WhatsApp',
+                onPressed: () => chargeOnWhatsApp(context: context, debt: debt),
+                icon: const WhatsAppMark(size: 25),
               ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => chargeOnWhatsApp(context: context, debt: debt),
-                child: const WhatsAppMark(size: 28),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.mutedDark,
+                size: 18,
               ),
             ],
           ),
@@ -596,57 +1306,10 @@ class DebtTile extends StatelessWidget {
 
 class _CashSummaryCard extends StatelessWidget {
   const _CashSummaryCard();
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
-    final titleStyle = GoogleFonts.plusJakartaSans(
-      fontWeight: FontWeight.w800,
-      fontSize: 14,
-    );
-    final mutedStyle = GoogleFonts.plusJakartaSans(
-      fontSize: 11.5,
-      color: AppColors.mutedDark,
-      fontWeight: FontWeight.w500,
-    );
-    if (!state.user.premiumAtivo) {
-      return Material(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () =>
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const PremiumPage())),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-            child: Row(
-              children: [
-                const Icon(Icons.account_balance_wallet_outlined),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Resumo do caixa', style: titleStyle),
-                      Text(
-                        'Premium · a receber × a pagar e quem mais deve',
-                        style: mutedStyle,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.lock_outline_rounded,
-                  color: AppColors.mutedDark,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
+    final theme = Theme.of(context).textTheme;
     final summary = buildCashSummary(
       debts: state.debts,
       saldoOf: state.saldoOf,
@@ -659,18 +1322,15 @@ class _CashSummaryCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
           children: [
-            Expanded(
-              child: Text(label, style: mutedStyle.copyWith(fontSize: 12.5)),
-            ),
+            Expanded(child: Text(label, style: theme.bodyMedium)),
             Text(
               '+${Money.compact(receber)}  −${Money.compact(pagar)}  ',
-              style: mutedStyle.copyWith(fontSize: 12.5),
+              style: theme.bodySmall?.copyWith(color: AppColors.mutedDark),
             ),
             Text(
               Money.compact(saldo),
-              style: GoogleFonts.plusJakartaSans(
+              style: theme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                fontSize: 14,
                 color: saldo < 0 ? AppColors.danger : AppColors.premiumGreen,
               ),
             ),
@@ -680,33 +1340,31 @@ class _CashSummaryCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        border: Border.all(color: AppColors.line),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.account_balance_wallet_outlined),
-              const SizedBox(width: 10),
-              Text('Resumo do caixa', style: titleStyle),
-            ],
+          Text(
+            'Resumo do caixa',
+            style: theme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           line('Próximos 7 dias', summary.receber7, summary.pagar7),
           line('Próximos 30 dias', summary.receber30, summary.pagar30),
           Text(
-            'Verde: sobra · Vermelho: falta (recebe − paga)',
-            style: mutedStyle,
+            'Recebe − paga. Verde sobra, vermelho falta.',
+            style: theme.bodySmall?.copyWith(color: AppColors.mutedDark),
           ),
           if (summary.devedores.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               'Quem mais deve em atraso',
-              style: titleStyle.copyWith(fontSize: 13),
+              style: theme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             for (final item in summary.devedores)
               Padding(
@@ -718,14 +1376,13 @@ class _CashSummaryCard extends StatelessWidget {
                         '${item.nome} · ${item.diasAtraso} ${item.diasAtraso == 1 ? 'dia' : 'dias'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: mutedStyle.copyWith(fontSize: 12.5),
+                        style: theme.bodySmall,
                       ),
                     ),
                     Text(
                       Money.full(item.valor),
-                      style: GoogleFonts.plusJakartaSans(
+                      style: theme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w800,
-                        fontSize: 13,
                         color: AppColors.danger,
                       ),
                     ),

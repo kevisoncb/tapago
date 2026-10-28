@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://usepago.web.app/sitemap.xml

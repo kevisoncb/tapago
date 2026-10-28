@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
-import '../services/bill_installments.dart';
 import '../services/client_match.dart';
+import '../services/debt_installments.dart';
 import '../services/speech_capture.dart';
 import '../services/voice_debt_parser.dart';
 import '../state/app_controller.dart';
@@ -42,13 +42,16 @@ class _AddDebtPageState extends State<AddDebtPage> {
   final _valor = TextEditingController();
   final _juros = TextEditingController();
   final _date = TextEditingController();
-  final _prazosCustom = TextEditingController();
   DateTime? _vencimento;
-  bool _parcelado = false;
-  List<int>? _preset = billPresets.first;
   bool _listening = false;
   String _heard = '';
   final _voice = SpeechCapture();
+  bool _saving = false;
+  bool _parcelado = false;
+  int _parcelas = 3;
+  String? _grupoId;
+  final List<String> _newIds = [];
+  List<Debt>? _pendingSave;
 
   @override
   void initState() {
@@ -85,7 +88,6 @@ class _AddDebtPageState extends State<AddDebtPage> {
     _valor.dispose();
     _juros.dispose();
     _date.dispose();
-    _prazosCustom.dispose();
     super.dispose();
   }
 
@@ -95,15 +97,66 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
   double get _total => _principal * (1 + _taxa / 100);
 
-  List<int>? get _prazos => _preset ?? parsePrazos(_prazosCustom.text);
+  bool _financialLocked(AppController state) {
+    final debt = widget.debt;
+    return debt != null &&
+        (debt.statusPago || state.paymentsFor(debt.id).isNotEmpty);
+  }
 
-  List<BillInstallment> get _parcelas {
-    final prazos = _prazos;
-    if (prazos == null || _principal <= 0) return const [];
-    return splitBill(total: _principal, base: DateTime.now(), prazos: prazos);
+  List<DebtInstallment> get _preview {
+    final date = _vencimento;
+    if (!_parcelado || date == null || _principal <= 0) return const [];
+    try {
+      return splitReceivable(
+        total: _principal,
+        firstDue: date,
+        installments: _parcelas,
+      );
+    } on ArgumentError {
+      return const [];
+    }
+  }
+
+  Future<void> _setParcelado(bool enabled) async {
+    if (_saving || _pendingSave != null) return;
+    if (enabled && !context.read<AppController>().user.premiumAtivo) {
+      await Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
+      return;
+    }
+    if (enabled && _taxa > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Valor total da venda'),
+          content: const Text(
+            'No parcelamento, informe o valor total já combinado com o cliente. '
+            'Quer zerar o campo de juros para dividir esse total em parcelas?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Manter lançamento único'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Zerar juros e parcelar'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+      _juros.clear();
+    }
+    if (mounted) setState(() => _parcelado = enabled);
   }
 
   Future<void> _pickDate() async {
+    if (_saving ||
+        _pendingSave != null ||
+        _financialLocked(context.read<AppController>())) {
+      return;
+    }
     final now = DateTime.now();
     final selected = await showDatePicker(
       context: context,
@@ -125,7 +178,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
   Future<void> _listenVoice() async {
     final state = context.read<AppController>();
-    if (!state.user.isPremium) {
+    if (_saving || _pendingSave != null || _financialLocked(state)) return;
+    if (!state.user.premiumAtivo) {
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
       return;
@@ -177,7 +231,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       if (draft.valor != null && draft.valor! > 0) {
         _valor.text = Money.full(draft.valor!);
       }
-      if (draft.juros != null) {
+      if (draft.juros != null && !_parcelado) {
         final taxa = draft.juros!;
         _juros.text = taxa == taxa.roundToDouble()
             ? taxa.toStringAsFixed(0)
@@ -200,16 +254,18 @@ class _AddDebtPageState extends State<AddDebtPage> {
   }
 
   Future<void> _save() async {
-    final phone = digitsOnly(_whatsapp.text);
-    final parcelar = _parcelado && widget.debt == null;
-    if (_nome.text.trim().isEmpty ||
-        _principal <= 0 ||
-        (!parcelar && _vencimento == null)) {
-      showPagoSnack(context, 'Preencha nome, valor e vencimento.');
+    if (_saving) return;
+    final state = context.read<AppController>();
+    // Após uma falha, reenviar exatamente a mesma operação evita gerar novos
+    // lançamentos caso a gravação anterior tenha sido confirmada no servidor.
+    final pending = _pendingSave;
+    if (pending != null) {
+      await _persist(state, pending);
       return;
     }
-    if (parcelar && _parcelas.isEmpty) {
-      showPagoSnack(context, 'Escolha os prazos, ex.: 30/60/90.');
+    final phone = digitsOnly(_whatsapp.text);
+    if (_nome.text.trim().isEmpty || _principal <= 0 || _vencimento == null) {
+      showPagoSnack(context, 'Preencha nome, valor e vencimento.');
       return;
     }
     if (phone.isNotEmpty && !isValidPhoneBr(phone)) {
@@ -217,15 +273,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
       return;
     }
 
-    final state = context.read<AppController>();
     final existing = widget.debt;
     final blocked = firstBlockingHit(
       debts: state.debts,
       nome: _nome.text,
       telefone: _whatsapp.text,
       ignoreId: existing?.id,
-      allowPhone: widget.prefillTelefone,
-      allowNome: widget.prefillNome,
+      allowPhone: widget.debt?.telefone ?? widget.prefillTelefone,
+      allowNome: widget.debt?.nome ?? widget.prefillNome,
     );
     if (blocked != null) {
       showPagoSnack(
@@ -236,48 +291,120 @@ class _AddDebtPageState extends State<AddDebtPage> {
       );
       return;
     }
-
-    if (parcelar) {
-      final parcelas = _parcelas;
-      final grupo = state.newId();
-      await state.createDebts([
-        for (final item in parcelas)
-          Debt(
-            id: state.newId(),
-            userId: state.user.id,
-            nome: _nome.text.trim(),
-            telefone: digitsOnly(_whatsapp.text),
-            valorPrincipal: item.valor,
-            taxaJuros: _taxa,
-            dataVencimento: item.vencimento,
-            statusPago: false,
-            clientScore: 80,
-            grupoId: grupo,
-            parcela: item.parcela,
-            totalParcelas: parcelas.length,
-            createdAt: DateTime.now(),
-          ),
-      ]);
-      if (!mounted) return;
-      Navigator.of(context).pop();
+    if (!_principal.isFinite || _principal > 100000000 || _taxa > 1000) {
+      showPagoSnack(context, 'Confira o valor e a taxa informados.');
+      return;
+    }
+    if (_parcelado && !state.user.premiumAtivo) {
+      showPagoSnack(context, 'O parcelamento precisa de Premium ativo.');
+      return;
+    }
+    if (_parcelado && (_preview.isEmpty || _taxa != 0)) {
+      showPagoSnack(
+        context,
+        'Informe o total combinado, sem juros adicionais. Cada parcela precisa ter ao menos R\$ 0,01.',
+      );
       return;
     }
 
-    final debt = Debt(
-      id: existing?.id ?? state.newId(),
-      userId: state.user.id,
-      nome: _nome.text.trim(),
-      telefone: digitsOnly(_whatsapp.text),
-      valorPrincipal: _principal,
-      taxaJuros: _taxa,
-      dataVencimento: _vencimento!,
-      statusPago: existing?.statusPago ?? false,
-      clientScore: existing?.clientScore ?? 80,
-      createdAt: existing?.createdAt ?? DateTime.now(),
+    final List<Debt> next;
+    if (existing != null) {
+      final locked = _financialLocked(state);
+      next = [
+        existing.copyWith(
+          nome: _nome.text.trim(),
+          telefone: phone,
+          valorPrincipal: locked ? existing.valorPrincipal : _principal,
+          taxaJuros: locked ? existing.taxaJuros : _taxa,
+          dataVencimento: locked ? existing.dataVencimento : _vencimento!,
+        ),
+      ];
+    } else {
+      final count = _parcelado ? _parcelas : 1;
+      while (_newIds.length < count) {
+        _newIds.add(state.newId());
+      }
+      final now = DateTime.now();
+      _grupoId ??= state.newId();
+      final preview = _preview;
+      next = [
+        for (var i = 0; i < count; i++)
+          Debt(
+            id: _newIds[i],
+            userId: state.user.id,
+            nome: _nome.text.trim(),
+            telefone: phone,
+            valorPrincipal: _parcelado ? preview[i].valor : _principal,
+            taxaJuros: _parcelado ? 0 : _taxa,
+            dataVencimento: _parcelado ? preview[i].vencimento : _vencimento!,
+            statusPago: false,
+            clientScore: 80,
+            createdAt: now,
+            grupoId: _parcelado ? _grupoId! : '',
+            parcela: i + 1,
+            totalParcelas: count,
+          ),
+      ];
+    }
+    _pendingSave = List.unmodifiable(next);
+    await _persist(state, next);
+  }
+
+  Future<void> _persist(AppController state, List<Debt> next) async {
+    setState(() => _saving = true);
+    try {
+      var firstEver = false;
+      if (widget.debt != null) {
+        await state.upsertDebt(next.single);
+      } else {
+        firstEver = state.debts.isEmpty;
+        await state.createDebts(next);
+      }
+      if (!mounted) return;
+      if (firstEver && state.canOfferDailyReminders) {
+        await _offerDailyReminders(state);
+        if (!mounted) return;
+      }
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      showPagoSnack(
+        context,
+        'Não foi possível confirmar o salvamento. Seus dados foram mantidos; tente salvar novamente.',
+      );
+    }
+  }
+
+  /// Depois do primeiro lançamento: o momento em que o aviso faz sentido.
+  Future<void> _offerDailyReminders(AppController state) async {
+    final accept = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Receber o resumo das 9h?'),
+        content: const Text(
+          'Todo dia às 9h o Pagô avisa quantas cobranças vencem hoje e amanhã e quantas estão atrasadas. Você pode desligar quando quiser em Configurações.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Agora não'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ligar avisos'),
+          ),
+        ],
+      ),
     );
-    await state.upsertDebt(debt);
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    if (accept != true) return;
+    final enabled = await state.enableDailyReminders();
+    if (mounted && !enabled) {
+      showPagoSnack(
+        context,
+        'Permissão de notificação não concedida. Ative nas configurações do aparelho.',
+      );
+    }
   }
 
   ClientHit? _blockedHit(AppController state) {
@@ -286,8 +413,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
       nome: _nome.text,
       telefone: _whatsapp.text,
       ignoreId: widget.debt?.id,
-      allowPhone: widget.prefillTelefone,
-      allowNome: widget.prefillNome,
+      allowPhone: widget.debt?.telefone ?? widget.prefillTelefone,
+      allowNome: widget.debt?.nome ?? widget.prefillNome,
     );
   }
 
@@ -295,13 +422,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final blocked = _blockedHit(state);
+    final financialLocked = _financialLocked(state);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _saving ? null : () => Navigator.pop(context),
         ),
         title: Text(
           widget.debt == null ? 'Novo lançamento' : 'Editar lançamento',
@@ -310,200 +438,345 @@ class _AddDebtPageState extends State<AddDebtPage> {
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              children: [
-                _VoiceBanner(
-                  listening: _listening,
-                  heard: _heard,
-                  isPremium: context.watch<AppController>().user.isPremium,
-                  onTap: _listenVoice,
-                ),
-                const SizedBox(height: 22),
-                AppTextField(
-                  label: 'Nome do Cliente',
-                  hint: 'Ex: João Silva',
-                  icon: Icons.person_outline_rounded,
-                  controller: _nome,
-                  textCapitalization: TextCapitalization.words,
-                  keyboardType: TextInputType.name,
-                  autofillHints: const [AutofillHints.name],
-                  inputFormatters: [NameMaskFormatter()],
-                  maxLength: 80,
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  label: 'WhatsApp',
-                  hint: '(00) 00000-0000',
-                  icon: Icons.phone_outlined,
-                  controller: _whatsapp,
-                  keyboardType: TextInputType.phone,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  inputFormatters: [PhoneMaskFormatter()],
-                  onChanged: (_) => setState(() {}),
-                ),
-                _ExistingClientHint(
-                  nome: _nome.text,
-                  telefone: _whatsapp.text,
-                  ignoreId: widget.debt?.id,
-                  allowPhone: widget.prefillTelefone,
-                  allowNome: widget.prefillNome,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Valor',
-                        hint: r'R$ 0,00',
-                        icon: Icons.attach_money_rounded,
-                        controller: _valor,
-                        readOnly: true,
-                        onTap: () async {
-                          final value = await showAmountKeypad(
-                            context: context,
-                            title: 'Valor do lançamento',
-                            confirmLabel: 'Usar valor',
-                          );
-                          if (value == null || !mounted) return;
-                          setState(() {
-                            _valor.text = Money.full(value);
-                          });
-                        },
-                        onChanged: (_) => setState(() {}),
-                      ),
+            child: AbsorbPointer(
+              absorbing: _saving || _pendingSave != null,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                children: [
+                  if (financialLocked)
+                    _FormNotice(
+                      text: 'Este lançamento já tem pagamentos ou está quitado. Valor, juros e vencimento foram preservados para manter o histórico.',
+                      icon: Icons.lock_outline_rounded,
+                    )
+                  else
+                    _VoiceBanner(
+                      listening: _listening,
+                      heard: _heard,
+                      isPremium: state.user.premiumAtivo,
+                      onTap: _listenVoice,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Juros (%)',
-                        hint: '0,00',
-                        icon: Icons.percent_rounded,
-                        controller: _juros,
-                        keyboardType: TextInputType.number,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        inputFormatters: [PercentMaskFormatter()],
-                        onChanged: (_) => setState(() {}),
-                      ),
+                  if (_pendingSave != null) ...[
+                    const SizedBox(height: 12),
+                    const _FormNotice(
+                      text: 'Há um salvamento sem confirmação. Tente novamente para reenviar os mesmos dados, sem criar outra venda.',
+                      icon: Icons.sync_problem_rounded,
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Juros só se você quiser. Fiado e venda a prazo ficam em branco.',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.mutedDark,
+                  const SizedBox(height: 22),
+                  AppTextField(
+                    label: 'Nome do Cliente',
+                    hint: 'Ex: João Silva',
+                    icon: Icons.person_outline_rounded,
+                    controller: _nome,
+                    textCapitalization: TextCapitalization.words,
+                    keyboardType: TextInputType.name,
+                    autofillHints: const [AutofillHints.name],
+                    inputFormatters: [NameMaskFormatter()],
+                    textInputAction: TextInputAction.next,
+                    maxLength: 80,
+                    onChanged: (_) => setState(() {}),
                   ),
-                ),
-                if (widget.debt == null) ...[
-                  const SizedBox(height: 16),
-                  _ParcelarBox(
-                    isPremium: state.user.isPremium,
-                    parcelado: _parcelado,
-                    preset: _preset,
-                    prazosCustom: _prazosCustom,
-                    parcelas: _parcelas,
-                    onParcelado: (value) => setState(() => _parcelado = value),
-                    onPreset: (value) => setState(() => _preset = value),
-                    onChanged: () => setState(() {}),
-                  ),
-                ],
-                if (!(_parcelado && widget.debt == null)) ...[
                   const SizedBox(height: 16),
                   AppTextField(
-                    label: 'Data de Vencimento',
+                    label: 'WhatsApp',
+                    hint: '(00) 00000-0000',
+                    icon: Icons.phone_outlined,
+                    controller: _whatsapp,
+                    keyboardType: TextInputType.phone,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    inputFormatters: [PhoneMaskFormatter()],
+                    textInputAction: TextInputAction.next,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  _ExistingClientHint(
+                    nome: _nome.text,
+                    telefone: _whatsapp.text,
+                    ignoreId: widget.debt?.id,
+                    allowPhone: widget.debt?.telefone ?? widget.prefillTelefone,
+                    allowNome: widget.debt?.nome ?? widget.prefillNome,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: _parcelado ? 'Total da venda' : 'Valor',
+                          hint: r'R$ 0,00',
+                          icon: Icons.attach_money_rounded,
+                          controller: _valor,
+                          readOnly: true,
+                          onTap: () async {
+                            if (financialLocked) return;
+                            final value = await showAmountKeypad(
+                              context: context,
+                              title: _parcelado
+                                  ? 'Valor total da venda'
+                                  : 'Valor do lançamento',
+                              confirmLabel: 'Usar valor',
+                            );
+                            if (value == null || !mounted) return;
+                            setState(() {
+                              _valor.text = Money.full(value);
+                            });
+                          },
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppTextField(
+                          label: 'Juros (%)',
+                          hint: '0,00',
+                          icon: Icons.percent_rounded,
+                          controller: _juros,
+                          readOnly: financialLocked || _parcelado,
+                          keyboardType: TextInputType.number,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          inputFormatters: [PercentMaskFormatter()],
+                          textInputAction: TextInputAction.done,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _parcelado
+                        ? 'Informe o valor total combinado. O parcelamento não acrescenta juros.'
+                        : 'Juros opcionais, aplicados uma vez sobre o valor informado.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedDark,
+                    ),
+                  ),
+                  if (widget.debt == null) ...[
+                    const SizedBox(height: 16),
+                    _installmentOptions(state),
+                  ],
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    label: _parcelado
+                        ? 'Primeiro vencimento'
+                        : 'Data de Vencimento',
                     hint: 'Selecionar data',
                     icon: Icons.event_outlined,
                     readOnly: true,
                     onTap: _pickDate,
                     controller: _date,
                     suffix: IconButton(
-                      onPressed: _pickDate,
+                      tooltip: 'Selecionar data de vencimento',
+                      onPressed: financialLocked ? null : _pickDate,
                       icon: const Icon(
                         Icons.calendar_month_outlined,
                         color: AppColors.muted,
                       ),
                     ),
                   ),
+                  if (_parcelado && _preview.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _installmentPreview(),
+                  ],
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFEEF2F7)),
+                    ),
+                    child: Column(
+                      children: [
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          spacing: 16,
+                          runSpacing: 6,
+                          children: [
+                            Text(
+                              _taxa > 0 ? 'Total com juros' : 'Total a receber',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.mutedDark,
+                              ),
+                            ),
+                            Text(
+                              Money.full(_total),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Text(
+                              'Prazo Inicial',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: AppColors.mutedDark,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Hoje',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFEEF2F7)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            _taxa > 0 ? 'Total com juros' : 'Total a receber',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.mutedDark,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            Money.full(_total),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Text(
-                            'Prazo Inicial',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppColors.mutedDark,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'Hoje',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: PrimaryButton(
-                label: blocked == null
-                    ? (_parcelado && widget.debt == null && _parcelas.length > 1
-                          ? 'Salvar ${_parcelas.length} parcelas'
-                          : 'Salvar na caderneta')
-                    : 'Já existe na caderneta',
-                onPressed: blocked == null ? _save : null,
               ),
             ),
           ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: PrimaryButton(
+            label: _saving
+                ? 'Salvando…'
+                : _pendingSave != null
+                ? 'Tentar salvar novamente'
+                : blocked != null
+                ? 'Já existe na caderneta'
+                : _parcelado
+                ? 'Salvar $_parcelas parcelas'
+                : 'Salvar na caderneta',
+            onPressed: !_saving && (blocked == null || _pendingSave != null)
+                ? _save
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _installmentOptions(AppController state) {
+    return Material(
+      color: AppColors.primarySoft,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          SwitchListTile.adaptive(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            title: Text(
+              'Parcelar a receber',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            subtitle: Text(
+              state.user.premiumAtivo
+                  ? 'Escolha o 1º vencimento e em quantas vezes dividir'
+                  : 'Premium · lançamento único continua grátis',
+            ),
+            value: _parcelado,
+            onChanged: _setParcelado,
+          ),
+          if (_parcelado)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: DropdownButtonFormField<int>(
+                initialValue: _parcelas,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Parcelas'),
+                items: [
+                  for (var i = 2; i <= 12; i++)
+                    DropdownMenuItem(value: i, child: Text('$i vezes')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _parcelas = value);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _installmentPreview() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primarySoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Confira antes de salvar',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Parcelado em ${_parcelas}x · vence todo dia ${_vencimento!.day} do mês',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.mutedDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final installment in _preview)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 2,
+                children: [
+                  Text(
+                    '${installment.parcela} de ${installment.totalParcelas} · ${Dates.full(installment.vencimento)}',
+                  ),
+                  Text(
+                    Money.full(installment.valor),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormNotice extends StatelessWidget {
+  const _FormNotice({required this.text, required this.icon});
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
         ],
       ),
     );
@@ -686,139 +959,6 @@ class _ExistingClientHint extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ParcelarBox extends StatelessWidget {
-  const _ParcelarBox({
-    required this.isPremium,
-    required this.parcelado,
-    required this.preset,
-    required this.prazosCustom,
-    required this.parcelas,
-    required this.onParcelado,
-    required this.onPreset,
-    required this.onChanged,
-  });
-
-  final bool isPremium;
-  final bool parcelado;
-  final List<int>? preset;
-  final TextEditingController prazosCustom;
-  final List<BillInstallment> parcelas;
-  final ValueChanged<bool> onParcelado;
-  final ValueChanged<List<int>?> onPreset;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isPremium) {
-      return ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFEEF2F7)),
-        ),
-        leading: const Icon(
-          Icons.splitscreen_rounded,
-          color: AppColors.primary,
-        ),
-        title: Text(
-          'Parcelar em 30/60/90',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-        subtitle: const Text('Premium: divide o valor e avisa cada parcela.'),
-        trailing: const Icon(Icons.lock_outline_rounded, size: 18),
-        onTap: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const PremiumPage())),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, label: Text('À vista')),
-            ButtonSegment(value: true, label: Text('Parcelado')),
-          ],
-          selected: {parcelado},
-          showSelectedIcon: false,
-          onSelectionChanged: (value) => onParcelado(value.first),
-        ),
-        if (parcelado) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Prazos (dias), contados a partir de hoje',
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final item in billPresets)
-                ChoiceChip(
-                  label: Text(prazosLabel(item)),
-                  selected: preset == item,
-                  onSelected: (_) => onPreset(item),
-                ),
-              ChoiceChip(
-                label: const Text('Outro'),
-                selected: preset == null,
-                onSelected: (_) => onPreset(null),
-              ),
-            ],
-          ),
-          if (preset == null) ...[
-            const SizedBox(height: 10),
-            AppTextField(
-              label: 'Seus prazos',
-              hint: '30/60/90',
-              icon: Icons.date_range_rounded,
-              controller: prazosCustom,
-              keyboardType: TextInputType.text,
-              onChanged: (_) => onChanged(),
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (parcelas.isEmpty)
-            Text(
-              'Digite o valor e os prazos para ver as parcelas.',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                color: AppColors.mutedDark,
-              ),
-            )
-          else
-            for (final item in parcelas)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    Text(
-                      'Parcela ${item.parcela} de ${parcelas.length}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.mutedDark,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${Dates.full(item.vencimento)} · ${Money.full(item.valor)}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        ],
-      ],
     );
   }
 }

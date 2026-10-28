@@ -17,12 +17,17 @@ import '../widgets/common.dart';
 import '../widgets/fields.dart';
 import '../widgets/pago_logo.dart';
 import 'legal_page.dart';
+import 'account_export_page.dart';
+import 'follow_ups_page.dart';
 import 'premium_page.dart';
+import 'reports_page.dart';
 
 enum _MsgStage { normal, atraso, atrasoForte }
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -38,14 +43,14 @@ class SettingsPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Configurações',
+              'Mais',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
               ),
             ),
             Text(
-              'Gerencie sua conta e preferências',
+              'Conta, cobrança e preferências',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -55,12 +60,14 @@ class SettingsPage extends StatelessWidget {
           ],
         ),
         toolbarHeight: 84,
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close_rounded),
-          ),
-        ],
+        actions: embedded
+            ? null
+            : [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -104,7 +111,7 @@ class SettingsPage extends StatelessWidget {
                           fontSize: 12.5,
                         ),
                       ),
-                      if (user.isPremium) ...[
+                      if (user.premiumAtivo) ...[
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -137,6 +144,15 @@ class SettingsPage extends StatelessWidget {
           GroupCard(
             children: [
               SettingsRow(
+                icon: Icons.insights_outlined,
+                title: 'Relatórios',
+                subtitle: 'Recebido, previsto, vencido e boletos',
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
                 icon: Icons.diamond_outlined,
                 title: 'Minha Chave PIX',
                 subtitle: user.chavePix.isEmpty
@@ -161,14 +177,23 @@ class SettingsPage extends StatelessWidget {
           GroupCard(
             children: [
               SettingsRow(
+                icon: Icons.event_note_outlined,
+                title: 'Acompanhamentos',
+                subtitle: 'Promessas, contatos e datas combinadas',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FollowUpsPage()),
+                ),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
                 icon: Icons.chat_rounded,
                 iconBackground: AppColors.whatsappSoft,
                 iconColor: AppColors.whatsapp,
-                title: user.isPremium ? 'Sua mensagem' : 'Mensagem pronta',
+                title: user.premiumAtivo ? 'Sua mensagem' : 'Mensagem pronta',
                 subtitle:
-                    user.isPremium && user.mensagemCobranca.trim().isNotEmpty
+                    user.premiumAtivo && user.mensagemCobranca.trim().isNotEmpty
                     ? 'Premium: toque para editar'
-                    : user.isPremium
+                    : user.premiumAtivo
                     ? 'Escreva o texto que vai no WhatsApp'
                     : 'O plano livre usa esta. Premium deixa mudar.',
                 onTap: () => _editMensagem(context),
@@ -225,13 +250,46 @@ class SettingsPage extends StatelessWidget {
               SettingsRow(
                 icon: Icons.notifications_outlined,
                 title: 'Notificações Diárias',
-                subtitle: 'Lembretes de cobrança',
+                subtitle: 'Resumo de cobranças todo dia às 9h',
                 trailing: Switch.adaptive(
                   value: user.notificacoesDiarias,
-                  onChanged: (value) {
-                    context.read<AppController>().saveUser(
-                      user.copyWith(notificacoesDiarias: value),
-                    );
+                  onChanged: (value) async {
+                    final controller = context.read<AppController>();
+                    if (!value) {
+                      await controller.saveUser(
+                        user.copyWith(notificacoesDiarias: false),
+                      );
+                      return;
+                    }
+                    final enabled = await controller.enableDailyReminders();
+                    if (context.mounted && !enabled) {
+                      showPagoSnack(
+                        context,
+                        'Permissão de notificação não concedida. Ative nas configurações do aparelho.',
+                      );
+                    }
+                  },
+                ),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
+                icon: Icons.event_available_outlined,
+                title: 'Lembretes de acompanhamento',
+                subtitle: user.lembretesAcompanhamento
+                    ? 'Avisar nas datas combinadas'
+                    : 'Desligado · ative quando quiser',
+                trailing: Switch.adaptive(
+                  value: user.lembretesAcompanhamento,
+                  onChanged: (value) async {
+                    final enabled = await context
+                        .read<AppController>()
+                        .setFollowUpReminders(value);
+                    if (context.mounted && value && !enabled) {
+                      showPagoSnack(
+                        context,
+                        'Permissão de notificação não concedida.',
+                      );
+                    }
                   },
                 ),
               ),
@@ -294,9 +352,9 @@ class SettingsPage extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            user.isPremium && user.premiumVenceEm != null
+                            user.premiumAtivo && user.premiumVenceEm != null
                                 ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
-                                : user.isPremium
+                                : user.premiumAtivo
                                 ? 'Assinatura ativa'
                                 : 'Voz e leitura de recibos',
                             style: GoogleFonts.plusJakartaSans(
@@ -328,7 +386,7 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      user.isPremium
+                      user.premiumAtivo
                           ? 'Gerenciar Assinatura'
                           : 'Assinar Premium',
                       style: GoogleFonts.plusJakartaSans(
@@ -339,6 +397,21 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 22),
+          const SectionLabel('MEUS DADOS'),
+          const SizedBox(height: 10),
+          GroupCard(
+            children: [
+              SettingsRow(
+                icon: Icons.file_download_outlined,
+                title: 'Exportar meus dados',
+                subtitle: 'Sua caderneta em CSV ou JSON',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AccountExportPage()),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 22),
           const SectionLabel('SUPORTE'),
@@ -698,7 +771,7 @@ class SettingsPage extends StatelessWidget {
       _MsgStage.atraso => 'Mensagem de atraso',
       _MsgStage.atrasoForte => 'Mensagem de atraso longo',
     };
-    if (!user.isPremium) {
+    if (!user.premiumAtivo) {
       await showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.white,

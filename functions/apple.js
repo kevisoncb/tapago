@@ -14,6 +14,7 @@ const {
 } = require("@apple/app-store-server-library");
 
 const mmp = require("./mmp_s2s");
+const rights = require("./subscription_rights");
 
 const PRODUCT_ID = "pago_premium_monthly_ios";
 const DEFAULT_BUNDLE_ID = "app.usepago";
@@ -170,16 +171,11 @@ function subscriptionRef(originalTransactionId) {
   return admin.firestore().collection("AppleSubscriptions").doc(originalTransactionId);
 }
 
-function premiumId(originalTransactionId) {
-  return `apple_${originalTransactionId}`.slice(0, 120);
-}
-
 /**
  * Grava AppleSubscriptions/{originalTransactionId} e o Premium em Users/{uid}.
  * Notificações chegam fora de ordem: uma transação com validade menor que a
- * gravada é ignorada (salvo estorno/revogação/expiração). Desligar o Premium só
- * mexe no usuário se o Premium atual veio desta assinatura (não apaga cortesia
- * do painel nem assinatura da Play).
+ * gravada é ignorada, inclusive revogação de um período anterior. Os direitos
+ * são reconciliados com outras assinaturas verificadas e cortesias existentes.
  */
 async function applyTransaction(uid, tx, options = {}) {
   const db = admin.firestore();
@@ -187,19 +183,25 @@ async function applyTransaction(uid, tx, options = {}) {
   const ref = subscriptionRef(summary.originalTransactionId);
   return db.runTransaction(async (t) => {
     const stored = (await t.get(ref)).data() || {};
+    if (uid && stored.uid && uid !== stored.uid) {
+      throw httpError(403, "Esta assinatura pertence a outra conta do Pagô.");
+    }
     const owner = uid || stored.uid || null;
-    const userRef = owner ? db.collection("Users").doc(owner) : null;
-    const profile = userRef ? (await t.get(userRef)).data() || {} : {};
+    const account = owner ? await rights.readAccount(t, db, owner) : null;
+    if (stored.deletedAccount || (account && !account.exists)) {
+      if (uid) throw rights.accountUnavailable();
+      return { ...summary, uid: null, ignored: true, stale: false };
+    }
 
     const storedExpiry = stored.venceEm?.toMillis?.() || 0;
-    if (!options.forceInactive && summary.expiry && summary.expiry < storedExpiry) {
+    const signedAt = Number(options.signedAt || tx.signedDate || 0);
+    const olderEvent = signedAt && stored.eventoEm && signedAt < stored.eventoEm;
+    if (olderEvent || (summary.expiry && summary.expiry < storedExpiry)) {
       if (owner && !stored.uid) t.set(ref, { uid: owner }, { merge: true });
       return { ...summary, uid: owner, stale: true };
     }
 
-    t.set(
-      ref,
-      {
+    const data = {
         uid: owner,
         appAccountToken: tx.appAccountToken || stored.appAccountToken || null,
         productId: tx.productId || PRODUCT_ID,
@@ -212,24 +214,15 @@ async function applyTransaction(uid, tx, options = {}) {
         ...(summary.autoRenew === null ? {} : { renovaSozinha: summary.autoRenew }),
         teste: summary.test,
         verificada: true,
+        eventoEm: signedAt || stored.eventoEm || 0,
         atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+      };
+    t.set(ref, data, { merge: true });
 
-    const ours = premiumId(summary.originalTransactionId);
-    if (userRef && (summary.active || profile.premium_transaction_id === ours)) {
-      t.set(
-        userRef,
-        {
-          is_premium: summary.active,
-          premium_vence_em: summary.expiry && !summary.revoked
-            ? admin.firestore.Timestamp.fromMillis(summary.expiry)
-            : null,
-          premium_transaction_id: ours,
-        },
-        { merge: true },
-      );
+    if (account) {
+      t.update(account.userRef,
+        rights.choosePremium(account.profile,
+          rights.sourcesFor(account, "apple", summary.originalTransactionId, data)));
     }
     return { ...summary, uid: owner, stale: false };
   });
@@ -259,6 +252,9 @@ async function confirmPurchase(uid, { transactionId, signedTransaction }) {
   if (!signed) throw httpError(400, "Atualize o app para confirmar a assinatura.");
 
   const tx = await decodeTransaction(signed);
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(String(tx.originalTransactionId || ""))) {
+    throw httpError(400, "A App Store não informou a identificação da assinatura.");
+  }
   if (transactionId && ![tx.transactionId, tx.originalTransactionId].includes(transactionId)) {
     throw httpError(400, "A compra enviada não confere com a App Store.");
   }
@@ -273,11 +269,17 @@ async function confirmPurchase(uid, { transactionId, signedTransaction }) {
   if (linked && linked !== uid) {
     throw httpError(403, "Esta assinatura pertence a outra conta do Pagô.");
   }
+  if (!token && linked !== uid) {
+    throw httpError(403, "Esta compra não está vinculada à sua conta do Pagô. Procure o suporte.");
+  }
   if (!summarize(tx).active) {
     throw httpError(402, "A App Store não mostra esta assinatura como ativa.");
   }
 
   const summary = await applyTransaction(uid, tx);
+  if (summary.stale) {
+    throw httpError(409, "Há uma atualização mais recente desta assinatura. Restaure a compra para atualizar.");
+  }
   const firstPurchase = tx.transactionId === tx.originalTransactionId;
   const created = firstPurchase ? await logAppleEvent(uid, "COMPRA", summary) : false;
   return { summary, created };
@@ -303,7 +305,9 @@ async function handleNotification(signedPayload) {
   const summary = await applyTransaction(null, tx, {
     forceInactive: FORCE_INACTIVE.has(type),
     autoRenew: renewal ? renewal.autoRenewStatus === 1 : null,
+    signedAt: notification.signedDate,
   });
+  if (summary.ignored || summary.stale) return { type, ignored: true, created: false };
   const tipo = eventType(type, subtype);
   const created = await logAppleEvent(summary.uid, tipo, summary);
   return { type, subtype, tipo, uid: summary.uid, summary, created };
@@ -336,8 +340,12 @@ async function logAppleEvent(uid, type, summary) {
   const charge = CHARGE_TYPES.has(type);
   const base = `apple_${summary.transactionId || Date.now()}`;
   const id = (charge ? base : `${base}_${type}`).replace(/[^\w.-]/g, "_");
-  try {
-    await admin.firestore().collection("PlayEvents").doc(id).create({
+  const revenueEvent = charge ? {
+    uid, platform: "ios", transactionId: summary.transactionId, type,
+    revenue: mmp.netRevenue(summary.price), currency: summary.currency,
+    test: summary.test === true,
+  } : null;
+  const created = await mmp.recordRevenueEvent(admin.firestore().collection("PlayEvents").doc(id), {
       uid: uid || null,
       tipo: type,
       cobranca: charge,
@@ -346,23 +354,12 @@ async function logAppleEvent(uid, type, summary) {
       loja: "app_store",
       teste: summary.test === true,
       em: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    if (charge) {
-      await mmp.logServerRevenue({
-        uid,
-        platform: "ios",
-        transactionId: summary.transactionId,
-        type,
-        revenue: mmp.netRevenue(summary.price),
-        currency: summary.currency,
-        test: summary.test,
-      });
-    }
-    return true;
-  } catch (error) {
-    if (error.code === 6) return false;
-    throw error;
+    }, revenueEvent);
+  if (created && revenueEvent) {
+    try { await mmp.flushRevenueEvent(revenueEvent); }
+    catch (_) { console.warn("Receita da App Store permanece na fila para nova tentativa."); }
   }
+  return created;
 }
 
 function httpError(status, message, cause) {

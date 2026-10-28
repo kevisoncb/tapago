@@ -14,9 +14,10 @@ import 'add_bill_page.dart';
 import 'premium_page.dart';
 
 class BillsPage extends StatelessWidget {
-  const BillsPage({super.key, this.fornecedor});
+  const BillsPage({super.key, this.fornecedor, this.embedded = false});
 
   final String? fornecedor;
+  final bool embedded;
 
   bool _matches(Bill bill) =>
       fornecedor == null ||
@@ -37,20 +38,17 @@ class BillsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: !embedded,
         title: Text(fornecedor ?? 'Boletos a pagar'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'bills-new-bill',
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                premium ? const AddBillPage() : const PremiumPage(),
+            builder: (_) => premium ? const AddBillPage() : const PremiumPage(),
           ),
         ),
         icon: Icon(premium ? Icons.add : Icons.lock_outline_rounded),
@@ -63,11 +61,7 @@ class BillsPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 108),
         children: [
           if (vencido > 0) ...[
-            _Total(
-              label: 'Vencido',
-              value: Money.full(vencido),
-              danger: true,
-            ),
+            _Total(label: 'Vencido', value: Money.full(vencido), danger: true),
             const SizedBox(height: 12),
           ],
           Row(
@@ -87,10 +81,7 @@ class BillsPage extends StatelessWidget {
               ),
             ],
           ),
-          if (!premium) ...[
-            const SizedBox(height: 16),
-            const _PremiumLock(),
-          ],
+          if (!premium) ...[const SizedBox(height: 16), const _PremiumLock()],
           const SizedBox(height: 22),
           if (pending.isEmpty)
             Padding(
@@ -177,9 +168,9 @@ class _PremiumLock extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PremiumPage()),
-        ),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const PremiumPage())),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -217,7 +208,7 @@ class BillTile extends StatelessWidget {
       if (bill.parcelado) bill.parcelaLabel,
       bill.pago && bill.pagoEm != null
           ? 'Pago em ${Dates.due(bill.pagoEm!)}'
-          : 'Vence em ${Dates.due(bill.dataVencimento)}',
+          : '${overdue ? 'Venceu' : 'Vence'} em ${Dates.due(bill.dataVencimento)}',
     ].join(' · ');
 
     return Material(
@@ -243,8 +234,8 @@ class BillTile extends StatelessWidget {
                 color: bill.pago
                     ? AppColors.success
                     : overdue
-                        ? AppColors.danger
-                        : AppColors.primary,
+                    ? AppColors.danger
+                    : AppColors.primary,
                 size: 22,
               ),
               const SizedBox(width: 10),

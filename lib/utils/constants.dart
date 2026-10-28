@@ -1,7 +1,7 @@
 class AppConstants {
   static const appName = 'Pagô';
   static const tagline = 'E aí, pagô?';
-  static const versionLabel = 'Pagô v2.4.0';
+  static const versionLabel = 'Pagô v2.5.0';
   static const logoAsset = 'assets/brand/pago-icon.jpg';
   static const premiumPrice = 39.90;
   static const premiumPriceLabel = r'R$ 39,90';

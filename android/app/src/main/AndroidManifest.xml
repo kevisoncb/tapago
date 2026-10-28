@@ -11,7 +11,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
         android:label="Pagô"
         android:name="${applicationName}"
@@ -38,6 +37,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Canal padrão das notificações push do servidor (criado pelo app). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="cobrancas" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -48,7 +51,7 @@
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver
             android:exported="false"
-            android:name="com.dexterous.flutter_local_notifications.ActionBroadcastReceiver" />
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">

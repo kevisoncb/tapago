@@ -1,11 +1,9 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  updatePassword,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+// Modo demonstração: só existe quando a página define PAGO_ADMIN_DEMO (cópia de prévia
+// montada por tool/admin-preview.sh). Usa dados fictícios e nunca fala com o Firebase.
+const DEMO = globalThis.PAGO_ADMIN_DEMO === true;
+const demo = DEMO ? await import("./demo-data.js") : null;
+const fbApp = DEMO ? null : await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js");
+const fbAuth = DEMO ? null : await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js");
 
 const firebaseConfig = {
   apiKey: "AIzaSyCy2sI-4oJ4Zqfy85a_vN8hG_hS4ire6d8",
@@ -42,6 +40,8 @@ const ACTION_LABELS = {
   excluir: "excluiu a conta",
   excluiu_a_propria_conta: "excluiu a própria conta pelo app",
   anotacao: "anotou",
+  investimento: "registrou investimento",
+  investimento_removido: "removeu um investimento",
   chamado: "marcou como chamado",
   "2fa_ativado": "ligou o segundo fator",
   "2fa_desligado": "desligou o segundo fator",
@@ -88,7 +88,11 @@ const SEGMENTS = {
   },
 };
 
-const auth = getAuth(initializeApp(firebaseConfig));
+const auth = DEMO ? { currentUser: { email: "demo@pago.app" } } : fbAuth.getAuth(fbApp.initializeApp(firebaseConfig));
+const onAuthStateChanged = (instance, callback) => (DEMO ? callback(instance.currentUser) : fbAuth.onAuthStateChanged(instance, callback));
+const signInWithEmailAndPassword = (...args) => fbAuth.signInWithEmailAndPassword(...args);
+const signOut = (...args) => (DEMO ? Promise.resolve() : fbAuth.signOut(...args));
+const updatePassword = (...args) => fbAuth.updatePassword(...args);
 const $ = (id) => document.getElementById(id);
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -96,6 +100,7 @@ const dateTimeFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2
 const dayFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" });
 const monthFmt = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
+let forcing = false;
 const state = {
   data: null,
   users: [],
@@ -113,9 +118,15 @@ onAuthStateChanged(auth, (user) => {
   $("login").hidden = !!user;
   $("app").hidden = !user;
   $("twofa").hidden = true;
+  $("twofa-setup").hidden = true;
   clearInterval(state.timer);
   if (!user) {
+    forcing = false;
     sessionStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  if (DEMO && location.search.includes("setup2fa")) {
+    forceSetup();
     return;
   }
   load();
@@ -158,6 +169,7 @@ $("twofa-form").addEventListener("submit", async (event) => {
 });
 
 $("twofa-logout").addEventListener("click", () => signOut(auth));
+$("setup-logout").addEventListener("click", () => signOut(auth));
 $("logout").addEventListener("click", () => signOut(auth));
 $("refresh").addEventListener("click", () => load());
 $("export").addEventListener("click", exportCsv);
@@ -190,9 +202,11 @@ $("tabs").addEventListener("click", (event) => {
   const tab = event.target.closest("[data-tab]");
   if (!tab) return;
   state.tab = tab.dataset.tab;
+  $("page-title").textContent = tab.querySelector("span").textContent;
   document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
   document.querySelectorAll("[data-page]").forEach((page) => (page.hidden = page.dataset.page !== state.tab));
   if (state.tab === "registro") loadLog();
+  if (state.tab === "marketing") loadSpend();
 });
 
 $("search").addEventListener("input", (event) => {
@@ -232,6 +246,7 @@ function closeLayer(layer) {
 }
 
 async function api(path, body, attempt = 1) {
+  if (DEMO) return demo.demoApi(path, body);
   const token = await auth.currentUser.getIdToken();
   const session = sessionStorage.getItem(SESSION_KEY);
   let response;
@@ -260,9 +275,10 @@ async function api(path, body, attempt = 1) {
       $("twofa").hidden = false;
       $("twofa-code").focus();
     }
+    if (data.precisa2faSetup) forceSetup();
     const error = new Error(data.message || "Falha no servidor.");
     error.status = response.status;
-    error.twofa = !!data.precisa2fa;
+    error.twofa = !!data.precisa2fa || !!data.precisa2faSetup;
     throw error;
   }
   return data;
@@ -301,6 +317,9 @@ function renderAll() {
   renderStats(data.stats, data.receita);
   renderFocus();
   renderRevenue(data.receita);
+  renderRevenuePage(data.receita);
+  renderAnalysis();
+  renderMarketing();
   renderMonthly();
   renderFunnel();
   renderRetention();
@@ -314,12 +333,6 @@ async function checkSecurityBanner() {
   if (securityChecked) return;
   securityChecked = true;
   const notes = [];
-  try {
-    const status = await api("/2fa/status");
-    if (!status.ativo) {
-      notes.push(`Ligue o segundo fator para proteger o painel. <button class="link" data-open-security>Ligar agora</button>`);
-    }
-  } catch (_) {}
   if (state.data && !state.data.emailLigado) {
     notes.push("O resumo diário e os alertas por e-mail estão desligados: falta a chave do Resend no servidor.");
   }
@@ -334,10 +347,10 @@ function renderStats(stats, receita) {
     { label: "Cadastros", value: stats.total, hint: `+${stats.novos7d} nos últimos 7 dias` },
     { label: "Premium ativos", value: stats.premium, hint: `${stats.premiumPagantes} pagantes · ${stats.premiumCortesia} cortesia` },
     {
-      label: "Receita do mês (Play)",
+      label: "Receita do mês (lojas)",
       value: money.format(receita.mesAtual.bruto),
       hint: receita.mesAtual.cobrancas
-        ? `${money.format(receita.mesAtual.liquido)} líquido · ${receita.mesAtual.cobrancas} cobranças`
+        ? `Play ${money.format(stores(receita.mesAtual).play.bruto)} · iPhone ${money.format(stores(receita.mesAtual).app_store.bruto)}`
         : `estimada: ${money.format(stats.receitaEstimada)}/mês`,
     },
     { label: "Premium vence em 7 dias", value: stats.premiumVence7d, hint: "podem não renovar" },
@@ -354,12 +367,24 @@ function renderStats(stats, receita) {
     .join("");
 }
 
+// Backend antigo não separa as lojas: trata tudo como Google Play até as Functions serem atualizadas.
+function stores(period) {
+  const empty = { bruto: 0, liquido: 0, cobrancas: 0, novas: 0, renovacoes: 0, cancelamentos: 0, falhas: 0 };
+  return period.porLoja || { play: { ...empty, ...period }, app_store: empty };
+}
+
+const STORE_NAME = { play: "Google Play", app_store: "App Store" };
+const STORE_SHORT = { play: "Play", app_store: "iPhone" };
+const STORE_COLOR = { play: "var(--c-play)", app_store: "var(--c-apple)" };
+const monthShort = new Intl.DateTimeFormat("pt-BR", { month: "short" });
+
 function renderRevenue(receita) {
   const now = receita.mesAtual;
   const before = receita.mesAnterior;
+  const fee = (store) => Math.round((receita.taxas?.[store] ?? receita.taxaPlay) * 100);
   const rows = [
     ["Faturamento bruto", money.format(now.bruto), money.format(before.bruto)],
-    [`Líquido (sem os ${Math.round(receita.taxaPlay * 100)}% da Google)`, money.format(now.liquido), money.format(before.liquido)],
+    [`Líquido (sem as taxas das lojas)`, money.format(now.liquido), money.format(before.liquido)],
     ["Assinaturas novas", now.novas, before.novas],
     ["Renovações", now.renovacoes, before.renovacoes],
     ["Cancelamentos", now.cancelamentos, before.cancelamentos],
@@ -373,10 +398,475 @@ function renderRevenue(receita) {
     </table>
     <p class="muted small">${
       empty
-        ? "Ainda sem cobranças registradas. Os números aparecem quando a primeira assinatura for feita pela Play (e as renovações, depois de ligar os avisos da Play)."
-        : "Valores conferidos com a Google. Compras de teste ficam de fora. A Google paga o líquido no mês seguinte."
+        ? "Ainda sem cobranças registradas. Os números aparecem quando a primeira assinatura for feita pela Play ou pela App Store."
+        : `Compras de teste ficam de fora. Taxa considerada: Google ${fee("play")}% e Apple ${fee("app_store")}%. As lojas pagam o líquido no mês seguinte.`
     }</p>`;
 }
+
+function renderRevenuePage(receita) {
+  const now = receita.mesAtual;
+  const before = receita.mesAnterior;
+  const iosShare = now.bruto ? Math.round((stores(now).app_store.bruto / now.bruto) * 100) : 0;
+  const cards = [
+    { label: "Bruto do mês", value: money.format(now.bruto), hint: `${trend(now.bruto, before.bruto) || "sem comparação"} vs. mês passado`, hero: true },
+    { label: "Líquido do mês", value: money.format(now.liquido), hint: "depois das taxas das lojas" },
+    { label: "Cobranças", value: now.cobrancas, hint: `${now.novas} novas · ${now.renovacoes} renovações` },
+    { label: "Cancelamentos", value: now.cancelamentos, hint: `${now.falhas} pagamentos recusados` },
+    { label: "Peso do iPhone", value: `${iosShare}%`, hint: "da receita bruta do mês" },
+  ];
+  $("rev-kpis").innerHTML = cards.map(statCard).join("");
+
+  $("stores").innerHTML = ["play", "app_store"]
+    .map((store) => {
+      const part = stores(now)[store];
+      const rate = Math.round((receita.taxas?.[store] ?? receita.taxaPlay) * 100);
+      return `
+        <article class="store ${store === "play" ? "play" : "apple"}">
+          <div class="store-head"><h3>${STORE_NAME[store]}</h3><span class="badge">${store === "play" ? "Android" : "iPhone"}</span></div>
+          <div class="store-value">${money.format(part.bruto)}</div>
+          <div class="muted small">${money.format(part.liquido)} líquido · taxa de ${rate}%</div>
+          <dl>
+            <dt>Cobranças</dt><dd>${part.cobrancas}</dd>
+            <dt>Assinaturas novas</dt><dd>${part.novas}</dd>
+            <dt>Renovações</dt><dd>${part.renovacoes}</dd>
+            <dt>Cancelamentos</dt><dd>${part.cancelamentos}</dd>
+            <dt>Pagamentos recusados</dt><dd>${part.falhas}</dd>
+          </dl>
+        </article>`;
+    })
+    .join("");
+
+  $("rev-legend").innerHTML = ["play", "app_store"]
+    .map((store) => `<span style="--c:${STORE_COLOR[store]}"><i></i>${STORE_NAME[store]}</span>`)
+    .join("");
+  $("rev-chart").innerHTML = stackedBars(receita.meses || []);
+
+  $("rev-events").innerHTML = receita.eventos.length
+    ? receita.eventos
+        .map(
+          (item) => `
+        <div class="feed-item ${item.loja === "app_store" ? "apple" : "play"}">
+          <span class="feed-dot"></span>
+          <div><button class="link" data-file="${escapeHtml(item.uid)}">${escapeHtml(item.nome || "Assinante")}</button> ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo.toLowerCase())}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""} <span class="badge" style="--store:${STORE_COLOR[item.loja || "play"]}">${STORE_SHORT[item.loja || "play"]}</span></div>
+          <span class="muted small">${relative(item.em)}</span>
+        </div>`,
+        )
+        .join("")
+    : `<div class="empty">Nenhuma cobrança ainda.</div>`;
+}
+
+function statCard(card) {
+  return `
+      <div class="stat${card.hero ? " hero" : ""}">
+        <div class="label">${card.dot ? '<span class="dot"></span>' : ""}${card.label}</div>
+        <div class="value">${card.value}</div>
+        <div class="hint">${card.hint}</div>
+      </div>`;
+}
+
+function stackedBars(months) {
+  if (!months.length) return `<div class="empty">O gráfico mensal aparece quando as Functions forem atualizadas.</div>`;
+  const W = 520, H = 220, L = 44, B = 28, T = 12;
+  const max = niceMax(Math.max(1, ...months.map((m) => m.bruto)));
+  const slot = (W - L) / months.length;
+  const barW = Math.min(56, slot * 0.6);
+  const y = (value) => T + (H - T - B) * (1 - value / max);
+  const grid = [0, 0.5, 1]
+    .map((f) => `<line class="grid" x1="${L}" x2="${W}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${compactMoney(max * f)}</text>`)
+    .join("");
+  const bars = months
+    .map((m, i) => {
+      const x = L + slot * i + (slot - barW) / 2;
+      const hPlay = ((H - T - B) * m.play) / max;
+      const hApple = ((H - T - B) * m.app_store) / max;
+      return `
+        <g>
+          <title>${monthShort.format(m.mes)}: Play ${money.format(m.play)} · iPhone ${money.format(m.app_store)}</title>
+          <rect x="${x}" y="${H - B - hPlay}" width="${barW}" height="${Math.max(0, hPlay)}" rx="4" fill="var(--c-play)"/>
+          <rect x="${x}" y="${H - B - hPlay - hApple}" width="${barW}" height="${Math.max(0, hApple)}" rx="4" fill="var(--c-apple)"/>
+          <text x="${x + barW / 2}" y="${H - 8}" text-anchor="middle">${monthShort.format(m.mes)}</text>
+        </g>`;
+    })
+    .join("");
+  return `<svg class="svgchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Receita bruta por mês e por loja">${grid}${bars}</svg>`;
+}
+
+function niceMax(value) {
+  const step = Math.pow(10, Math.floor(Math.log10(value)));
+  return Math.ceil(value / step) * step;
+}
+
+function compactMoney(value) {
+  return value >= 1000 ? `R$ ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(value)}`;
+}
+
+// ===== Marketing: retorno por canal =====
+const PLAY_URL = "https://play.google.com/store/apps/details?id=app.usepago";
+const SITE_URL = "https://usepago.web.app/";
+
+function monthKey(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function marketingPeriod() {
+  const now = Date.now();
+  const thisMonth = startOfMonth(now);
+  const prevMonth = startOfMonth(thisMonth - DAY);
+  const range = state.mkRange || "month";
+  if (range === "prev") return { from: prevMonth, to: thisMonth, months: new Set([monthKey(prevMonth)]), label: "mês passado" };
+  if (range === "all") return { from: 0, to: Infinity, months: null, label: "todo o período" };
+  return { from: thisMonth, to: Infinity, months: new Set([monthKey(thisMonth)]), label: "este mês" };
+}
+
+function channelRows() {
+  const period = marketingPeriod();
+  const now = Date.now();
+  const fee = state.data?.receita?.taxas?.play ?? state.data?.receita?.taxaPlay ?? 0.15;
+  const rows = new Map();
+  const row = (key, label) => {
+    if (!rows.has(key)) rows.set(key, { key, label, gasto: 0, instalacoes: 0, cadastros: 0, lancou: 0, ativos: 0, pagantes: 0, bruta: 0 });
+    return rows.get(key);
+  };
+  const known = state.users.some((user) => user.origem !== undefined);
+  for (const user of state.users) {
+    if (user.admin || user.desativado) continue;
+    if (!user.criadoEm || user.criadoEm < period.from || user.criadoEm >= period.to) continue;
+    const source = !known ? "sem-dado" : user.origem?.fonte || "sem-registro";
+    const label = { organico: "Orgânico", "sem-registro": "Sem origem registrada", "sem-dado": "Sem origem registrada" }[source] || source;
+    const item = row(source, label);
+    item.cadastros += 1;
+    if ((user.uso?.lancamentos || 0) > 0) item.lancou += 1;
+    if (user.ultimoAcesso && now - user.ultimoAcesso <= 7 * DAY) item.ativos += 1;
+    if ((user.receitaBruta || 0) > 0) item.pagantes += 1;
+    item.bruta += user.receitaBruta || 0;
+  }
+  for (const entry of state.spend?.itens || []) {
+    if (period.months && !period.months.has(entry.mes)) continue;
+    const item = row(entry.canal, entry.canal);
+    item.gasto += entry.valor;
+    item.instalacoes += entry.instalacoes || 0;
+  }
+  const list = [...rows.values()].map((item) => {
+    const liquido = item.bruta * (1 - fee);
+    const per = (value, count) => (item.gasto > 0 && count > 0 ? value / count : null);
+    return {
+      ...item,
+      liquido,
+      cpaCadastro: per(item.gasto, item.cadastros),
+      cpaLancamento: per(item.gasto, item.lancou),
+      cac: per(item.gasto, item.pagantes),
+      retorno: item.gasto > 0 ? liquido / item.gasto : null,
+      resultado: item.gasto > 0 ? liquido - item.gasto : null,
+    };
+  });
+  list.sort((a, b) => b.gasto - a.gasto || b.cadastros - a.cadastros);
+  const best = list.filter((item) => item.cpaLancamento != null).sort((a, b) => a.cpaLancamento - b.cpaLancamento)[0];
+  if (best) best.melhor = true;
+  return list;
+}
+
+function renderMarketing() {
+  if (!state.data) return;
+  const rows = channelRows();
+  const paid = rows.filter((item) => item.gasto > 0);
+  const total = (list, key) => list.reduce((sum, item) => sum + item[key], 0);
+  const spend = total(paid, "gasto");
+  const signups = total(rows, "cadastros");
+  const paidSignups = total(paid, "cadastros");
+  const paidLaunched = total(paid, "lancou");
+  const paidLiquid = total(paid, "liquido");
+  const ratio = (a, b) => (b > 0 && a > 0 ? money.format(a / b) : "—");
+  const cards = [
+    { label: "Investido", value: money.format(spend), hint: marketingPeriod().label, hero: true },
+    { label: "Cadastros", value: signups, hint: `${paidSignups} vieram de canais pagos` },
+    { label: "Custo por cadastro", value: ratio(spend, paidSignups), hint: "canais com investimento" },
+    { label: "Custo por 1º lançamento", value: ratio(spend, paidLaunched), hint: "quem realmente usou" },
+    { label: "Retorno", value: spend > 0 ? `${(paidLiquid / spend).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x` : "—", hint: "receita líquida ÷ investimento" },
+  ];
+  $("mk-kpis").innerHTML = cards.map(statCard).join("");
+
+  const known = state.users.some((user) => user.origem !== undefined);
+  $("mk-note").textContent = !known
+    ? "O servidor ainda não envia a origem das contas (atualize as Functions). Os números por canal aparecem depois disso."
+    : "A origem vem do link da Play usado na instalação. Contas criadas antes da medição ficam em \"Sem origem registrada\". Use o mesmo nome de canal no link e no investimento.";
+
+  const cell = (value, fmt = (v) => v) => (value == null ? `<span class="muted">—</span>` : fmt(value));
+  $("mk-table").innerHTML = rows.length
+    ? `<table class="table">
+        <thead><tr><th>Canal</th><th>Gasto</th><th>Instalações</th><th>Cadastros</th><th>1º lançamento</th><th>Ativos 7d</th><th>Pagantes</th><th>Receita</th><th>Custo/cadastro</th><th>Custo/1º lanç.</th><th>Custo/pagante</th><th>Retorno</th></tr></thead>
+        <tbody>${rows
+          .map(
+            (item) => `<tr>
+          <td><b>${escapeHtml(item.label)}</b>${item.melhor ? ` <span class="badge" style="--store:var(--c-play)">melhor custo</span>` : ""}</td>
+          <td>${item.gasto ? money.format(item.gasto) : "—"}</td>
+          <td>${item.instalacoes || "—"}</td>
+          <td>${item.cadastros}</td>
+          <td>${item.lancou}${item.cadastros ? ` <span class="muted small">${Math.round((item.lancou / item.cadastros) * 100)}%</span>` : ""}</td>
+          <td>${item.ativos}</td>
+          <td>${item.pagantes}</td>
+          <td>${item.bruta ? money.format(item.bruta) : "—"}</td>
+          <td>${cell(item.cpaCadastro, money.format)}</td>
+          <td>${cell(item.cpaLancamento, money.format)}</td>
+          <td>${cell(item.cac, money.format)}</td>
+          <td>${item.retorno == null ? `<span class="muted">—</span>` : `<b class="${item.retorno >= 1 ? "good" : "bad"}">${item.retorno.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x</b>`}</td>
+        </tr>`,
+          )
+          .join("")}</tbody></table>`
+    : `<div class="empty">Sem cadastros nem investimento neste período.</div>`;
+
+  renderSpendList();
+  renderLinks();
+}
+
+function renderSpendList() {
+  const box = $("spend-list");
+  if (state.spendError) {
+    box.innerHTML = `<div class="empty">${escapeHtml(state.spendError)}</div>`;
+    return;
+  }
+  const items = state.spend?.itens || [];
+  box.innerHTML = items.length
+    ? items
+        .slice(0, 30)
+        .map(
+          (item) => `<div class="feed-item">
+        <span class="feed-dot"></span>
+        <div><b>${escapeHtml(item.canal)}</b>${item.campanha ? ` · ${escapeHtml(item.campanha)}` : ""} · ${escapeHtml(item.mes)} · ${money.format(item.valor)}${item.instalacoes != null ? ` · ${item.instalacoes} instalações` : ""}${item.nota ? ` <span class="muted">(${escapeHtml(item.nota)})</span>` : ""}</div>
+        <button class="link" data-spend-delete="${escapeHtml(item.id)}">remover</button>
+      </div>`,
+        )
+        .join("")
+    : `<div class="empty">Nenhum investimento registrado ainda.</div>`;
+}
+
+async function loadSpend() {
+  try {
+    state.spend = await api("/spend");
+    state.spendError = "";
+  } catch (error) {
+    if (error.twofa) return;
+    state.spend = null;
+    state.spendError = error.status === 404 ? "Disponível depois que as Functions forem atualizadas." : error.message;
+  }
+  if (state.data) renderMarketing();
+}
+
+$("mk-range").addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-range]");
+  if (!chip) return;
+  state.mkRange = chip.dataset.range;
+  $("mk-range").querySelectorAll(".chip").forEach((item) => item.classList.toggle("active", item === chip));
+  renderMarketing();
+});
+
+$("spend-month").value = monthKey(Date.now());
+$("spend-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.target.querySelector("button[type=submit]");
+  button.disabled = true;
+  try {
+    await api("/spend", {
+      mes: $("spend-month").value,
+      canal: $("spend-channel").value,
+      campanha: $("spend-campaign").value,
+      valor: $("spend-value").value.replace(/\./g, "").replace(",", "."),
+      instalacoes: $("spend-installs").value,
+      nota: $("spend-note").value,
+    });
+    toast("Investimento registrado.");
+    for (const id of ["spend-value", "spend-installs", "spend-note"]) $(id).value = "";
+    await loadSpend();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("spend-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-spend-delete]");
+  if (!button) return;
+  button.disabled = true;
+  try {
+    await api("/spend/delete", { id: button.dataset.spendDelete });
+    toast("Investimento removido.");
+    await loadSpend();
+  } catch (error) {
+    toast(error.message);
+    button.disabled = false;
+  }
+});
+
+function utmQuery() {
+  const clean = (id) => $(id).value.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  const pairs = [["utm_source", clean("link-source")], ["utm_medium", clean("link-medium")], ["utm_campaign", clean("link-campaign")], ["utm_content", clean("link-content")]];
+  return pairs.filter(([, value]) => value).map(([key, value]) => `${key}=${value}`).join("&");
+}
+
+function renderLinks() {
+  const query = utmQuery();
+  if (!query) {
+    $("link-out").innerHTML = `<div class="empty">Preencha pelo menos o canal.</div>`;
+    return;
+  }
+  const links = [
+    ["Link da Google Play", `${PLAY_URL}&referrer=${encodeURIComponent(query)}`],
+    ["Link do site", `${SITE_URL}?${query}`],
+  ];
+  $("link-out").innerHTML = links
+    .map(([label, url]) => `<div class="link-row"><span class="muted small">${label}</span><code>${escapeHtml(url)}</code><button class="btn ghost" type="button" data-copy="${escapeHtml(url)}">Copiar</button></div>`)
+    .join("");
+}
+
+$("link-form").addEventListener("input", renderLinks);
+$("link-out").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-copy]");
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    toast("Link copiado.");
+  } catch (_) {
+    toast("Selecione o link e copie manualmente.");
+  }
+});
+
+const SERIES = [
+  { key: "total", label: "Cadastros", color: "var(--primary)" },
+  { key: "ativos7d", label: "Ativos em 7 dias", color: "var(--c-play)" },
+  { key: "premiumPagantes", label: "Premium pagantes", color: "var(--c-pix)" },
+];
+
+function renderAnalysis() {
+  const { stats, receita } = state.data;
+  const total = Math.max(1, stats.total);
+  const month = receita.mesAtual;
+  const payers = stats.premiumPagantes;
+  const churnBase = payers + month.cancelamentos;
+  const cards = [
+    { label: "Conversão para pago", value: `${((payers / total) * 100).toFixed(1).replace(".", ",")}%`, hint: `${payers} pagantes em ${stats.total} cadastros`, hero: true },
+    { label: "Receita por pagante", value: payers && month.bruto ? money.format(month.bruto / payers) : "—", hint: "bruto do mês ÷ pagantes ativos" },
+    { label: "Cancelamentos do mês", value: month.cancelamentos, hint: churnBase ? `${Math.round((month.cancelamentos / churnBase) * 100)}% de quem pagava` : "sem pagantes ainda" },
+    { label: "Ativos em 7 dias", value: `${Math.round((stats.ativos7d / total) * 100)}%`, hint: `${stats.ativos7d} de ${stats.total} cadastros` },
+    { label: "Novos em 7 dias", value: stats.novos7d, hint: "cadastros recentes" },
+  ];
+  $("an-kpis").innerHTML = cards.map(statCard).join("");
+
+  renderLegend();
+  renderLines();
+
+  const platforms = stats.plataformas || {};
+  const platformRows = [
+    ["Android", platforms.android, "var(--c-play)"],
+    ["iPhone", platforms.ios, "var(--c-apple)"],
+    ["Web", platforms.web, "var(--c-web)"],
+    ["Outras", platforms.outras, "var(--c-admin)"],
+    ["Sem registro de acesso", platforms.semDado, "var(--line)"],
+  ].filter(([, value]) => value > 0);
+  $("an-platform").innerHTML = platformRows.length ? segments(platformRows, stats.total) : `<div class="empty">Sem dados de plataforma ainda.</div>`;
+
+  const origins = stats.premiumPorOrigem || {};
+  const originRows = [
+    ["Google Play", origins.play, "var(--c-play)"],
+    ["App Store", origins.apple, "var(--c-apple)"],
+    ["PIX (legado)", origins.pix, "var(--c-pix)"],
+    ["Cortesia do admin", origins.admin, "var(--c-admin)"],
+  ].filter(([, value]) => value > 0);
+  $("an-origin").innerHTML = originRows.length ? segments(originRows, stats.premium) : `<div class="empty">Ninguém com Premium ativo ainda.</div>`;
+
+  const windows = [
+    ["Online agora (5 min)", stats.online],
+    ["Últimas 24 horas", stats.ativos24h],
+    ["Últimos 7 dias", stats.ativos7d],
+    ["Últimos 30 dias", stats.ativos30d],
+  ];
+  $("an-active").innerHTML = windows
+    .map(([label, value]) => `<div class="hbar"><span>${label}</span><div class="track"><i style="width:${Math.max(1, Math.round((value / total) * 100))}%"></i></div><b>${value} <span class="muted small">${Math.round((value / total) * 100)}%</span></b></div>`)
+    .join("");
+}
+
+function renderLegend() {
+  const hidden = state.hiddenSeries || (state.hiddenSeries = new Set());
+  $("an-legend").innerHTML = SERIES.map(
+    (item) => `<button type="button" class="legend-btn${hidden.has(item.key) ? " off" : ""}" data-series="${item.key}" aria-pressed="${!hidden.has(item.key)}" style="--c:${item.color}"><i></i>${item.label}</button>`,
+  ).join("") + `<span class="muted small">Clique para ocultar uma linha e ampliar as outras.</span>`;
+}
+
+$("an-legend").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-series]");
+  if (!button) return;
+  const hidden = state.hiddenSeries || (state.hiddenSeries = new Set());
+  const key = button.dataset.series;
+  if (hidden.has(key)) hidden.delete(key);
+  else if (hidden.size < SERIES.length - 1) hidden.add(key);
+  renderLegend();
+  if (state.data) renderLines();
+});
+
+function segments(rows, total) {
+  const sum = Math.max(1, total || rows.reduce((acc, [, value]) => acc + value, 0));
+  return `
+    <div class="segbar" role="img" aria-label="Distribuição">${rows.map(([label, value, color]) => `<span class="seg" title="${label}: ${value}" style="--c:${color};width:${(value / sum) * 100}%"><i style="width:100%"></i></span>`).join("")}</div>
+    <div class="rows">${rows.map(([label, value, color]) => `<div class="row-item" style="--c:${color}"><i></i><span>${label}</span><b>${value} <span class="muted small">${Math.round((value / sum) * 100)}%</span></b></div>`).join("")}</div>`;
+}
+
+function renderLines() {
+  const all = state.data.historico || [];
+  const days = state.analysisDays || 30;
+  const cutoff = dayId(Date.now() - days * DAY);
+  const points = all.filter((item) => item.dia >= cutoff);
+  const box = $("an-lines");
+  if (points.length < 2) {
+    box.innerHTML = `<div class="empty">O painel guarda uma foto por dia. A evolução aparece a partir do segundo dia de uso.</div>`;
+    return;
+  }
+  const W = 760, H = 260, L = 44, R = 12, T = 12, B = 28;
+  const hidden = state.hiddenSeries || new Set();
+  const visible = SERIES.filter((item) => !hidden.has(item.key));
+  const max = niceMax(Math.max(1, ...points.flatMap((point) => visible.map((item) => point[item.key] || 0))));
+  const x = (i) => L + ((W - L - R) * i) / (points.length - 1);
+  const y = (value) => T + (H - T - B) * (1 - value / max);
+  const grid = [0, 0.25, 0.5, 0.75, 1]
+    .map((f) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${Math.round(max * f)}</text>`)
+    .join("");
+  const lines = visible.map((item) => {
+    const path = points.map((point, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(point[item.key] || 0).toFixed(1)}`).join(" ");
+    const last = points.length - 1;
+    return `<path d="${path}" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(last)}" cy="${y(points[last][item.key] || 0)}" r="4" fill="${item.color}"/>`;
+  }).join("");
+  const labelEvery = Math.max(1, Math.ceil(points.length / 7));
+  const labels = points
+    .map((point, i) => (i % labelEvery === 0 || i === points.length - 1 ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${point.dia.slice(8, 10)}/${point.dia.slice(5, 7)}</text>` : ""))
+    .join("");
+  const slot = (W - L - R) / (points.length - 1);
+  const hits = points.map((point, i) => `<rect class="hit" data-i="${i}" x="${x(i) - slot / 2}" y="${T}" width="${slot}" height="${H - T - B}"/>`).join("");
+  box.innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução de cadastros, ativos e pagantes">${grid}${lines}${labels}${hits}</svg><div class="tip" hidden></div>`;
+
+  const tip = box.querySelector(".tip");
+  const svg = box.querySelector("svg");
+  const show = (event) => {
+    const hit = event.target.closest("[data-i]");
+    if (!hit) return;
+    const point = points[Number(hit.dataset.i)];
+    tip.innerHTML = `<b>${point.dia.split("-").reverse().join("/")}</b>${visible.map((item) => `${item.label}: ${point[item.key] ?? "—"}`).join("<br>")}`;
+    const rect = svg.getBoundingClientRect();
+    const host = box.getBoundingClientRect();
+    tip.style.left = `${rect.left - host.left + (x(Number(hit.dataset.i)) / W) * rect.width}px`;
+    tip.style.top = `${rect.top - host.top + (T / H) * rect.height + 40}px`;
+    tip.hidden = false;
+  };
+  svg.addEventListener("mousemove", show);
+  svg.addEventListener("click", show);
+  svg.addEventListener("mouseleave", () => (tip.hidden = true));
+}
+
+$("an-range").addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-days]");
+  if (!chip) return;
+  state.analysisDays = Number(chip.dataset.days);
+  $("an-range").querySelectorAll(".chip").forEach((item) => item.classList.toggle("active", item === chip));
+  if (state.data) renderLines();
+});
 
 function renderMonthly() {
   const now = Date.now();
@@ -395,7 +885,7 @@ function renderMonthly() {
 
   const rows = [
     ["Cadastros (mesmo período)", signupsNow, signupsPrev],
-    ["Receita bruta da Play", money.format(receita.mesAtual.bruto), money.format(receita.mesAnterior.bruto), receita.mesAtual.bruto, receita.mesAnterior.bruto],
+    ["Receita bruta das lojas", money.format(receita.mesAtual.bruto), money.format(receita.mesAnterior.bruto), receita.mesAtual.bruto, receita.mesAnterior.bruto],
     ["Premium ativos", stats.premium, past ? past.premium : null],
     ["Pagantes", stats.premiumPagantes, past ? past.premiumPagantes : null],
     ["Ativos em 7 dias", stats.ativos7d, past ? past.ativos7d : null],
@@ -513,7 +1003,7 @@ function renderFeed() {
     em: item.em,
     uid: item.uid,
     nome: item.nome || "Assinante",
-    texto: `${EVENT_LABELS[item.tipo] || item.tipo.toLowerCase()}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""}`,
+    texto: `${EVENT_LABELS[item.tipo] || item.tipo.toLowerCase()}${item.cobranca ? ` · ${money.format(item.valor)}` : ""}${item.teste ? " · teste" : ""}${item.loja === "app_store" ? " · iPhone" : ""}`,
     tipo: ["CANCELADA", "SUSPENSA", "PERIODO_DE_CARENCIA", "ESTORNADA", "EXPIRADA"].includes(item.tipo) ? "perda" : "play",
   }));
   const items = [...signups, ...play].sort((a, b) => b.em - a.em).slice(0, 25);
@@ -877,10 +1367,10 @@ function renderFile(file) {
         ? file.assinaturas
             .map(
               (sub) =>
-                `<p class="small">Assinatura Play: <b>${subState(sub)}</b>${sub.venceEm ? ` · vale até ${dateFmt.format(sub.venceEm)}` : ""}${sub.renovaSozinha ? " · renova sozinha" : ""}${sub.teste ? " · teste" : ""}${sub.verificada ? "" : " · não conferida com a Google"}</p>`,
+                `<p class="small">Assinatura ${sub.loja === "app_store" ? "App Store" : "Play"}: <b>${subState(sub)}</b>${sub.venceEm ? ` · vale até ${dateFmt.format(sub.venceEm)}` : ""}${sub.renovaSozinha ? " · renova sozinha" : ""}${sub.teste ? " · teste" : ""}${sub.verificada ? "" : ` · não conferida com ${sub.loja === "app_store" ? "a Apple" : "a Google"}`}</p>`,
             )
             .join("")
-        : `<p class="muted small">Nenhuma assinatura da Play ligada a esta conta.</p>`
+        : `<p class="muted small">Nenhuma assinatura de loja ligada a esta conta.</p>`
     }
 
     <h3>Histórico</h3>
@@ -890,8 +1380,8 @@ function renderFile(file) {
             .map(
               (item) =>
                 `<div class="feed-item ${item.origem}"><span class="feed-dot"></span><div>${
-                  item.origem === "play"
-                    ? `Play: ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo)}${item.detalhe ? ` · ${escapeHtml(item.detalhe)}` : ""}${item.teste ? " · teste" : ""}`
+                  item.origem === "play" || item.origem === "apple"
+                    ? `${item.origem === "apple" ? "App Store" : "Play"}: ${escapeHtml(EVENT_LABELS[item.tipo] || item.tipo)}${item.detalhe ? ` · ${escapeHtml(item.detalhe)}` : ""}${item.teste ? " · teste" : ""}`
                     : `${escapeHtml(item.por || "admin")} ${escapeHtml(ACTION_LABELS[item.tipo] || item.tipo)}${item.detalhe ? `: ${escapeHtml(item.detalhe)}` : ""}`
                 }</div><span class="muted small">${item.em ? dateTimeFmt.format(item.em) : ""}</span></div>`,
             )
@@ -961,6 +1451,9 @@ function subState(sub) {
       SUBSCRIPTION_STATE_PAUSED: "pausada",
       SUBSCRIPTION_STATE_CANCELED: "cancelada (vale até o fim do período)",
       SUBSCRIPTION_STATE_EXPIRED: "expirada",
+      ATIVA: "ativa",
+      INATIVA: "inativa",
+      REVOGADA: "revogada",
     }[sub.estado] || (sub.verificada ? sub.estado || "?" : "registrada")
   );
 }
@@ -1035,11 +1528,15 @@ async function openSecurity() {
         <h2>Segurança</h2>
         <p><span class="badge premium">Segundo fator ligado</span></p>
         <p class="muted small">Ao entrar, o painel pede o código do aplicativo autenticador. A sessão vale 12 horas neste navegador.</p>
-        <form id="disable-form" class="note-form">
+        ${
+          status.obrigatorio
+            ? `<p class="muted small">O segundo fator é obrigatório. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore.</p>`
+            : `<form id="disable-form" class="note-form">
           <label>Para desligar, digite um código atual<input id="disable-code" inputmode="numeric" maxlength="6" required /></label>
           <button class="btn danger" type="submit">Desligar segundo fator</button>
-        </form>`;
-      $("disable-form").addEventListener("submit", async (event) => {
+        </form>`
+        }`;
+      $("disable-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
         try {
           await api("/2fa/disable", { code: $("disable-code").value });
@@ -1057,51 +1554,81 @@ async function openSecurity() {
       <p class="muted small">Além da senha, o painel vai pedir um código de 6 números que muda a cada 30 segundos. Use o Google Authenticator ou o Microsoft Authenticator no celular.</p>
       <button class="btn primary" id="setup-btn">Gerar código QR</button>
       <div id="setup-area"></div>`;
-    $("setup-btn").addEventListener("click", startSetup);
+    $("setup-btn").addEventListener("click", async () => {
+      $("setup-btn").disabled = true;
+      try {
+        await setupFlow($("setup-area"), async (result) => {
+          sessionStorage.setItem(SESSION_KEY, result.sessao);
+          toast("Segundo fator ligado.");
+          openSecurity();
+        });
+      } catch (error) {
+        toast(error.message);
+        $("setup-btn").disabled = false;
+      }
+    });
   } catch (error) {
     if (!error.twofa) $("modal-content").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
 }
 
-async function startSetup() {
-  $("setup-btn").disabled = true;
+// Tela cheia, sem acesso ao painel: aparece quando o servidor diz que o segundo fator ainda não foi ligado.
+async function forceSetup() {
+  if (forcing) return;
+  forcing = true;
+  clearInterval(state.timer);
+  $("app").hidden = true;
+  $("twofa").hidden = true;
+  $("twofa-setup").hidden = false;
+  $("force-area").innerHTML = `<div class="empty">Preparando...</div>`;
   try {
-    const data = await api("/2fa/setup", {});
-    let qr = "";
-    try {
-      const { default: QRCode } = await import("https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm");
-      qr = `<img class="qr" alt="Código QR" src="${await QRCode.toDataURL(data.uri, { margin: 1, width: 220 })}" />`;
-    } catch (_) {
-      qr = "";
-    }
-    $("setup-area").innerHTML = `
-      <ol class="steps">
-        <li>No aplicativo autenticador, toque em adicionar conta e leia o código QR${qr ? `:<br>${qr}` : " (não carregou: use a chave abaixo)"}.</li>
-        <li>Ou digite a chave manualmente: <code>${escapeHtml(data.secret.replace(/(.{4})/g, "$1 ").trim())}</code></li>
-        <li>Digite o código que aparecer no aplicativo:</li>
-      </ol>
-      <form id="enable-form" class="note-form">
-        <input id="enable-code" inputmode="numeric" maxlength="6" placeholder="000000" required />
-        <button class="btn primary" type="submit">Ligar</button>
-      </form>
-      <p class="muted small">Guarde a chave num lugar seguro. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore para desligar.</p>`;
-    $("enable-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      try {
-        const result = await api("/2fa/enable", { code: $("enable-code").value });
-        sessionStorage.setItem(SESSION_KEY, result.sessao);
-        toast("Segundo fator ligado.");
-        securityChecked = false;
-        checkSecurityBanner();
-        openSecurity();
-      } catch (error) {
-        toast(error.message);
-      }
+    await setupFlow($("force-area"), async (result) => {
+      sessionStorage.setItem(SESSION_KEY, result.sessao);
+      forcing = false;
+      $("twofa-setup").hidden = true;
+      $("app").hidden = false;
+      toast("Segundo fator ligado.");
+      await load();
+      state.timer = setInterval(() => {
+        if (document.visibilityState === "visible" && !$("app").hidden) load({ quiet: true });
+      }, AUTO_REFRESH_MS);
     });
   } catch (error) {
-    toast(error.message);
-    $("setup-btn").disabled = false;
+    forcing = false;
+    $("force-area").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
+}
+
+async function setupFlow(area, onEnabled) {
+  const data = await api("/2fa/setup", {});
+  let qr = "";
+  try {
+    const { default: QRCode } = await import("https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm");
+    qr = `<img class="qr" alt="Código QR" src="${await QRCode.toDataURL(data.uri, { margin: 1, width: 220 })}" />`;
+  } catch (_) {
+    qr = "";
+  }
+  area.innerHTML = `
+    <ol class="steps">
+      <li>No aplicativo autenticador (Google ou Microsoft Authenticator), toque em adicionar conta e leia o código QR${qr ? `:<br>${qr}` : " (não carregou: use a chave abaixo)"}.</li>
+      <li>Ou digite a chave manualmente: <code>${escapeHtml(data.secret.replace(/(.{4})/g, "$1 ").trim())}</code></li>
+      <li>Digite o código de 6 números que aparecer no aplicativo:</li>
+    </ol>
+    <form id="enable-form" class="note-form">
+      <input id="enable-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required />
+      <button class="btn primary" type="submit">Ligar e entrar</button>
+    </form>
+    <p id="enable-error" class="error" role="alert"></p>
+    <p class="muted small">Guarde a chave num lugar seguro. Se perder o celular, apague o documento da sua conta em AdminSecurity no Firestore.</p>`;
+  area.querySelector("#enable-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      const result = await api("/2fa/enable", { code: area.querySelector("#enable-code").value });
+      await onEnabled(result);
+    } catch (error) {
+      area.querySelector("#enable-error").textContent = error.message;
+    }
+  });
 }
 
 function relative(ms) {

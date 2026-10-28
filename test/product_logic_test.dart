@@ -265,7 +265,7 @@ Troco: R\$ 0,00
     );
     final back = Debt.fromMap(debt.toMap());
     expect(back.parcelado, isTrue);
-    expect(back.parcelaLabel, 'parcela 1 de 3');
+    expect(back.parcelaLabel, 'Parcela 1 de 3');
     expect(debt.toFirestore()['total_parcelas'], 3);
     expect(
       WhatsAppService.messageFor(
@@ -275,7 +275,7 @@ Troco: R\$ 0,00
         saldo: 150,
         chavePix: '',
       ),
-      contains('parcela 1 de 3'),
+      contains('Parcela 1 de 3'),
     );
     final custom = WhatsAppService.messageFor(
       action: WhatsAppAction.preventivo,
@@ -286,7 +286,7 @@ Troco: R\$ 0,00
       customTemplate: 'Oi {primeiro}, {valor}',
       isPremium: true,
     );
-    expect(custom, contains('parcela 1 de 3'));
+    expect(custom, contains('Parcela 1 de 3'));
     // débito comum não grava campos de parcela no Firestore
     expect(debt.copyWith(valorPrincipal: 1).toFirestore().containsKey('grupo_id'), isTrue);
     final single = Debt.fromMap({'nome': 'A', 'valor_principal': 10});
@@ -342,24 +342,6 @@ Troco: R\$ 0,00
     expect(summary.devedores.first.diasAtraso, 9);
     expect(summary.devedores.last.valor, 150);
     expect(summary.devedores.last.diasAtraso, 5);
-  });
-
-  test('aviso de 3 dias antes do fiado é só Premium', () {
-    final due = DateTime(2026, 10, 9);
-    final day = DateTime(2026, 10, 6);
-    expect(reminderKind(due: due, day: day, pago: false), isNull);
-    expect(
-      reminderKind(due: due, day: day, pago: false, premium: true),
-      ReminderKind.tresDias,
-    );
-    expect(
-      reminderKind(due: due, day: day, pago: true, premium: true),
-      isNull,
-    );
-    expect(
-      whatsAppActionForReminder(ReminderKind.tresDias),
-      WhatsAppAction.preventivo,
-    );
   });
 
   test('lembrete cobre véspera, dia e atraso', () {

@@ -1,71 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Política de Privacidade — Pagô</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg" />
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="./index.html">
-        <img src="./assets/pago-icon.jpg" width="36" height="36" alt="" />
-        Pagô
-      </a>
-    </header>
-    <article class="legal">
-      <p class="eyebrow">Lei nº 13.709/2018</p>
-      <h1>Política de Privacidade</h1>
-      <p>Última atualização: 14 de outubro de 2026.</p>
-      <p>
-        O Pagô é controlador dos dados da sua conta. Dos clientes que você
-        cadastra, você é o controlador e o Pagô é operador.         Canal LGPD: WhatsApp de suporte
-        (<a href="./ajuda.html">Ajuda</a>).
-      </p>
-      <h2>Dados</h2>
-      <p>
-        Conta: nome, e-mail, senha protegida, telefone se informado, aceite dos
-        termos, chave PIX, dados bancários opcionais, preferências e assinatura.
-        Caderneta: nome, telefone, valores, juros, vencimentos e abatimentos.
-        Boletos a pagar (Premium): fornecedor, valor, vencimento, parcelas e código do boleto, se você colar.
-        Premium: imagem de recibo e áudio, quando você usa. Site: dados técnicos
-        de acesso para segurança. Não vendemos sua lista.
-      </p>
-      <h2>Bases legais e finalidades</h2>
-      <p>
-        Contrato (conta, caderneta, WhatsApp a seu pedido, assinatura);
-        obrigação legal (registros de pagamento); legítimo interesse (segurança
-        e prevenção a fraude); consentimento no cadastro e em recursos que
-        pedem permissão do aparelho.
-      </p>
-      <h2>Compartilhamento e transferência</h2>
-      <p>
-        Firebase/Google (inclusive relatório de travamentos: modelo do
-        aparelho, versão do sistema e do app, sem os dados da caderneta),
-        Google Play e App Store (assinatura do Premium) e Asaas, só o
-        necessário. WhatsApp abre no
-        seu aparelho quando você toca em cobrar. Servidores podem ficar fora do
-        Brasil, com salvaguardas da LGPD.
-      </p>
-      <h2>Retenção e direitos</h2>
-      <p>
-        Dados ficam enquanto a conta existir e pelo prazo legal. Você pode
-        pedir acesso, correção, exclusão, portabilidade, revogação e oposição
-        (art. 18) pelo WhatsApp de suporte
-        (<a href="./ajuda.html">Ajuda</a>), e reclamar à ANPD. O app não se destina a
-        menores de 18 anos.
-      </p>
-      <p>
-        Para excluir a conta e os dados na hora: no app, Configurações →
-        Excluir minha conta. Veja <a href="./excluir-conta.html">como excluir sua conta</a>.
-      </p>
-      <p>
-        <a href="./ajuda.html">Ajuda</a> ·
-        <a href="./lgpd.html">LGPD no Pagô</a> ·
-        <a href="./termos.html">Termos de Uso</a>
-      </p>
-      <p><a href="./index.html">Voltar ao site</a></p>
-    </article>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade — Pagô</title>
+<meta name="description" content="Como o Pagô trata os seus dados: o que coletamos, para quê, com quem compartilhamos, por quanto tempo guardamos e quais são os seus direitos.">
+<link rel="canonical" href="https://usepago.web.app/privacidade">
+<meta name="theme-color" content="#2f6bff">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Pagô">
+<meta property="og:title" content="Política de Privacidade — Pagô">
+<meta property="og:description" content="Como o Pagô trata os seus dados: o que coletamos, para quê, com quem compartilhamos, por quanto tempo guardamos e quais são os seus direitos.">
+<meta property="og:url" content="https://usepago.web.app/privacidade">
+<meta property="og:image" content="https://usepago.web.app/assets/pago-icon.jpg">
+<link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="./legal.css">
+</head>
+<body>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+<header class="top">
+  <div class="in">
+    <a class="brand" href="./" aria-label="Pagô, página inicial"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="114" fill="#2F6BFF"/><path d="M132 268 L228 364 L348 176" fill="none" stroke="#fff" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><circle cx="402" cy="110" r="32" fill="#fff"/></svg>Pagô</a>
+    <nav aria-label="Páginas do site"><a href="./ajuda">Ajuda</a><a href="./privacidade" aria-current="page">Privacidade</a><a href="./termos">Termos</a><a href="./lgpd">LGPD</a><a href="./excluir-conta">Excluir conta</a></nav>
+  </div>
+</header>
+<main id="conteudo">
+<article class="doc">
+<p class="eyebrow">Lei nº 13.709/2018 (LGPD)</p>
+<h1>Política de Privacidade</h1>
+<p class="updated">Última atualização: 27 de outubro de 2026.</p>
+<div class="summary"><h2>Em resumo</h2><ul><li>Os dados da sua caderneta e dos seus clientes são seus. O Pagô só os usa para o app funcionar.</li><li>Não vendemos dados e não cobramos o seu cliente: a mensagem sai do seu WhatsApp, quando você toca.</li><li>Câmera, microfone e notificações só são pedidos quando você usa o recurso.</li><li>Você pode excluir a conta a qualquer hora, pelo app, e apagamos tudo na hora.</li></ul></div>
+<nav class="toc" aria-label="Neste documento"><h2>Neste documento</h2><ol><li><a href="#quem">Quem é responsável pelos dados</a></li><li><a href="#dados">Quais dados tratamos</a></li><li><a href="#uso">Para que usamos e por quê</a></li><li><a href="#compartilhamento">Com quem compartilhamos</a></li><li><a href="#identificadores">Anúncios e identificadores</a></li><li><a href="#seguranca">Segurança</a></li><li><a href="#retencao">Por quanto tempo guardamos</a></li><li><a href="#direitos">Seus direitos</a></li><li><a href="#menores">Menores de idade</a></li><li><a href="#mudancas">Mudanças nesta política</a></li><li><a href="#contato">Contato</a></li></ol></nav>
+
+<h2 id="quem">1. Quem é responsável pelos dados</h2>
+<p>Esta política vale para o aplicativo e para o site do Pagô e segue a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, LGPD).</p>
+<ul>
+  <li><strong>Dados da sua conta:</strong> o Pagô é o controlador.</li>
+  <li><strong>Dados dos seus clientes</strong> (nome, telefone, valores): você é o controlador, porque decide quem cadastra. O Pagô é o operador e trata esses dados só para a caderneta funcionar, seguindo as suas instruções.</li>
+</ul>
+<p>O canal para qualquer assunto de privacidade, inclusive o encarregado pelo tratamento de dados, é o <a href="https://wa.me/5527999019162?text=Oi%2C%20quero%20fazer%20um%20pedido%20sobre%20meus%20dados%20(LGPD).">WhatsApp de suporte</a>.</p>
+
+<h2 id="dados">2. Quais dados tratamos</h2>
+<div class="scroll"><table>
+<thead><tr><th>Dado</th><th>Para quê</th></tr></thead>
+<tbody>
+<tr><td><strong>Conta:</strong> nome, e-mail, senha (guardada de forma protegida), telefone (se informar) e aceite dos termos</td><td>Criar e proteger a sua conta, entrar no app e falar com você</td></tr>
+<tr><td><strong>Perfil de cobrança:</strong> chave PIX, dados bancários (opcionais), texto da mensagem de cobrança e preferências</td><td>Montar a mensagem de cobrança e personalizar o app</td></tr>
+<tr><td><strong>Caderneta:</strong> nome e telefone dos clientes, valores, juros, vencimentos e pagamentos registrados</td><td>Mostrar o que cada cliente deve e o que vence</td></tr>
+<tr><td><strong>Boletos a pagar</strong> (Premium): fornecedor, valor, vencimento, parcelas e o código do boleto, se você colar</td><td>Lembrar os vencimentos dos seus fornecedores</td></tr>
+<tr><td><strong>Assinatura:</strong> situação e identificadores da compra enviados pela loja (não recebemos número de cartão)</td><td>Liberar e manter o Premium</td></tr>
+<tr><td><strong>Voz</strong> (Premium): o que você dita para lançar</td><td>Sugerir o preenchimento do lançamento. O reconhecimento usa o serviço de voz do seu aparelho, que pode ser do fabricante ou do Google, conforme as configurações do aparelho</td></tr>
+<tr><td><strong>Foto de comprovante</strong> (Premium)</td><td>Ler o valor no próprio aparelho e sugerir a baixa. A imagem não é enviada ao Pagô</td></tr>
+<tr><td><strong>Notificações:</strong> identificador do aparelho para avisos</td><td>Enviar o lembrete diário de vencimentos</td></tr>
+<tr><td><strong>Uso e falhas:</strong> eventos como cadastro, primeiro lançamento e abertura da oferta Premium, e relatórios de travamento (modelo do aparelho, versão do sistema e do app)</td><td>Corrigir erros e entender o que melhorar. Esses dados não incluem nomes, telefones, valores nem a sua caderneta</td></tr>
+<tr><td><strong>Origem da instalação:</strong> o canal ou a campanha do link usado para instalar</td><td>Saber de onde vêm os usuários</td></tr>
+<tr><td><strong>Site:</strong> dados técnicos de acesso</td><td>Segurança e funcionamento do site</td></tr>
+</tbody></table></div>
+<p>O app só pede acesso à câmera, ao microfone, às notificações e à biometria quando você usa o recurso que precisa deles. Você pode negar ou retirar essas permissões nas configurações do aparelho.</p>
+
+<h2 id="uso">3. Para que usamos e por quê</h2>
+<p>Usamos os dados para prestar o serviço, manter a segurança, cumprir obrigações legais e melhorar o app. As bases legais da LGPD são:</p>
+<ul>
+  <li><strong>Execução de contrato:</strong> conta, caderneta, cobrança pelo WhatsApp a seu pedido e assinatura.</li>
+  <li><strong>Obrigação legal:</strong> guarda de registros de pagamento da assinatura.</li>
+  <li><strong>Legítimo interesse:</strong> segurança, prevenção a fraude e estabilidade do app.</li>
+  <li><strong>Consentimento:</strong> aceite no cadastro e permissões do aparelho (câmera, microfone, notificações). Você pode retirá-lo quando quiser.</li>
+</ul>
+<div class="note"><p><strong>O Pagô não vende os seus dados nem a sua lista de clientes</strong> e não usa esses dados para cobrar ninguém em seu nome.</p></div>
+
+<h2 id="compartilhamento">4. Com quem compartilhamos</h2>
+<p>Compartilhamos só o necessário, com empresas que prestam serviços ao Pagô:</p>
+<ul>
+  <li><strong>Google (Firebase):</strong> autenticação, banco de dados, notificações, relatórios de travamento e análise de uso.</li>
+  <li><strong>Google Play e App Store:</strong> cobrança e verificação da assinatura Premium.</li>
+  <li><strong>AppsFlyer:</strong> medição da origem das instalações e de eventos mínimos de uso, quando essa medição estiver ativada.</li>
+  <li><strong>WhatsApp:</strong> abre no seu aparelho quando você toca em cobrar. O envio é feito por você.</li>
+</ul>
+<p>Esses prestadores podem ter servidores fora do Brasil. Nesses casos, a transferência internacional segue a LGPD (art. 33), com as garantias previstas na lei. Também podemos compartilhar dados quando uma autoridade pública exigir, na forma da lei.</p>
+
+<h2 id="identificadores">5. Anúncios e identificadores</h2>
+<p>O app não usa o identificador de publicidade no Android. No iPhone, qualquer uso de identificador de publicidade depende da sua autorização na janela de rastreamento do sistema, e você pode recusar sem perder nenhum recurso do app. Os eventos de medição não levam nomes, telefones, valores, vencimentos, chave PIX nem o conteúdo da caderneta.</p>
+
+<h2 id="seguranca">6. Segurança</h2>
+<p>As conexões usam criptografia (HTTPS). Cada pessoa só acessa a própria caderneta, por regras de acesso no banco de dados. O painel interno do Pagô tem acesso restrito e registra as ações feitas nele. Nenhum sistema é totalmente imune, e, se houver um incidente que possa causar risco relevante a você, avisaremos você e a Autoridade Nacional de Proteção de Dados (ANPD), como a lei exige.</p>
+
+<h2 id="retencao">7. Por quanto tempo guardamos</h2>
+<p>Guardamos os dados enquanto a sua conta existir. Quando você exclui a conta, apagamos login, perfil, clientes, lançamentos, pagamentos e boletos na hora. Ficam apenas os registros de pagamento da assinatura Premium (número do pedido, data e valor), pelo prazo exigido por lei fiscal, sem os dados da sua caderneta. Cópias de segurança são eliminadas por completo em até 30 dias. Veja <a href="./excluir-conta">como excluir a sua conta</a>.</p>
+
+<h2 id="direitos">8. Seus direitos</h2>
+<p>Pela LGPD (art. 18), você pode pedir a qualquer momento:</p>
+<ul>
+  <li>confirmação de que tratamos seus dados e acesso a eles;</li>
+  <li>correção de dados incompletos ou desatualizados;</li>
+  <li>anonimização, bloqueio ou eliminação de dados desnecessários ou tratados fora da lei;</li>
+  <li>portabilidade dos dados;</li>
+  <li>informação sobre com quem compartilhamos;</li>
+  <li>eliminação dos dados tratados com o seu consentimento;</li>
+  <li>revogação do consentimento e oposição ao tratamento.</li>
+</ul>
+<p>Faça o pedido pelo <a href="https://wa.me/5527999019162?text=Oi%2C%20quero%20fazer%20um%20pedido%20sobre%20meus%20dados%20(LGPD).">WhatsApp de suporte</a>, a partir do contato cadastrado na conta. Detalhes e prazos estão na página de <a href="./lgpd">LGPD</a>. Você também pode reclamar à ANPD (<a href="https://www.gov.br/anpd">gov.br/anpd</a>).</p>
+
+<h2 id="menores">9. Menores de idade</h2>
+<p>O Pagô é para maiores de 18 anos e não é direcionado a crianças nem adolescentes. Se soubermos que uma conta é de menor, podemos excluí-la.</p>
+
+<h2 id="mudancas">10. Mudanças nesta política</h2>
+<p>Podemos atualizar esta política quando o app mudar ou a lei exigir. A data no topo mostra a última revisão, e mudanças importantes serão avisadas no app.</p>
+
+<h2 id="contato">11. Contato</h2>
+<p>Dúvidas, pedidos de dados ou reclamações: <a href="https://wa.me/5527999019162?text=Oi%2C%20quero%20fazer%20um%20pedido%20sobre%20meus%20dados%20(LGPD).">WhatsApp de suporte</a>. Veja também a <a href="./ajuda">Ajuda</a>, os <a href="./termos">Termos de Uso</a> e a página de <a href="./lgpd">LGPD</a>.</p>
+
+</article>
+</main>
+<footer>
+  <div class="in">
+    <a href="./">Início</a>
+    <a href="./ajuda">Ajuda</a>
+    <a href="./privacidade">Privacidade</a>
+    <a href="./termos">Termos</a>
+    <a href="./lgpd">LGPD</a>
+    <a href="./excluir-conta">Excluir conta</a>
+    <p class="legal">Pagô é uma ferramenta de organização. Não é banco, carteira digital nem meio de pagamento.</p>
+  </div>
+</footer>
+</body>
 </html>

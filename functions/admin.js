@@ -7,11 +7,17 @@ const totp = require("./totp");
 const { sendEmail, emailEnabled, escapeHtml } = require("./alerts");
 
 const adminEmailsParam = defineString("ADMIN_EMAILS", { default: "" });
+// Desligado por padrão. Com "true", o painel só abre depois de ligar o segundo fator.
+const require2faParam = defineString("ADMIN_REQUIRE_2FA", { default: "false" });
 
 const REGION = "southamerica-east1";
 const TIME_ZONE = "America/Sao_Paulo";
 const PREMIUM_VALUE = 39.9;
 const PLAY_FEE = 0.15;
+// Taxa de cada loja sobre a cobrança. A Apple usa 15% no Small Business Program
+// (até US$ 1 milhão por ano); sem ele, 30%. Ajuste aqui se o programa não valer.
+const STORE_FEES = { play: PLAY_FEE, app_store: 0.15 };
+const STORES = ["play", "app_store"];
 const ONLINE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PREMIUM_DAYS = 366;
@@ -25,13 +31,30 @@ const OWNED_COLLECTIONS = [
   ["Bills", "user_id"],
   ["PremiumCharges", "userId"],
   ["AdminNotes", "uid"],
+  ["CollectionFollowUps", "user_id"],
+  ["MmpOutbox", "uid"],
+  ["Devices", "uid"],
+  ["RemindersSent", "uid"],
+  ["Acquisition", "uid"],
 ];
 const OPEN_2FA_ROUTES = new Set(["/2fa/status", "/2fa/verify"]);
+// Quando ADMIN_REQUIRE_2FA=true e o segundo fator não está ligado, só estas rotas respondem.
+const SETUP_2FA_ROUTES = new Set(["/2fa/status", "/2fa/setup", "/2fa/enable"]);
+
+function require2fa() {
+  let raw = "";
+  try {
+    raw = process.env.ADMIN_REQUIRE_2FA || require2faParam.value() || "";
+  } catch (_) {
+    raw = process.env.ADMIN_REQUIRE_2FA || "";
+  }
+  return String(raw).trim().toLowerCase() === "true";
+}
 
 function adminEmails() {
   let raw = "";
   try {
-    raw = adminEmailsParam.value();
+    raw = adminEmailsParam.value() || process.env.ADMIN_EMAILS || "";
   } catch (_) {
     raw = process.env.ADMIN_EMAILS || "";
   }
@@ -51,6 +74,10 @@ exports.adminApi = onRequest(
       const caller = await requireAdmin(req);
       const route = String(req.path || "/").replace(/\/+$/, "") || "/";
       const security = await securityOf(caller.uid);
+      if (require2fa() && !security.ativo && !SETUP_2FA_ROUTES.has(route)) {
+        res.status(403).json({ message: "Ligue o segundo fator para usar o painel.", precisa2faSetup: true });
+        return;
+      }
       if (security.ativo && !OPEN_2FA_ROUTES.has(route)) {
         if (!totp.checkSession(security.secret, caller.uid, req.get("x-admin-2fa"))) {
           res.status(401).json({ message: "Digite o código do autenticador.", precisa2fa: true });
@@ -63,7 +90,8 @@ exports.adminApi = onRequest(
           "/overview": () => overview(),
           "/user": () => userFile(String(req.query.uid || "").trim()),
           "/log": () => actionLog(),
-          "/2fa/status": () => ({ ativo: security.ativo }),
+          "/spend": () => spendList(),
+          "/2fa/status": () => ({ ativo: security.ativo, obrigatorio: require2fa() }),
         }[route];
         if (!handler) throw httpError(404, "Rota não encontrada.");
         res.status(200).json(await handler());
@@ -74,6 +102,26 @@ exports.adminApi = onRequest(
       const body = req.body || {};
       if (route.startsWith("/2fa/")) {
         res.status(200).json(await twoFactor(route, caller, security, body));
+        return;
+      }
+
+      if (route === "/spend") {
+        const entry = parseSpend(body);
+        const ref = await db().collection("AdminSpend").add({
+          ...entry,
+          por: caller.email || "",
+          em: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        await logAction(caller, "investimento", null, `${entry.mes} · ${entry.canal} · ${money(entry.valor)}`);
+        res.status(200).json({ ok: true, id: ref.id });
+        return;
+      }
+      if (route === "/spend/delete") {
+        const id = String(body.id || "").trim();
+        if (!id) throw httpError(400, "Informe o lançamento.");
+        await db().collection("AdminSpend").doc(id).delete();
+        await logAction(caller, "investimento_removido", null, id);
+        res.status(200).json({ ok: true });
         return;
       }
 
@@ -231,6 +279,7 @@ async function twoFactor(route, caller, security, body) {
     return { sessao: totp.signSession(security.secret, caller.uid, SESSION_MS) };
   }
   if (route === "/2fa/disable") {
+    if (require2fa()) throw httpError(400, "O segundo fator é obrigatório e não pode ser desligado pelo painel.");
     if (!security.ativo) return { ok: true };
     if (!totp.verifyCode(security.secret, code)) throw httpError(400, "Código errado.");
     await security.ref.delete();
@@ -241,12 +290,21 @@ async function twoFactor(route, caller, security, body) {
 }
 
 async function overview() {
-  const [authUsers, profiles, presence, contacts] = await Promise.all([
+  const [authUsers, profiles, presence, contacts, acquisitions, charges] = await Promise.all([
     listAuthUsers(),
     db().collection("Users").get(),
     db().collection("Presence").get(),
     db().collection("AdminContacts").get(),
+    db().collection("Acquisition").get(),
+    db().collection("PlayEvents").where("cobranca", "==", true).get(),
   ]);
+  const acquisitionById = new Map(acquisitions.docs.map((doc) => [doc.id, doc.data()]));
+  const grossById = new Map();
+  for (const doc of charges.docs) {
+    const data = doc.data();
+    if (data.teste === true || !data.uid) continue;
+    grossById.set(data.uid, (grossById.get(data.uid) || 0) + Number(data.valor || 0));
+  }
 
   const profileById = new Map(profiles.docs.map((doc) => [doc.id, doc.data()]));
   const seenById = new Map(presence.docs.map((doc) => [doc.id, doc.data()]));
@@ -275,6 +333,8 @@ async function overview() {
       admin: allowed.includes(String(record.email || "").toLowerCase()),
       desativado: record.disabled === true,
       chamadoEm: contact ? toMillis(contact.em) : null,
+      origem: originOf(acquisitionById.get(record.uid)),
+      receitaBruta: round2(grossById.get(record.uid) || 0),
     };
   });
 
@@ -308,6 +368,8 @@ async function overview() {
     premiumCortesia: premium.length - paying.length,
     premiumVence7d: premium.filter((user) => user.premiumAte - at <= 7 * DAY_MS).length,
     receitaEstimada: Math.round(paying.length * PREMIUM_VALUE * 100) / 100,
+    plataformas: platformCounts(people),
+    premiumPorOrigem: originCounts(premium),
     cadastros14d: signups,
   };
 
@@ -318,47 +380,85 @@ async function overview() {
 }
 
 async function revenue(at, nameById) {
-  const monthStart = startOfMonth(at);
-  const previousStart = startOfMonth(monthStart - DAY_MS);
+  const since = startOfMonth(addMonths(at, -5));
   const snap = await db()
     .collection("PlayEvents")
-    .where("em", ">=", admin.firestore.Timestamp.fromMillis(previousStart))
+    .where("em", ">=", admin.firestore.Timestamp.fromMillis(since))
     .get();
-  const eventos = snap.docs
-    .map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        uid: data.uid || "",
-        nome: nameById.get(data.uid) || "",
-        tipo: data.tipo,
-        cobranca: data.cobranca === true,
-        valor: Number(data.valor || 0),
-        teste: data.teste === true,
-        em: toMillis(data.em) || 0,
-      };
-    })
-    .sort((a, b) => b.em - a.em);
+  const eventos = snap.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      uid: data.uid || "",
+      nome: nameById.get(data.uid) || "",
+      tipo: data.tipo,
+      cobranca: data.cobranca === true,
+      valor: Number(data.valor || 0),
+      teste: data.teste === true,
+      loja: data.loja === "app_store" ? "app_store" : "play",
+      em: toMillis(data.em) || 0,
+    };
+  });
+  return summarizeRevenue(eventos, at);
+}
+
+/** Receita por loja a partir dos eventos (PlayEvents guarda Google Play e App Store). */
+function summarizeRevenue(events, at) {
+  const eventos = [...events].sort((a, b) => b.em - a.em);
+  const monthStart = startOfMonth(at);
+  const previousStart = startOfMonth(addMonths(at, -1));
 
   const period = (from, to) => {
     const list = eventos.filter((item) => !item.teste && item.em >= from && item.em < to);
-    const charges = list.filter((item) => item.cobranca);
-    const bruto = round2(charges.reduce((sum, item) => sum + item.valor, 0));
+    const count = (items) => {
+      const charges = items.filter((item) => item.cobranca);
+      return {
+        bruto: round2(charges.reduce((sum, item) => sum + item.valor, 0)),
+        cobrancas: charges.length,
+        novas: items.filter((item) => item.tipo === "COMPRA").length,
+        renovacoes: items.filter((item) => item.tipo === "RENOVADA" || item.tipo === "RECUPERADA").length,
+        cancelamentos: items.filter((item) => item.tipo === "CANCELADA").length,
+        falhas: items.filter((item) => ["SUSPENSA", "PERIODO_DE_CARENCIA"].includes(item.tipo)).length,
+      };
+    };
+    const porLoja = {};
+    for (const store of STORES) {
+      const part = count(list.filter((item) => item.loja === store));
+      porLoja[store] = { ...part, liquido: round2(part.bruto * (1 - STORE_FEES[store])) };
+    }
+    const sum = (key) => STORES.reduce((total, store) => total + porLoja[store][key], 0);
     return {
-      bruto,
-      liquido: round2(bruto * (1 - PLAY_FEE)),
-      cobrancas: charges.length,
-      novas: list.filter((item) => item.tipo === "COMPRA").length,
-      renovacoes: list.filter((item) => item.tipo === "RENOVADA" || item.tipo === "RECUPERADA").length,
-      cancelamentos: list.filter((item) => item.tipo === "CANCELADA").length,
-      falhas: list.filter((item) => ["SUSPENSA", "PERIODO_DE_CARENCIA"].includes(item.tipo)).length,
+      bruto: round2(sum("bruto")),
+      liquido: round2(sum("liquido")),
+      cobrancas: sum("cobrancas"),
+      novas: sum("novas"),
+      renovacoes: sum("renovacoes"),
+      cancelamentos: sum("cancelamentos"),
+      falhas: sum("falhas"),
+      porLoja,
     };
   };
 
+  const meses = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const start = startOfMonth(addMonths(at, -i));
+    const end = startOfMonth(addMonths(at, -i + 1));
+    const month = period(start, end);
+    meses.push({
+      mes: start,
+      play: month.porLoja.play.bruto,
+      app_store: month.porLoja.app_store.bruto,
+      bruto: month.bruto,
+      liquido: month.liquido,
+    });
+  }
+
   return {
     taxaPlay: PLAY_FEE,
+    taxas: STORE_FEES,
     mesAtual: period(monthStart, Number.MAX_SAFE_INTEGER),
     mesAnterior: period(previousStart, monthStart),
+    meses,
     eventos: eventos.slice(0, 40),
   };
 }
@@ -374,6 +474,8 @@ async function saveSnapshot(at, stats) {
       ativos30d: stats.ativos30d,
       premium: stats.premium,
       premiumPagantes: stats.premiumPagantes,
+      android: stats.plataformas.android,
+      ios: stats.plataformas.ios,
       atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
     },
     { merge: true },
@@ -389,6 +491,8 @@ async function saveSnapshot(at, stats) {
         ativos30d: data.ativos30d,
         premium: data.premium,
         premiumPagantes: data.premiumPagantes,
+        android: data.android ?? null,
+        ios: data.ios ?? null,
       };
     })
     .sort((a, b) => a.dia.localeCompare(b.dia));
@@ -398,7 +502,7 @@ async function userFile(uid) {
   if (!uid) throw httpError(400, "Informe a pessoa.");
   const record = await admin.auth().getUser(uid).catch(() => null);
   if (!record) throw httpError(404, "Pessoa não encontrada.");
-  const [profile, presence, debts, payments, bills, subs, events, notes, log, contact] = await Promise.all([
+  const [profile, presence, debts, payments, bills, subs, events, appleSubs, notes, log, contact] = await Promise.all([
     db().collection("Users").doc(uid).get(),
     db().collection("Presence").doc(uid).get(),
     db().collection("Debts").where("user_id", "==", uid).select("created_at", "status_pago").get(),
@@ -406,6 +510,7 @@ async function userFile(uid) {
     db().collection("Bills").where("user_id", "==", uid).select("pago").get(),
     db().collection("PlaySubscriptions").where("uid", "==", uid).get(),
     db().collection("PlayEvents").where("uid", "==", uid).get(),
+    db().collection("AppleSubscriptions").where("uid", "==", uid).get(),
     db().collection("AdminNotes").where("uid", "==", uid).get(),
     db().collection("AdminLog").where("uid", "==", uid).get(),
     db().collection("AdminContacts").doc(uid).get(),
@@ -430,7 +535,7 @@ async function userFile(uid) {
   const historico = [
     ...events.docs.map((doc) => {
       const data = doc.data();
-      return { em: toMillis(data.em), origem: "play", tipo: data.tipo, detalhe: data.cobranca ? money(data.valor) : "", teste: data.teste === true };
+      return { em: toMillis(data.em), origem: data.loja === "app_store" ? "apple" : "play", tipo: data.tipo, detalhe: data.cobranca ? money(data.valor) : "", teste: data.teste === true };
     }),
     ...log.docs.map((doc) => {
       const data = doc.data();
@@ -465,17 +570,10 @@ async function userFile(uid) {
       boletosEmAberto: bills.docs.filter((doc) => doc.data().pago !== true).length,
       porMes: months.map(({ mes, total }) => ({ mes, total })),
     },
-    assinaturas: subs.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        estado: data.estado || "",
-        verificada: data.verificada === true,
-        venceEm: toMillis(data.venceEm),
-        renovaSozinha: data.renovaSozinha === true,
-        valor: data.valor || null,
-        teste: data.teste === true,
-      };
-    }),
+    assinaturas: [
+      ...subs.docs.map((doc) => subscriptionRow(doc.data(), "play")),
+      ...appleSubs.docs.map((doc) => subscriptionRow(doc.data(), "app_store")),
+    ],
     historico,
     anotacoes: notes.docs
       .map((doc) => ({ id: doc.id, texto: doc.data().texto, por: doc.data().por, em: toMillis(doc.data().em) }))
@@ -603,12 +701,18 @@ async function deleteAccount(uid) {
   let record = null;
   try {
     record = await admin.auth().getUser(uid);
-  } catch (_) {
-    record = null;
+  } catch (error) {
+    if (error.code !== "auth/user-not-found") throw error;
   }
   if (record && adminEmails().includes(String(record.email || "").toLowerCase())) {
     throw httpError(400, "Não dá para excluir uma conta administradora.");
   }
+
+  // Written before any destructive step. Store webhook transactions read this
+  // document so concurrent renewals cannot recreate a deleted user profile.
+  await db().collection("DeletedAccounts").doc(uid).set({
+    deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
 
   let removed = 0;
   for (const [collection, field] of OWNED_COLLECTIONS) {
@@ -618,6 +722,18 @@ async function deleteAccount(uid) {
   await db().collection("Presence").doc(uid).delete();
   await db().collection("AdminContacts").doc(uid).delete();
   await db().collection("MmpIds").doc(uid).delete();
+  // Financial records remain server-only. Purchase tokens and attribution IDs
+  // are operational secrets, not needed in a retained financial record.
+  for (const collection of ["PlaySubscriptions", "AppleSubscriptions"]) {
+    const subscriptions = await db().collection(collection).where("uid", "==", uid).get();
+    for (const subscription of subscriptions.docs) {
+      await subscription.ref.set({
+        deletedAccount: true,
+        purchaseToken: admin.firestore.FieldValue.delete(),
+        appAccountToken: admin.firestore.FieldValue.delete(),
+      }, { merge: true });
+    }
+  }
   if (record) await admin.auth().deleteUser(uid);
   return { ok: true, documentos: removed };
 }
@@ -639,6 +755,83 @@ async function deleteWhere(query) {
     await batch.commit();
     total += snap.size;
   }
+}
+
+function originOf(data) {
+  if (!data) return { fonte: "", meio: "", campanha: "" };
+  return { fonte: data.source || "", meio: data.medium || "", campanha: data.campaign || "" };
+}
+
+/** Valida um lançamento de investimento em anúncios (valores em reais). */
+function parseSpend(body) {
+  const month = String(body.mes || "").trim();
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw httpError(400, "Informe o mês no formato AAAA-MM.");
+  const channel = String(body.canal || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  if (!channel) throw httpError(400, "Informe o canal (por exemplo google, instagram, tiktok).");
+  const value = Number(body.valor);
+  if (!Number.isFinite(value) || value < 0 || value > 10000000) throw httpError(400, "Valor inválido.");
+  const installs = body.instalacoes === undefined || body.instalacoes === "" || body.instalacoes === null ? null : Number(body.instalacoes);
+  if (installs !== null && (!Number.isInteger(installs) || installs < 0 || installs > 100000000)) {
+    throw httpError(400, "Instalações inválidas.");
+  }
+  return {
+    mes: month,
+    canal: channel,
+    campanha: String(body.campanha || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64),
+    valor: round2(value),
+    instalacoes: installs,
+    nota: String(body.nota || "").trim().slice(0, 200),
+  };
+}
+
+async function spendList() {
+  const snap = await db().collection("AdminSpend").get();
+  return {
+    itens: snap.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id, mes: data.mes, canal: data.canal, campanha: data.campanha || "",
+          valor: Number(data.valor || 0), instalacoes: data.instalacoes ?? null, nota: data.nota || "",
+          por: data.por || "", em: toMillis(data.em),
+        };
+      })
+      .sort((a, b) => String(b.mes).localeCompare(String(a.mes)) || (b.em || 0) - (a.em || 0)),
+  };
+}
+
+function subscriptionRow(data, loja) {
+  return {
+    loja,
+    estado: data.estado || "",
+    verificada: data.verificada === true,
+    venceEm: toMillis(data.venceEm),
+    renovaSozinha: data.renovaSozinha === true,
+    valor: data.valor || null,
+    teste: data.teste === true,
+  };
+}
+
+function platformCounts(people) {
+  const counts = { android: 0, ios: 0, web: 0, outras: 0, semDado: 0 };
+  for (const user of people) {
+    const name = String(user.plataforma || "").toLowerCase();
+    if (!name) counts.semDado += 1;
+    else if (name === "android") counts.android += 1;
+    else if (name === "ios") counts.ios += 1;
+    else if (name === "web") counts.web += 1;
+    else counts.outras += 1;
+  }
+  return counts;
+}
+
+function originCounts(premium) {
+  const counts = { play: 0, apple: 0, pix: 0, admin: 0 };
+  for (const user of premium) {
+    const origin = user.premiumOrigem || "play";
+    counts[origin] = (counts[origin] || 0) + 1;
+  }
+  return counts;
 }
 
 function premiumOrigin(transactionId) {
@@ -701,4 +894,4 @@ function httpError(status, message) {
   return error;
 }
 
-module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId } };
+module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts, parseSpend } };

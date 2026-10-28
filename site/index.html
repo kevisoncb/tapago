@@ -1,545 +1,296 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pagô — E aí, pagô?</title>
-    <meta
-      name="description"
-      content="O Pagô organiza fiado, venda a prazo e empréstimos. Clientes ilimitados no grátis. A caderneta fica na sua conta. Premium: voz, OCR, cobrança no seu texto e boletos a pagar. R$ 39,90/mês."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css?v=20261009c" />
-    <link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg" />
-    <link rel="apple-touch-icon" href="./assets/pago-icon.jpg" />
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="#topo">
-        <img src="./assets/pago-icon.jpg" width="36" height="36" alt="" />
-        Pagô
-      </a>
-      <nav>
-        <a href="#uso">Na prática</a>
-        <a href="#voz">Voz</a>
-        <a href="#recibos">Recibos</a>
-        <a href="#boletos">Boletos</a>
-        <a href="#avisos">Avisos</a>
-        <a href="#preco">Premium</a>
-        <a href="./ajuda.html">Ajuda</a>
-      </nav>
-      <a class="btn btn-small" href="#preco">Baixar grátis</a>
-    </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagô — caderneta digital para quem vende fiado</title>
+<meta name="description" content="Pagô organiza o fiado e as vendas a prazo: quem deve, quanto e quando cobrar. Você cobra pelo seu WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: nav fixa curta; hero em duas colunas (promessa + tela do app); faixas alternadas até o rodapé. */
+:root {
+  --bg: #f4f7fc;
+  --band: #ffffff;
+  --fg: #0f172a;
+  --muted: #526078;
+  --line: #dbe4f0;
+  --blue: #2f6bff;
+  --blue-ink: #1d4ed8;
+  --on-blue: #ffffff;
+  --lime: #b6f23a;
+  --on-lime: #0f172a;
+  --danger: #dc2626;
+  --ok: #15803d;
+  --night: #102a6b;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220; --band: #101a2e; --fg: #e8eefb; --muted: #9aaac4; --line: #223049;
+    --blue-ink: #8fb0ff; --night: #0a1a45; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1220; --band: #101a2e; --fg: #e8eefb; --muted: #9aaac4; --line: #223049;
+  --blue-ink: #8fb0ff; --night: #0a1a45; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 17px; line-height: 1.55; }
+.in { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: inherit; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--blue-ink); }
 
-    <main id="topo">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Fiado, a prazo ou empréstimo</p>
-          <h1>E aí, pagô?<br />O Pagô lembra por você.</h1>
-          <p class="lead">
-            Cobra sem perseguir. Serve para quem empresta, para o comércio que vende a prazo e para
-            o fiado da mercearia. Caderneta digital: lança, abate o que entrou e
-            cobra no seu WhatsApp, no tom que quiser. Juros só se você quiser.
-          </p>
-          <div class="hero-actions">
-            <a class="btn" href="#preco">Baixar grátis</a>
-            <a class="btn btn-ghost" href="#uso">Ver alguém usando</a>
-          </div>
-          <p class="fine">O app é gratuito. Premium é extra, quando a caderneta crescer.</p>
-        </div>
-        <div class="hero-phone">
-          <button class="demo-hint" type="button" id="demo-hint">
-            Toca em <strong>+ Novo lançamento</strong> e testa agora
-          </button>
-          <div class="iphone">
-            <div class="iphone-screen demo-phone" id="demo-phone">
-              <div class="island"></div>
-              <div class="sb"><span>03:05</span><span>⬤⬤⬤ 🔋</span></div>
-              <div class="phone-deck" id="phone-deck">
-                <div class="phone-pane" id="tela-1">
-                  <div class="dash-head">
-                    <div class="dash-brand">
-                      <img src="./assets/pago-icon.jpg" width="28" height="28" alt="" />
-                      <div>
-                        <p>Olá, João</p>
-                        <strong>Pagô!</strong>
-                      </div>
-                    </div>
-                    <span class="avatar">JD</span>
-                  </div>
-                  <div class="metrics">
-                    <article>
-                      <span>Saldo aberto</span>
-                      <b id="saldo-rua" data-count="4451">R$ 0</b>
-                    </article>
-                    <article>
-                      <span>Recebe esta semana</span>
-                      <b data-count="1936">R$ 0</b>
-                    </article>
-                  </div>
-                  <div class="money-row danger">
-                    <span>Vencido a receber</span>
-                    <b data-count="450">R$ 0</b>
-                  </div>
-                  <div id="demo-lista">
-                    <div class="debt overdue">
-                      <span>Carlos Oliveira</span>
-                      <strong>R$ 450,00</strong>
-                    </div>
-                    <div class="debt">
-                      <span>Mariana Souza</span>
-                      <strong>R$ 1.200,00</strong>
-                    </div>
-                  </div>
-                  <button class="fab" type="button" id="demo-novo">
-                    + Novo lançamento
-                  </button>
-                </div>
-                <div class="phone-pane phone-pane-form" id="tela-2">
-                  <div class="form-bar">
-                    <button class="form-back" type="button" id="demo-voltar" aria-label="Voltar">
-                      ‹
-                    </button>
-                    <strong>Novo lançamento</strong>
-                  </div>
-                  <label class="app-field">
-                    Nome do Cliente
-                    <span class="app-input">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z"
-                        />
-                      </svg>
-                      <input
-                        id="demo-nome"
-                        type="text"
-                        placeholder="Ex: João Silva"
-                        autocomplete="off"
-                      />
-                    </span>
-                  </label>
-                  <div class="app-field-row">
-                    <label class="app-field">
-                      Valor (R$)
-                      <span class="app-input">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path
-                            d="M11.8 10.9c-2.3-.6-3-1.2-3-2.1 0-1.1 1-1.9 2.7-1.9 1.5 0 2.3.6 2.6 1.5h2.3c-.3-1.7-1.7-2.9-3.6-3.3V3h-2.2v1.9c-2 .4-3.6 1.8-3.6 3.8 0 2.4 2 3.6 4.9 4.2 2.6.6 3.1 1.5 3.1 2.4 0 .7-.6 1.9-2.9 1.9-1.8 0-2.8-.7-3.1-1.8H8.2c.4 2 2 3.2 4.1 3.6V21h2.2v-1.9c2.1-.4 3.7-1.8 3.7-3.9 0-3-2.6-4-5.4-4.7Z"
-                          />
-                        </svg>
-                        <input
-                          id="demo-valor"
-                          type="text"
-                          inputmode="decimal"
-                          placeholder="R$ 0,00"
-                          autocomplete="off"
-                        />
-                      </span>
-                    </label>
-                    <label class="app-field">
-                      Juros ao mês (%)
-                      <span class="app-input">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <circle cx="7" cy="8" r="2.2" />
-                          <circle cx="17" cy="16" r="2.2" />
-                          <path d="M8 17 16 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                        </svg>
-                        <input
-                          id="demo-juros"
-                          type="text"
-                          inputmode="decimal"
-                          placeholder="Opcional"
-                          autocomplete="off"
-                        />
-                      </span>
-                    </label>
-                  </div>
-                  <p class="app-field-hint">
-                    Juros só se você quiser. Fiado e venda a prazo ficam em branco.
-                  </p>
-                  <button class="form-save" type="button" id="demo-salvar">
-                    Salvar
-                  </button>
-                </div>
-              </div>
-              <div class="home-bar"></div>
-            </div>
-          </div>
-        </div>
-      </section>
+/* nav */
+.nav { display: flex; align-items: center; gap: 22px; padding-block: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; text-decoration: none; letter-spacing: -.02em; }
+.brand svg { width: 34px; height: 34px; }
+.nav nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 600; color: var(--muted); }
+.nav nav a { text-decoration: none; }
+.nav nav a:hover { color: var(--fg); }
+@media (max-width: 720px) { .nav nav { display: none; } .nav .btn { margin-left: auto; } }
 
-      <section class="band" aria-label="O que você ganha no grátis">
-        <article class="stat" tabindex="0">
-          <div class="stat-preview">
-            <strong class="price-zero">R$ 0</strong>
-            <small>sem cartão pra baixar</small>
-          </div>
-          <b>Grátis</b>
-          <p class="stat-copy">Cadastra, vê o que está na rua e cobra. Premium é depois.</p>
-        </article>
-        <article class="stat" tabindex="0">
-          <div class="stat-preview">
-            <div class="faces" aria-hidden="true">
-              <i>CO</i><i>MS</i><i>RC</i><i>JS</i><i>+1</i>
-            </div>
-            <small>caderneta livre</small>
-          </div>
-          <b>Clientes Ilimitados</b>
-          <p class="stat-copy">Cadastre clientes, vendas a prazo e fiados sem limites.</p>
-        </article>
-        <article class="stat" tabindex="0">
-          <div class="stat-preview">
-            <div class="taps" aria-hidden="true">
-              <em>Antes</em>
-              <em class="on">Hoje</em>
-              <em>Atraso</em>
-            </div>
-          </div>
-          <b>1 toque</b>
-          <p class="stat-copy">Tom amigável ou formal, no seu WhatsApp.</p>
-        </article>
-        <article class="stat" tabindex="0">
-          <div class="stat-preview">
-            <div class="pix-chip">chave PIX salva</div>
-            <small>vai junto na cobrança</small>
-          </div>
-          <b>PIX</b>
-          <p class="stat-copy">O cliente já recebe pra onde pagar.</p>
-        </article>
-      </section>
+.btn { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: var(--on-blue); font: inherit; font-weight: 800; font-size: 16px; padding: 14px 24px; border-radius: 14px; text-decoration: none; border: 0; }
+.btn.small { padding: 10px 18px; font-size: 14.5px; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.btn.lime { background: var(--lime); color: var(--on-lime); }
 
-      <section id="uso" class="use">
-        <div class="section-head">
-          <p class="eyebrow">Na prática</p>
-          <h2>A conversa acontece sozinha</h2>
-          <p>Você toca em Cobrar Hoje, o PIX chega, e no app só você marca se foi o total, uma parte ou o juro do mês.</p>
-        </div>
-        <div class="use-grid">
-          <div class="iphone iphone-sm">
-            <div class="iphone-screen" id="demo-uso-screen">
-              <div class="island"></div>
-              <div class="sb"><span>03:05</span><span>⬤⬤⬤ 🔋</span></div>
-              <p class="center-name">Ricardo Carvalho</p>
-              <p class="score">Score de Confiança: 92/100</p>
-              <div class="value-card">
-                <span>Saldo da caderneta</span>
-                <b id="demo-uso-saldo">R$ 1.450,00</b>
-              </div>
-              <div class="abater" id="demo-uso-abater">Abater valor</div>
-              <div class="wa-row">
-                <div>Lembrete</div>
-                <div class="active">Cobrar Hoje</div>
-                <div>Atraso</div>
-              </div>
-              <div class="ocr-chip">Anexar comprovante</div>
-              <div class="home-bar"></div>
-            </div>
-          </div>
-          <div class="chat-wrap">
-            <div class="chat-head">
-              <span class="dot"></span>
-              WhatsApp · Ricardo Carvalho
-            </div>
-            <div id="chat" class="chat" aria-live="polite"></div>
-          </div>
-        </div>
-      </section>
+/* hero */
+.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding-block: 56px 72px; }
+.hero h1 { font-size: clamp(36px, 5.4vw, 60px); font-weight: 800; margin: 14px 0 18px; }
+.hero h1 em { font-style: normal; color: var(--blue); }
+.hero .lead { font-size: 19px; color: var(--muted); max-width: 46ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 14px; }
+.fine { font-size: 14px; color: var(--muted); }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-block: 28px 48px; } }
 
-      <section id="voz" class="voice">
-        <div class="voice-copy">
-          <p class="eyebrow">Premium</p>
-          <h2>Cadastro por voz. Fala, o app preenche.</h2>
-          <p>
-            Segura o microfone e dita: nome, valor e vencimento. A IA monta o
-            lançamento. Recurso exclusivo do plano Premium — no grátis o cadastro
-            é pelo formulário.
-          </p>
-        </div>
-        <div class="voice-card">
-          <button class="mic" type="button" aria-label="Gravar cadastro por voz">
-            <span class="mic-wave"></span>
-            <svg viewBox="0 0 24 24" width="36" height="36" fill="none">
-              <rect x="9" y="3" width="6" height="11" rx="3" fill="white" />
-              <path
-                d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"
-                stroke="white"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
-          <p class="mic-label">Segure e fale o lançamento</p>
-          <p id="transcript" class="transcript">
-            “João Silva, setecentos e cinquenta reais, vence daqui a trinta dias.”
-          </p>
-          <span class="pill">Somente no Premium</span>
-        </div>
-      </section>
+/* telefone com tela ilustrada do app */
+.phone { width: 292px; max-width: 100%; margin: 0 auto; border-radius: 42px; background: #0f172a; padding: 9px; box-shadow: 0 30px 60px -28px rgba(15,23,42,.55); position: relative; }
+.screen { background: #f4f7fc; color: #0f172a; border-radius: 34px; padding: 40px 16px 16px; min-height: 560px; position: relative; overflow: hidden; font-size: 13px; }
+.screen::before { content: ""; position: absolute; top: 12px; left: 50%; translate: -50% 0; width: 84px; height: 22px; background: #0f172a; border-radius: 99px; }
+.hi { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.hi b { font-size: 20px; letter-spacing: -.02em; font-weight: 800; }
+.hi span { font-size: 11px; color: #64748b; font-weight: 700; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.kpi { background: #fff; border-radius: 14px; padding: 10px 12px; }
+.kpi small { display: block; color: #64748b; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.kpi b { font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.late b { color: #dc2626; }
+.list-h { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin: 14px 2px 6px; }
+.item { background: #fff; border-radius: 14px; padding: 10px 12px; margin-bottom: 7px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.item strong { font-size: 13.5px; }
+.item b { font-variant-numeric: tabular-nums; }
+.item small { grid-column: 1 / -1; font-size: 11.5px; font-weight: 600; }
+.item .a { color: #dc2626; } .item .b { color: #b45309; } .item .c { color: #15803d; }
+.item .wa { grid-column: 1 / -1; margin-top: 6px; background: #e8f0ff; color: #1d4ed8; font-weight: 800; font-size: 11.5px; text-align: center; padding: 7px; border-radius: 9px; }
+.fab { position: absolute; left: 16px; right: 16px; bottom: 16px; background: var(--blue); color: #fff; text-align: center; padding: 13px; border-radius: 14px; font-weight: 800; }
+.cap { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 12px; }
 
-      <section id="recibos" class="ocr">
-        <div class="ocr-copy">
-          <p class="eyebrow">Premium</p>
-          <h2>O cliente pagou. Tira foto do recibo. O app abate.</h2>
-          <p>
-            A leitura de recibos mora na caderneta do cliente, embaixo do Abater
-            valor. Você anexa o comprovante, a IA lê o valor e baixa o saldo.
-            No grátis o abatimento é na mão, no teclado.
-          </p>
-        </div>
-        <div class="ocr-card">
-          <article class="pix-receipt pix-receipt-static" aria-label="Comprovante PIX">
-            <header class="pix-receipt-head">
-              <span class="pix-mark">PIX</span>
-              <p>Transferência concluída</p>
-            </header>
-            <p class="pix-amount">R$ 1.450,00</p>
-            <p class="pix-when">05/10/2026 às 03:05</p>
-            <div class="pix-receipt-body">
-              <div class="pix-row"><span>De</span><strong>Ricardo Carvalho</strong></div>
-              <div class="pix-row"><span>Para</span><strong>João</strong></div>
-              <div class="pix-row"><span>Chave</span><strong>joao.dinamico@email.com</strong></div>
-              <div class="pix-row"><span>ID</span><strong>E4a92c31b8f0d7e1</strong></div>
-            </div>
-            <p class="bubble-caption">Enviei. Valeu!</p>
-          </article>
-          <p class="ocr-result">No WhatsApp chega o comprovante. No app, você anexa e abate.</p>
-          <span class="pill pill-light">Somente no Premium</span>
-        </div>
-      </section>
+/* faixas */
+.band { background: var(--band); border-block: 1px solid var(--line); padding-block: 72px; }
+.section-head { max-width: 640px; margin-bottom: 36px; }
+.section-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 800; margin: 10px 0 12px; }
+.section-head p { color: var(--muted); }
+.pad { padding-block: 72px; }
 
-      <section id="boletos" class="bills">
-        <div class="bills-card" aria-label="Boletos a pagar no app">
-          <div class="bills-totals">
-            <article><span>A pagar</span><b>R$ 3.270</b></article>
-            <article><span>Esta semana</span><b>R$ 1.020</b></article>
-          </div>
-          <div class="bill bill-late">
-            <div>
-              <strong>Distribuidora Silva</strong>
-              <small>Parcela 1 de 3 · Venceu ontem</small>
-            </div>
-            <b>R$ 333,33</b>
-          </div>
-          <div class="bill">
-            <div>
-              <strong>Atacadão Bebidas</strong>
-              <small>Vence sexta</small>
-            </div>
-            <b>R$ 686,67</b>
-            <span class="bill-copy">Copiar código</span>
-          </div>
-          <div class="bill">
-            <div>
-              <strong>Distribuidora Silva</strong>
-              <small>Parcela 2 de 3 · 30 dias</small>
-            </div>
-            <b>R$ 333,33</b>
-          </div>
-          <div class="bill-terms" aria-hidden="true">
-            <em>15/30/45</em>
-            <em class="on">30/60/90</em>
-            <em>30/45/60</em>
-            <em>Outro</em>
-          </div>
-          <span class="pill pill-light">Somente no Premium</span>
-        </div>
-        <div class="bills-copy">
-          <p class="eyebrow">Premium</p>
-          <h2>Quem te deve, e o que você deve. No mesmo app.</h2>
-          <p>
-            Cadastre o boleto do fornecedor à vista ou parcelado em 15/30/45,
-            30/60/90 ou nos seus prazos. O Pagô divide o valor, mostra
-            “parcela 1 de 3” e avisa 3 dias antes, na véspera e no dia do vencimento.
-          </p>
-          <ul class="bills-list">
-            <li>Cola o código do boleto e copia na hora de pagar</li>
-            <li>Atrasado fica em vermelho, pago sai da lista</li>
-            <li>Total a pagar na semana, ao lado do que você tem a receber</li>
-          </ul>
-        </div>
-      </section>
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.step { border-top: 3px solid var(--blue); padding-top: 16px; }
+.step h3 { font-size: 20px; margin-bottom: 8px; }
+.step p { color: var(--muted); font-size: 16px; }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
 
-      <section id="avisos" class="notifs">
-        <div class="section-head">
-          <p class="eyebrow">Lembretes no celular</p>
-          <h2>O prazo chega até você. Antes e no dia.</h2>
-          <p>Do cliente que te deve e, no Premium, do boleto que você tem que pagar.</p>
-        </div>
-        <div class="lock">
-          <p class="lock-time">03:05</p>
-          <p class="lock-date">segunda-feira, 6 de outubro</p>
-          <article class="push">
-            <header>
-              <span class="push-app">
-                <img src="./assets/pago-icon.jpg" width="18" height="18" alt="" />
-                Pagô
-              </span>
-              <time>ontem</time>
-            </header>
-            <p>O prazo de Carlos Oliveira se encerra amanhã.</p>
-          </article>
-          <article class="push push-today">
-            <header>
-              <span class="push-app">
-                <img src="./assets/pago-icon.jpg" width="18" height="18" alt="" />
-                Pagô
-              </span>
-              <time>agora</time>
-            </header>
-            <p>
-              O prazo de Carlos Oliveira vence hoje. Gostaria de mandar uma
-              mensagem?
-            </p>
-            <div class="push-actions">
-              <span>Agora não</span>
-              <span class="yes">Enviar cobrança</span>
-            </div>
-          </article>
-          <article class="push">
-            <header>
-              <span class="push-app">
-                <img src="./assets/pago-icon.jpg" width="18" height="18" alt="" />
-                Pagô
-              </span>
-              <time>agora</time>
-            </header>
-            <p>Boleto de Distribuidora Silva vence amanhã. Total R$ 333,33.</p>
-          </article>
-        </div>
-      </section>
+/* grátis x premium */
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.plan { border: 1.5px solid var(--line); border-radius: 24px; padding: 30px; background: var(--bg); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.plan.pro { background: var(--night); border-color: transparent; color: #fff; }
+.plan h3 { font-size: 24px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan h3 small { font-size: 15px; font-weight: 700; color: var(--muted); }
+.plan.pro h3 small { color: #b6c7f2; }
+.plan ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.plan li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 16px; }
+.plan li::before { content: ""; width: 20px; height: 20px; margin-top: 3px; border-radius: 50%; background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+.plan.pro li::before { background-color: var(--lime); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.plan .note { font-size: 13.5px; color: var(--muted); margin-top: auto; }
+.plan.pro .note { color: #b6c7f2; }
+@media (max-width: 760px) { .plans { grid-template-columns: 1fr; } }
 
-      <section id="preco" class="price">
-        <div class="section-head">
-          <p class="eyebrow">Baixe grátis</p>
-          <h2>Venha ser Premium e abusar de suas vantagens.</h2>
-          <p>
-            O Pagô é gratuito para baixar, com clientes e lançamentos
-            ilimitados. A caderneta já fica na sua conta. O Premium é voz,
-            leitura de recibo, cobrança no seu texto e boletos a pagar.
-          </p>
-        </div>
-        <div class="plans">
-          <article class="plan">
-            <h3>Grátis</h3>
-            <p class="plan-kicker">Baixa e usa</p>
-            <ul>
-              <li>Download livre</li>
-              <li>Clientes e lançamentos ilimitados</li>
-              <li>Caderneta na sua conta</li>
-              <li>Dashboard e quem está atrasado</li>
-              <li>Abater valor, com ou sem juros</li>
-              <li>Cobrar no WhatsApp (tom amigável ou formal)</li>
-              <li>Chave PIX e notificações</li>
-            </ul>
-            <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=app.usepago"
-              >Baixar o app</a
-            >
-          </article>
-          <article class="plan featured">
-            <p class="badge">Voz, recibos e boletos, quando a mão cansar</p>
-            <h3>Premium</h3>
-            <p class="plan-price">
-              <strong>R$ 39,90</strong>
-              <span>/mês · assinatura na Google Play · cancele quando quiser</span>
-            </p>
-            <p class="plan-include">Tudo do plano grátis, e ainda:</p>
-            <ul class="plan-extras">
-              <li>
-                <span class="plan-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
-                    <path
-                      d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <strong>Cadastro por voz</strong>
-                  <span>Fala nome, valor e vencimento. O app monta o lançamento.</span>
-                </div>
-              </li>
-              <li>
-                <span class="plan-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                    <rect x="3" y="6" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2" />
-                    <circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="2" />
-                    <path d="M8 6l1.2-2h5.6L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>OCR de recibos e comprovantes</strong>
-                  <span>Tira foto do PIX. O valor entra e o saldo baixa sozinho.</span>
-                </div>
-              </li>
-              <li>
-                <span class="plan-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                    <path
-                      d="M4 6.5A3.5 3.5 0 0 1 7.5 3h9A3.5 3.5 0 0 1 20 6.5v6A3.5 3.5 0 0 1 16.5 16H13l-4.2 3.2c-.7.54-1.8.04-1.8-.82V16H7.5A3.5 3.5 0 0 1 4 12.5v-6Z"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    />
-                    <path d="M8 8.5h8M8 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>Cobrança no seu texto</strong>
-                  <span>A mensagem do WhatsApp sai com as suas palavras, não um texto genérico.</span>
-                </div>
-              </li>
-              <li>
-                <span class="plan-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                    <path
-                      d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linejoin="round"
-                    />
-                    <path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>Boletos a pagar</strong>
-                  <span>Boleto do fornecedor à vista ou em 30/60/90. Copia o código e o app avisa antes de vencer.</span>
-                </div>
-              </li>
-            </ul>
-            <a class="btn" href="https://play.google.com/store/apps/details?id=app.usepago"
-              >Quero ser Premium</a
-            >
-          </article>
-        </div>
-      </section>
-    </main>
+/* seus dados */
+.trust { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.facts { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.facts div { padding: 16px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 150px 1fr; gap: 14px; }
+.facts dt { font-weight: 800; }
+.facts dd { margin: 0; color: var(--muted); font-size: 16px; }
+@media (max-width: 860px) { .trust { grid-template-columns: 1fr; gap: 24px; } .facts div { grid-template-columns: 1fr; gap: 2px; } }
 
-    <footer class="foot">
-      <div>
-        <a class="brand brand-foot" href="#topo">
-          <img src="./assets/pago-icon.jpg" width="36" height="36" alt="" />
-          Pagô
-        </a>
-        <p>E aí, pagô? Fiado, venda a prazo ou empréstimo — juros só se você quiser.</p>
+/* perguntas */
+.faq { max-width: 760px; }
+details { border-bottom: 1px solid var(--line); padding-block: 16px; }
+summary { cursor: pointer; font-weight: 800; font-size: 18px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::after { content: "+"; font-size: 22px; line-height: 1; color: var(--blue-ink); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin-top: 10px; }
+
+/* chamada final */
+.final { background: var(--night); color: #fff; padding-block: 72px; }
+.final .in { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: space-between; }
+.final h2 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 800; max-width: 18ch; }
+.final h2 em { font-style: normal; color: var(--lime); }
+footer { padding-block: 28px 40px; color: var(--muted); font-size: 14.5px; }
+footer .in { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+footer a { text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+footer .legal { flex-basis: 100%; font-size: 13px; }
+</style>
+<link rel="icon" href="./assets/pago-icon.jpg" type="image/jpeg">
+<link rel="canonical" href="https://usepago.web.app/">
+<meta name="theme-color" content="#2f6bff">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Pagô">
+<meta property="og:title" content="Pagô — saiba quem te deve, quanto e quando cobrar">
+<meta property="og:description" content="Caderneta digital para fiado e vendas a prazo. Veja o que vence, cobre pelo seu WhatsApp e acompanhe o que falta receber.">
+<meta property="og:url" content="https://usepago.web.app/">
+<meta property="og:image" content="https://usepago.web.app/assets/pago-icon.jpg">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"MobileApplication","name":"Pagô","applicationCategory":"BusinessApplication","operatingSystem":"Android","description":"Caderneta digital para organizar fiado e vendas a prazo e cobrar pelo WhatsApp.","offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},"url":"https://usepago.web.app/"}</script>
+</head>
+<body><header class="in nav">
+  <a class="brand" href="#topo" aria-label="Pagô, início">
+    <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="114" fill="#2F6BFF"/><path d="M132 268 L228 364 L348 176" fill="none" stroke="#fff" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><circle cx="402" cy="110" r="32" fill="#fff"/></svg>
+    Pagô
+  </a>
+  <nav aria-label="Seções">
+    <a href="#como">Como funciona</a>
+    <a href="#planos">Grátis e Premium</a>
+    <a href="#dados">Seus dados</a>
+    <a href="#perguntas">Perguntas</a>
+  </nav>
+  <a class="btn small" href="https://play.google.com/store/apps/details?id=app.usepago&amp;referrer=utm_source%3Dsite%26utm_medium%3Dwebsite%26utm_campaign%3Dnav">Baixar</a>
+</header>
+
+<main id="topo">
+  <section class="in hero">
+    <div>
+      <p class="eyebrow">Caderneta digital para quem vende fiado</p>
+      <h1>Saiba quem te deve, <em>quanto</em> e quando cobrar.</h1>
+      <p class="lead">O Pagô guarda o fiado e as vendas a prazo do seu comércio, mostra o que vence hoje e deixa a mensagem de cobrança pronta no seu WhatsApp.</p>
+      <div class="actions">
+        <a class="btn" href="https://play.google.com/store/apps/details?id=app.usepago&amp;referrer=utm_source%3Dsite%26utm_medium%3Dwebsite%26utm_campaign%3Dhero">Baixar grátis na Google Play</a>
+        <a class="btn ghost" href="#como">Como funciona</a>
       </div>
-      <nav>
-        <a href="./ajuda.html">Ajuda</a>
-        <a href="./termos.html">Termos de Uso</a>
-        <a href="./privacidade.html">Política de Privacidade</a>
-        <a href="./lgpd.html">LGPD</a>
-      </nav>
-      <p class="copy">
-        © 2026 Pagô. Todos os direitos reservados. Tratamento de dados
-        pessoais conforme a Lei nº 13.709/2018 (LGPD).
-      </p>
-    </footer>
-    <script src="./main.js?v=20261006"></script>
-  </body>
+      <p class="fine">Grátis para começar, sem limite de clientes. iPhone em breve.</p>
+    </div>
+    <div>
+      <div class="phone" role="img" aria-label="Tela inicial do aplicativo, com saldo em aberto, o que vence na semana e clientes para cobrar">
+        <div class="screen">
+          <div class="hi"><b>Olá, João</b><span>Pagô</span></div>
+          <div class="kpis">
+            <div class="kpi"><small>Saldo aberto</small><b>R$ 4.451</b></div>
+            <div class="kpi"><small>Recebe esta semana</small><b>R$ 1.936</b></div>
+          </div>
+          <div class="kpi late" style="margin-bottom:6px"><small>Vencido a receber</small><b>R$ 450</b></div>
+          <div class="list-h">Clientes</div>
+          <div class="item"><strong>Carlos Oliveira</strong><b>R$ 450,00</b><small class="a">Venceu há 3 dias</small><div class="wa">Cobrar no WhatsApp</div></div>
+          <div class="item"><strong>Mariana Souza</strong><b>R$ 1.200,00</b><small class="b">Vence sexta</small></div>
+          <div class="fab">+ Novo lançamento</div>
+        </div>
+      </div>
+      <p class="cap">Ilustração da tela inicial. Nomes e valores são exemplos.</p>
+    </div>
+  </section>
+
+  <section class="band" id="como">
+    <div class="in">
+      <div class="section-head">
+        <p class="eyebrow">Como funciona</p>
+        <h2>Do papel e da memória para o celular em três passos</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><h3>Anote</h3><p>Registre a venda com o valor, o vencimento e, se quiser, os juros. Cada cliente tem a sua caderneta.</p></div>
+        <div class="step"><h3>Veja quem cobrar</h3><p>A tela inicial mostra o saldo em aberto, o que vence esta semana e o que já venceu.</p></div>
+        <div class="step"><h3>Cobre e dê baixa</h3><p>Abra o WhatsApp com a mensagem pronta e envie você mesmo. Quando o cliente pagar, registre o valor recebido.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="in pad" id="planos">
+    <div class="section-head">
+      <p class="eyebrow">Grátis e Premium</p>
+      <h2>A caderneta é grátis. O Premium poupa digitação.</h2>
+      <p>Você não perde nada do essencial se ficar no plano gratuito.</p>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <h3>Grátis <small>para sempre</small></h3>
+        <ul>
+          <li>Clientes e lançamentos sem limite</li>
+          <li>Pagamentos parciais e juros opcionais</li>
+          <li>Tela inicial com saldo, vencimentos e atrasos</li>
+          <li>Mensagem de cobrança pronta para o WhatsApp, com a sua chave PIX</li>
+          <li>Lembretes de vencimento no celular</li>
+        </ul>
+        <p class="note">Sem cartão para começar.</p>
+      </div>
+      <div class="plan pro">
+        <h3>Premium <small>R$ 39,90 por mês</small></h3>
+        <ul>
+          <li>Lançamento por voz: você fala, o app sugere o preenchimento</li>
+          <li>Leitura de comprovante por foto, com conferência antes de salvar</li>
+          <li>Mensagem de cobrança com o seu texto</li>
+          <li>Boletos de fornecedores, com parcelas e aviso de vencimento</li>
+        </ul>
+        <p class="note">O preço final aparece na loja de aplicativos antes de você assinar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="dados">
+    <div class="in trust">
+      <div class="section-head" style="margin:0">
+        <p class="eyebrow">Seus dados</p>
+        <h2>O Pagô organiza. Não mexe no seu dinheiro.</h2>
+        <p>É um assistente de cobrança. O app não consulta banco, não confirma transferências e não movimenta dinheiro. Quem recebe e confere é você.</p>
+      </div>
+      <dl class="facts">
+        <div><dt>Só você vê</dt><dd>Cada caderneta pertence à sua conta e fica protegida por regras de acesso.</dd></div>
+        <div><dt>Sem enviar sozinho</dt><dd>O WhatsApp só abre quando você toca. O Pagô nunca manda mensagem em seu nome.</dd></div>
+        <div><dt>Seus clientes</dt><dd>Os nomes e valores da sua caderneta ficam na sua conta. A equipe do Pagô não os usa para cobrar ninguém.</dd></div>
+        <div><dt>Você manda</dt><dd>Exclua sua conta quando quiser, pelo app ou pela página de exclusão de conta.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="in pad" id="perguntas">
+    <div class="section-head"><p class="eyebrow">Perguntas</p><h2>O que mais perguntam</h2></div>
+    <div class="faq">
+      <details><summary>O Pagô cobra meu cliente?</summary><p>Não. Ele deixa a mensagem pronta e você decide quando enviar, pelo seu WhatsApp.</p></details>
+      <details><summary>O Pagô recebe o pagamento?</summary><p>Não. O dinheiro vai direto de quem paga para você. No app você anota o que recebeu para manter a caderneta em dia.</p></details>
+      <details><summary>Posso usar de graça?</summary><p>Pode. Clientes e lançamentos são ilimitados no plano gratuito. O Premium acrescenta voz, leitura de comprovante, texto próprio de cobrança e boletos de fornecedores.</p></details>
+      <details><summary>Funciona no iPhone?</summary><p>Hoje está disponível para Android na Google Play. A versão para iPhone está em preparação.</p></details>
+      <details><summary>Como apago minha conta?</summary><p>Pela página de exclusão de conta, linkada no rodapé. A exclusão segue a política de retenção descrita na política de privacidade.</p></details>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="in">
+      <h2>E aí, <em>pagô?</em> Comece a sua caderneta hoje.</h2>
+      <a class="btn lime" href="https://play.google.com/store/apps/details?id=app.usepago&amp;referrer=utm_source%3Dsite%26utm_medium%3Dwebsite%26utm_campaign%3Dfinal">Baixar grátis na Google Play</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="in">
+    <a href="./ajuda.html">Ajuda</a>
+    <a href="./privacidade.html">Privacidade</a>
+    <a href="./termos.html">Termos</a>
+    <a href="./lgpd.html">LGPD</a>
+    <a href="./excluir-conta.html">Excluir conta</a>
+    <p class="legal">Pagô é uma ferramenta de organização. Não é banco, carteira digital nem meio de pagamento.</p>
+  </div>
+</footer>
+</body>
 </html>

@@ -51,39 +51,45 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          onChanged: onChanged,
-          readOnly: readOnly,
-          onTap: onTap,
-          obscureText: obscureText,
-          textCapitalization: textCapitalization,
-          inputFormatters: inputFormatters,
-          autofillHints: autofillHints,
-          autocorrect: autocorrect,
-          enableSuggestions: enableSuggestions,
-          textInputAction: textInputAction,
-          maxLength: maxLength,
-          maxLines: obscureText ? 1 : maxLines,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            counterText: '',
-            prefixIcon: Icon(icon, color: AppColors.muted, size: 20),
-            suffixIcon: suffix,
+        Semantics(
+          label: label,
+          textField: true,
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+            readOnly: readOnly,
+            onTap: onTap,
+            obscureText: obscureText,
+            textCapitalization: textCapitalization,
+            inputFormatters: inputFormatters,
+            autofillHints: autofillHints,
+            autocorrect: autocorrect,
+            enableSuggestions: enableSuggestions,
+            textInputAction: textInputAction,
+            maxLength: maxLength,
+            maxLines: obscureText ? 1 : maxLines,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              counterText: '',
+              prefixIcon: Icon(icon, color: AppColors.muted, size: 20),
+              suffixIcon: suffix,
+            ),
           ),
         ),
       ],

@@ -11,6 +11,8 @@ import '../utils/masks.dart';
 import '../widgets/common.dart';
 import 'add_debt_page.dart';
 import 'client_profile_page.dart';
+import 'customer_statement_page.dart';
+import 'follow_up_page.dart';
 
 class ContactHistoryPage extends StatelessWidget {
   const ContactHistoryPage({super.key, required this.contactKey});
@@ -40,8 +42,9 @@ class ContactHistoryPage extends StatelessWidget {
     final saldo = contact.saldoAbertoOf(state.saldoOf);
     final quitado = !contact.temAberto(state.saldoOf);
     final ids = contact.debts.map((debt) => debt.id).toSet();
-    final history = state.payments.where((item) => ids.contains(item.debtId)).toList()
-      ..sort((a, b) => b.data.compareTo(a.data));
+    final history =
+        state.payments.where((item) => ids.contains(item.debtId)).toList()
+          ..sort((a, b) => b.data.compareTo(a.data));
     final loans = [...contact.debts]
       ..sort((a, b) => b.dataVencimento.compareTo(a.dataVencimento));
 
@@ -112,7 +115,7 @@ class ContactHistoryPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${loans.length} ${loans.length == 1 ? 'empréstimo' : 'empréstimos'} na caderneta',
+                  '${loans.length} ${loans.length == 1 ? 'lançamento' : 'lançamentos'} na caderneta',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
@@ -152,7 +155,34 @@ class ContactHistoryPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 26),
-          const SectionLabel('EMPRÉSTIMOS'),
+          _ActionPair(
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CustomerStatementPage(contactKey: contact.key),
+                  ),
+                ),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('Extrato do cliente'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FollowUpPage(
+                      contactKey: contact.key,
+                      clientName: contact.nome,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.event_note_outlined),
+                label: const Text('Acompanhar acordo'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const SectionLabel('LANÇAMENTOS'),
           const SizedBox(height: 10),
           ...loans.map((debt) {
             final itemSaldo = state.saldoOf(debt);
@@ -264,7 +294,11 @@ class ContactHistoryPage extends StatelessWidget {
                 children: [
                   for (var i = 0; i < history.length; i++) ...[
                     if (i > 0)
-                      const Divider(height: 1, indent: 66, color: Color(0xFFF0F3F8)),
+                      const Divider(
+                        height: 1,
+                        indent: 66,
+                        color: Color(0xFFF0F3F8),
+                      ),
                     _HistoryRow(
                       payment: history[i],
                       debt: loans
@@ -308,7 +342,9 @@ class _HistoryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  paymentKindLabel(payment.descricao),
+                  payment.estornado
+                      ? 'Pagamento estornado'
+                      : paymentKindLabel(payment.descricao),
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w800,
                   ),
@@ -329,12 +365,48 @@ class _HistoryRow extends StatelessWidget {
           Text(
             Money.full(payment.valor),
             style: GoogleFonts.plusJakartaSans(
-              color: AppColors.success,
+              color: payment.estornado
+                  ? AppColors.mutedDark
+                  : AppColors.success,
+              decoration: payment.estornado ? TextDecoration.lineThrough : null,
               fontWeight: FontWeight.w800,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Duas ações lado a lado; em telas estreitas ou com texto ampliado, empilhadas.
+class _ActionPair extends StatelessWidget {
+  const _ActionPair({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final stacked =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            children[i],
+          ],
+        ],
+      );
+    }
+    return Row(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(child: children[i]),
+        ],
+      ],
     );
   }
 }

@@ -14,24 +14,43 @@ import 'package:flutter/foundation.dart';
 /// Fluxo: [init] roda na primeira abertura do app (`main.dart`), depois do ATT,
 /// mesmo sem login, para a instalação ser contada. Depois do login,
 /// [setUserId] liga as ações seguintes à conta.
-class MmpService {
+abstract interface class ProductMetrics {
+  Future<void> logDebtCreated({
+    required bool firstDebt,
+    required bool installment,
+    required String source,
+    required int recordCount,
+  });
+
+  Future<void> logManualWriteOffRecorded({required bool settledReceivable});
+
+  Future<void> logManualWriteOffCorrected();
+}
+
+class MmpService implements ProductMetrics {
   MmpService._();
 
   static final instance = MmpService._();
 
   static const devKeyFromEnv = String.fromEnvironment('PAGO_AF_DEV_KEY');
-  static const appleAppIdFromEnv = String.fromEnvironment('PAGO_AF_APPLE_APP_ID');
+  static const appleAppIdFromEnv = String.fromEnvironment(
+    'PAGO_AF_APPLE_APP_ID',
+  );
 
   // Eventos de funil (nomes padrão da AppsFlyer que Google e Meta entendem).
   static const eventRegistration = 'af_complete_registration';
   static const eventPaywallView = 'af_premium_paywall_view';
   static const eventBillCreated = 'af_bill_created';
+  static const eventDebtCreated = 'pago_debt_created';
+  static const eventManualWriteOffRecorded = 'pago_manual_write_off_recorded';
+  static const eventManualWriteOffCorrected = 'pago_manual_write_off_corrected';
 
   final _sdk = AppsFlyerSdk.instance;
   Future<void>? _starting;
   String? _userId;
   String? _appliedUserId;
   String? _appsFlyerId;
+  Future<void> _identityWork = Future.value();
 
   /// Id do aparelho na AppsFlyer. Vai junto na confirmação da compra para o
   /// servidor mandar a receita (S2S) ligada a esta instalação.
@@ -52,15 +71,23 @@ class MmpService {
     String devKey = devKeyFromEnv,
     String appleAppId = appleAppIdFromEnv,
   }) {
-    if (kIsWeb || !(_isAndroid || _isIOS) || devKey.isEmpty) return Future.value();
+    if (kIsWeb || !(_isAndroid || _isIOS) || devKey.isEmpty) {
+      return Future.value();
+    }
     if (_isIOS && appleAppId.isEmpty) return Future.value();
     return _starting ??= _start(devKey, appleAppId, trackingAuthorized);
   }
 
-  Future<void> _start(String devKey, String appleAppId, bool trackingAuthorized) async {
+  Future<void> _start(
+    String devKey,
+    String appleAppId,
+    bool trackingAuthorized,
+  ) async {
     try {
       await _sdk.init(devKey: devKey, appId: _isIOS ? appleAppId : null);
-      if (_isIOS) await _sdk.setDisableAdvertisingIdentifiers(!trackingAuthorized);
+      if (_isIOS) {
+        await _sdk.setDisableAdvertisingIdentifiers(!trackingAuthorized);
+      }
       await _sdk.setCurrencyCode('BRL');
       await _applyUserId();
       if (_isAndroid) {
@@ -97,15 +124,31 @@ class MmpService {
     await _applyUserId();
   }
 
-  Future<void> _applyUserId() async {
-    final uid = _userId;
-    if (uid == null || uid == _appliedUserId) return;
-    try {
-      await _sdk.setCustomerUserId(uid);
-      _appliedUserId = uid;
-    } catch (error) {
-      debugPrint('AppsFlyer não ligou a conta: $error');
+  /// O aparelho continua atribuído à instalação, mas eventos após sair não
+  /// devem carregar o identificador da conta anterior.
+  Future<void> clearUserId() async {
+    _userId = null;
+    final starting = _starting;
+    if (starting == null) {
+      _appliedUserId = null;
+      return;
     }
+    await starting;
+    await _applyUserId();
+  }
+
+  Future<void> _applyUserId() {
+    _identityWork = _identityWork.then((_) async {
+      final uid = _userId;
+      if (uid == _appliedUserId) return;
+      try {
+        await _sdk.setCustomerUserId(uid ?? '');
+        _appliedUserId = uid;
+      } catch (error) {
+        debugPrint('AppsFlyer não atualizou a conta: $error');
+      }
+    });
+    return _identityWork;
   }
 
   Future<void> _log(String name, [Map<String, dynamic>? values]) async {
@@ -130,16 +173,39 @@ class MmpService {
   /// cadastro, mesmo que gere várias parcelas.
   Future<void> logBillCreated() => _log(eventBillCreated);
 
+  /// Atributos operacionais, sem nome, telefone, valor, vencimento ou id da
+  /// caderneta. [source] é controlado pelo app (`manual` ou `csv`).
+  @override
+  Future<void> logDebtCreated({
+    required bool firstDebt,
+    required bool installment,
+    required String source,
+    required int recordCount,
+  }) => _log(eventDebtCreated, {
+    'pago_first_debt': firstDebt,
+    'pago_installment': installment,
+    'pago_source': source == 'csv' ? 'csv' : 'manual',
+    'pago_record_count': recordCount.clamp(1, 12),
+  });
+
+  @override
+  Future<void> logManualWriteOffRecorded({required bool settledReceivable}) =>
+      _log(eventManualWriteOffRecorded, {
+        'pago_settled_receivable': settledReceivable,
+      });
+
+  @override
+  Future<void> logManualWriteOffCorrected() =>
+      _log(eventManualWriteOffCorrected);
+
   /// Sinal de conversão para otimizar campanhas (o anúncio aprende quem
   /// assina). Não leva `af_revenue` de propósito: a receita real e o LTV
   /// (líquido da taxa da loja, renovações, estornos) vêm só do servidor via
   /// S2S (`functions/mmp_s2s.js`), para não contar a mesma venda duas vezes.
-  Future<void> logFrontendPurchase(double price, String currency) => _log(
-        'pago_premium_checkout',
-        {
-          'af_price': price,
-          'af_currency': currency,
-          'af_content_id': 'premium_mensal',
-        },
-      );
+  Future<void> logFrontendPurchase(double price, String currency) =>
+      _log('pago_premium_checkout', {
+        'af_price': price,
+        'af_currency': currency,
+        'af_content_id': 'premium_mensal',
+      });
 }

@@ -8,7 +8,7 @@ class LegalSection {
 }
 
 class LegalDocs {
-  static const updatedAt = '14 de outubro de 2026';
+  static const updatedAt = '26 de outubro de 2026';
   static const contact =
       'WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda)';
 
@@ -98,6 +98,7 @@ class LegalDocs {
           'Caderneta: nome e telefone dos seus clientes, valores, juros, vencimentos, abatimentos e histórico.\n\n'
           'Boletos a pagar (Premium): fornecedor, valor, vencimento, parcelas e código do boleto, se você colar.\n\n'
           'Premium, quando usado: imagem de comprovante (OCR) e áudio para cadastro por voz.\n\n'
+          'Uso do app: quando a medição de atribuição estiver configurada, identificador da instalação, origem da campanha e eventos mínimos como cadastro, abertura da oferta Premium, criação de lançamento e baixa manual na caderneta. Baixa manual é uma declaração no organizador, não uma confirmação bancária. Esses eventos não incluem nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta. No iOS, identificadores de publicidade dependem da permissão da plataforma.\n\n'
           'Site: dados técnicos usuais de acesso (IP, navegador) para segurança e estatística agregada. Não vendemos a sua lista de clientes.',
     ),
     LegalSection(
@@ -109,7 +110,7 @@ class LegalDocs {
     ),
     LegalSection(
       '4. Compartilhamento',
-      'Firebase/Google (autenticação, banco e relatório de travamentos: modelo do aparelho, versão do sistema e do app, sem os dados da caderneta), Google Play e App Store (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
+      'Firebase/Google (autenticação, banco e relatório de travamentos: modelo do aparelho, versão do sistema e do app, sem os dados da caderneta), AppsFlyer (atribuição e métricas mínimas de uso quando configurado), Google Play e App Store (assinatura do Premium) e o aplicativo de WhatsApp no seu aparelho, só para abrir a conversa que você disparar.\n\n'
           'Não vendemos dados. Autoridade pública só mediante ordem legal.',
     ),
     LegalSection(

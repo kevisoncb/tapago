@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const crypto = require("crypto");
 
 /**
  * Receita para o MMP (AppsFlyer) servidor a servidor.
@@ -22,6 +23,7 @@ const EVENT_NAMES = {
 
 const PLATFORMS = new Set(["android", "ios"]);
 const TIMEOUT_MS = 5000;
+const MAX_ATTEMPTS = 10;
 
 function envValue(name, fallback = "") {
   const value = String(process.env[name] || "").trim();
@@ -37,10 +39,17 @@ function netRevenue(gross) {
 async function rememberDevice(uid, platform, mmpId) {
   const id = String(mmpId || "").trim();
   if (!uid || !PLATFORMS.has(platform) || !/^[\w.-]{6,64}$/.test(id)) return;
-  await admin.firestore().collection("MmpIds").doc(uid).set(
-    { [platform]: { appsflyerId: id, em: admin.firestore.FieldValue.serverTimestamp() } },
-    { merge: true },
-  );
+  const db = admin.firestore();
+  await db.runTransaction(async (transaction) => {
+    const [user, deleted] = await Promise.all([
+      transaction.get(db.collection("Users").doc(uid)),
+      transaction.get(db.collection("DeletedAccounts").doc(uid)),
+    ]);
+    if (!user.exists || deleted.exists) return;
+    transaction.set(db.collection("MmpIds").doc(uid),
+      { [platform]: { appsflyerId: id, em: admin.firestore.FieldValue.serverTimestamp() } },
+      { merge: true });
+  });
 }
 
 function eventTime(date = new Date()) {
@@ -100,9 +109,87 @@ async function logServerRevenue({ uid, platform, transactionId, type, revenue, c
   }
 }
 
+function outboxKey(event) {
+  return crypto.createHash("sha256").update(`${event.platform}:${event.transactionId}:${event.type}`).digest("hex");
+}
+
+// The business event and its delivery job commit together. Delivery is at
+// least once: af_order_id remains stable so downstream reporting can reconcile
+// duplicates when the remote response is lost after acceptance.
+async function recordRevenueEvent(ref, data, event) {
+  const db = admin.firestore();
+  const enabled = !!envValue("MMP_S2S_URL") && !!envValue("MMP_S2S_TOKEN");
+  return db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(ref);
+    if (existing.exists) return false;
+    let deleted = false;
+    if (event?.uid) {
+      deleted = (await transaction.get(db.collection("DeletedAccounts").doc(event.uid))).exists;
+    }
+    if (deleted) return false;
+    transaction.create(ref, data);
+    if (enabled && event && !event.test && event.uid && event.transactionId && EVENT_NAMES[event.type]) {
+      transaction.create(db.collection("MmpOutbox").doc(outboxKey(event)), {
+        ...event,
+        state: "pending",
+        attempts: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        nextAttemptAt: admin.firestore.Timestamp.fromMillis(0),
+      });
+    }
+    return true;
+  });
+}
+
+async function flushRevenueEvent(eventOrRef) {
+  const db = admin.firestore();
+  const ref = eventOrRef.path ? eventOrRef : db.collection("MmpOutbox").doc(outboxKey(eventOrRef));
+  const now = Date.now();
+  const job = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists) return null;
+    const data = snap.data();
+    const deleted = (await transaction.get(db.collection("DeletedAccounts").doc(data.uid))).exists;
+    if (deleted) { transaction.delete(ref); return null; }
+    if (!["pending", "processing"].includes(data.state)) return null;
+    if ((data.nextAttemptAt?.toMillis?.() || 0) > now ||
+        (data.lockedUntil?.toMillis?.() || 0) > now) return null;
+    const attempts = (data.attempts || 0) + 1;
+    transaction.update(ref, {
+      state: "processing", attempts,
+      lockedUntil: admin.firestore.Timestamp.fromMillis(now + 5 * 60 * 1000),
+    });
+    return { ...data, attempts };
+  });
+  if (!job) return;
+  const result = await logServerRevenue(job);
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const deleted = (await transaction.get(db.collection("DeletedAccounts").doc(job.uid))).exists;
+    if (!snap.exists) return;
+    if (deleted) { transaction.delete(ref); return; }
+    transaction.update(ref, {
+      state: result.sent ? "sent" : job.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+      lastReason: result.sent ? null : result.reason,
+      lockedUntil: null,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now() + Math.min(6 * 60 * 60 * 1000, 60000 * 2 ** job.attempts)),
+    });
+  });
+}
+
+async function flushRevenueOutbox() {
+  const jobs = await admin.firestore().collection("MmpOutbox")
+    .where("state", "in", ["pending", "processing"]).limit(100).get();
+  for (const job of jobs.docs) await flushRevenueEvent(job.ref);
+}
+
 module.exports = {
   EVENT_NAMES,
   netRevenue,
   rememberDevice,
   logServerRevenue,
+  recordRevenueEvent,
+  flushRevenueEvent,
+  flushRevenueOutbox,
 };

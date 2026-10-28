@@ -4,17 +4,60 @@
       "collectionGroup": "Debts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "user_id", "order": "ASCENDING" },
-        { "fieldPath": "data_vencimento", "order": "ASCENDING" }
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data_vencimento",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "Payments",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "user_id", "order": "ASCENDING" },
-        { "fieldPath": "debt_id", "order": "ASCENDING" },
-        { "fieldPath": "data", "order": "DESCENDING" }
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "debt_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Debts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status_pago",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data_vencimento",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Bills",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pago",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data_vencimento",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],

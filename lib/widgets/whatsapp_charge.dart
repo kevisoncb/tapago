@@ -21,7 +21,7 @@ Future<void> chargeOnWhatsApp({
       chosenAction == WhatsAppAction.atraso &&
       (user.mensagemAtraso.trim().isNotEmpty ||
           user.mensagemAtrasoForte.trim().isNotEmpty);
-  final useCustom = user.isPremium && (custom.isNotEmpty || stageCustom);
+  final useCustom = user.premiumAtivo && (custom.isNotEmpty || stageCustom);
 
   var tone = WhatsAppTone.amigavel;
   if (!useCustom) {
@@ -108,7 +108,7 @@ Future<void> chargeOnWhatsApp({
     customTemplate: custom,
     atrasoTemplate: user.mensagemAtraso,
     atrasoForteTemplate: user.mensagemAtrasoForte,
-    isPremium: state.user.isPremium,
+    isPremium: state.user.premiumAtivo,
   );
   if (!context.mounted) return;
   if (!ok) {

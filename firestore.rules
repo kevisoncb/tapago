@@ -353,7 +353,9 @@ service cloud.firestore {
     }
 
     match /Payments/{paymentId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      // 'resource == null' deixa a transação do app ler o pagamento que ainda não existe.
+      allow read: if isAuthenticated()
+        && (resource == null || resource.data.user_id == request.auth.uid);
       allow create: if isAuthenticated()
         && isValidPayment(request.resource.data)
         && paymentHasOwnedDebt(request.resource.data)

@@ -2,7 +2,7 @@ const { test, before, after, beforeEach } = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('../tool/rules/node_modules/@firebase/rules-unit-testing');
-const { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, serverTimestamp } = require('../tool/rules/node_modules/firebase/firestore');
+const { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, Timestamp, serverTimestamp } = require('../tool/rules/node_modules/firebase/firestore');
 
 let env;
 const date = Timestamp.fromDate(new Date('2026-10-23T12:00:00Z'));
@@ -38,6 +38,7 @@ test('payment cannot target missing debt or another account debt', async () => {
 });
 
 test('installment metadata is additive but inconsistent numbering is denied', async () => {
+  await seed({'Users/a':{email:'a@example.com',nome:'A',is_premium:true,premium_vence_em:Timestamp.fromDate(new Date(Date.now()+30*86400000))}});
   const db = dbFor('a');
   await assertSucceeds(setDoc(doc(db,'Debts/d'),debt('a',{grupo_id:'g',parcela:2,total_parcelas:3})));
   await assertFails(setDoc(doc(db,'Debts/bad'),debt('a',{grupo_id:'g',parcela:4,total_parcelas:3})));
@@ -55,6 +56,23 @@ test('first upgraded payment and parent marker commit together', async () => {
   second.set(doc(db,'Payments/p2'),payment());
   second.update(doc(db,'Debts/d'),{ledger_revision:2,ledger_payment_id:'p2',status_pago:false});
   await assertSucceeds(second.commit());
+});
+
+test('app ledger flow: transaction reads a missing payment, then commits payment and marker', async () => {
+  await seed({'Debts/d':debt()});
+  const db = dbFor('a');
+  await assertSucceeds(runTransaction(db, async tx => {
+    await tx.get(doc(db,'Debts/d'));
+    const stored = await tx.get(doc(db,'Payments/p'));
+    if (stored.exists()) throw new Error('payment should not exist yet');
+    tx.set(doc(db,'Payments/p'),payment());
+    tx.update(doc(db,'Debts/d'),{ledger_revision:1,ledger_payment_id:'p',status_pago:false});
+  }));
+});
+
+test('another account cannot read or probe a payment through a transaction', async () => {
+  await seed({'Debts/d':debt('a'),'Payments/p':payment('a')});
+  await assertFails(getDoc(doc(dbFor('b'),'Payments/p')));
 });
 
 test('marked financial terms and revision cannot be changed or reset', async () => {
@@ -102,4 +120,31 @@ test('collection followups are owned, immutable by contact, and not money moveme
   await assertFails(updateDoc(doc(db,'CollectionFollowUps/f'),{contact_key:'outro',updated_at:serverTimestamp()}));
   await assertFails(updateDoc(doc(db,'CollectionFollowUps/f'),{promised_amount:-1,updated_at:serverTimestamp()}));
   await assertSucceeds(updateDoc(doc(db,'CollectionFollowUps/f'),{note:'Confirmou acordo',updated_at:serverTimestamp()}));
+});
+
+const premiumUser = uid => ({[`Users/${uid}`]:{email:`${uid}@example.com`,nome:uid,is_premium:true,premium_vence_em:Timestamp.fromDate(new Date(Date.now()+30*86400000))}});
+const itens = () => [{nome:'Skol Beats 550ml',qtd:5,valor:8,em:date},{nome:'Coxinha',qtd:3,valor:7,em:date}];
+
+test('product items are Premium-only on creation and survive a ledger payment', async () => {
+  await seed({'Users/free':{email:'f@example.com',nome:'F',is_premium:false}});
+  await assertFails(setDoc(doc(dbFor('free'),'Debts/d'),debt('free',{itens:itens()})));
+  await seed(premiumUser('a'));
+  const db = dbFor('a');
+  await assertSucceeds(setDoc(doc(db,'Debts/d'),debt('a',{itens:itens(),valor_principal:61,taxa_juros:0})));
+  await assertSucceeds(runTransaction(db, async tx => {
+    await tx.get(doc(db,'Debts/d'));
+    await tx.get(doc(db,'Payments/p'));
+    tx.set(doc(db,'Payments/p'),payment('a','d',{valor:61}));
+    tx.update(doc(db,'Debts/d'),{ledger_revision:1,ledger_payment_id:'p',status_pago:true});
+  }));
+});
+
+test('keep flag and automatic cleanup preference are accepted; junk is not', async () => {
+  await seed({'Users/a':{email:'a@example.com',nome:'A',is_premium:false},'Debts/d':debt('a')});
+  const db = dbFor('a');
+  await assertSucceeds(updateDoc(doc(db,'Users/a'),{limpeza_auto:true,nome_loja:'Bar do Zé'}));
+  await assertFails(updateDoc(doc(db,'Users/a'),{limpeza_auto:'sim'}));
+  await assertSucceeds(updateDoc(doc(db,'Debts/d'),{manter:true}));
+  await assertSucceeds(updateDoc(doc(db,'Debts/d'),{manter:false}));
+  await assertFails(updateDoc(doc(db,'Debts/d'),{manter:'sim'}));
 });

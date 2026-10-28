@@ -3,8 +3,8 @@ class AppConstants {
   static const tagline = 'E aí, pagô?';
   static const versionLabel = 'Pagô v2.5.0';
   static const logoAsset = 'assets/brand/pago-icon.jpg';
-  static const premiumPrice = 39.90;
-  static const premiumPriceLabel = r'R$ 39,90';
+  static const premiumPrice = 19.90;
+  static const premiumPriceLabel = r'R$ 19,90';
   static const siteOrigin = 'https://usepago.web.app';
   static const checkoutUrl =
       'https://play.google.com/store/apps/details?id=app.usepago';

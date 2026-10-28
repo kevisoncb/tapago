@@ -68,7 +68,7 @@ Isso é uma tese de produto, não uma pesquisa de mercado concluída. Não foram
 - Outras cadernetas, sistemas de gestão e bancos podem incorporar funções semelhantes.
 - Reconhecimento de voz e OCR, isoladamente, são recursos replicáveis.
 - Uma divergência financeira ou perda de dados pode destruir confiança rapidamente.
-- R$ 39,90 pode ser alto para um usuário ocasional e razoável para outro; é necessário medir.
+- R$ 19,90 pode ser alto para um usuário ocasional e razoável para outro; é necessário medir.
 
 **Posicionamento recomendado:** “Sua caderneta organizada. Seu dinheiro a receber, no seu controle.”
 
@@ -347,7 +347,7 @@ Os valores são ilustrativos; o design deve esclarecer o significado e a soma de
 
 ## 9. Planos e monetização
 
-Não alteraria o preço de R$ 39,90 só por opinião. Mediria uso e disposição a pagar em segmentos diferentes, mantendo preço e oferta compatíveis com cada loja.
+Não alteraria o preço de R$ 19,90 só por opinião. Mediria uso e disposição a pagar em segmentos diferentes, mantendo preço e oferta compatíveis com cada loja.
 
 ### Proposta de estrutura a validar
 

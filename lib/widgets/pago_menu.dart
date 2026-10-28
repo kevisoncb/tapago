@@ -9,6 +9,7 @@ import '../screens/premium_page.dart';
 import '../screens/settings_page.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
+import '../utils/constants.dart';
 import '../utils/formatters.dart';
 
 Future<void> showPagoMenu(BuildContext context) async {
@@ -57,6 +58,22 @@ Future<void> showPagoMenu(BuildContext context) async {
           onTap: () => Navigator.pop(sheet, locked ? const PremiumPage() : page),
         );
       }
+
+      Widget section(String label) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 2),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      );
 
       return SafeArea(
         child: Padding(
@@ -112,17 +129,6 @@ Future<void> showPagoMenu(BuildContext context) async {
                 page: const CadernetaPage(focusSearch: true),
               ),
               item(
-                icon: Icons.receipt_long_rounded,
-                title: 'Boletos a pagar',
-                subtitle: !premium
-                    ? 'Premium'
-                    : boletos == 0
-                        ? 'Nenhum em aberto'
-                        : '$boletos em aberto',
-                page: const BillsPage(),
-                locked: !premium,
-              ),
-              item(
                 icon: Icons.add_rounded,
                 title: 'Novo lançamento',
                 subtitle: clientes == 0
@@ -130,11 +136,25 @@ Future<void> showPagoMenu(BuildContext context) async {
                     : '$clientes ${clientes == 1 ? 'pendência' : 'pendências'} de clientes',
                 page: const AddDebtPage(),
               ),
+              const Divider(height: 16),
+              section('PREMIUM'),
+              item(
+                icon: Icons.receipt_long_rounded,
+                title: 'Boletos a pagar',
+                subtitle: !premium
+                    ? 'Exclusivo Premium'
+                    : boletos == 0
+                        ? 'Nenhum em aberto'
+                        : '$boletos em aberto',
+                page: const BillsPage(),
+                locked: !premium,
+              ),
               if (!premium)
                 item(
                   icon: Icons.workspace_premium_rounded,
-                  title: 'Premium',
-                  subtitle: 'Voz, recibos e boletos a pagar',
+                  title: 'Conhecer o Premium',
+                  subtitle:
+                      '${AppConstants.premiumPriceLabel}/mês · caixa, parcelas, voz e mais',
                   page: const PremiumPage(),
                 ),
               const Divider(height: 16),

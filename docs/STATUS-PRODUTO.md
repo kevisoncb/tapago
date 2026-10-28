@@ -87,7 +87,7 @@ Subir a `develop` hoje não é recomendável: ela depende da publicação das Fu
 - Anunciar só o que a versão publicada faz.
 - Não prometer "fim da inadimplência" nem "cobrança automática".
 - Dizer com clareza que o Pagô não é banco e não movimenta dinheiro.
-- Preço: o Premium está configurado em R$ 39,90; a recomendação é testar R$ 19,90 e plano anual antes de investir pesado.
+- Preço: o Premium está configurado em R$ 19,90 (reduzido de R$ 39,90); avaliar plano anual depois de medir conversão.
 
 ## 7. O que faria hoje, em ordem
 1. Confirmar qual AAB vai para produção (o da `main`).

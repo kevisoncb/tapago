@@ -59,7 +59,7 @@ class LegalDocs {
     ),
     LegalSection(
       '5. Assinatura Premium',
-      'O Premium, quando disponível, custa R\$ 39,90 por mês. A assinatura é feita pela loja do seu aparelho (Google Play no Android, App Store no iPhone), renova automaticamente a cada mês e pode ser cancelada a qualquer momento na própria loja, até 24 horas antes do fim do período.\n\n'
+      'O Premium, quando disponível, custa R\$ 19,90 por mês. A assinatura é feita pela loja do seu aparelho (Google Play no Android, App Store no iPhone), renova automaticamente a cada mês e pode ser cancelada a qualquer momento na própria loja, até 24 horas antes do fim do período.\n\n'
           'O cancelamento vale para o ciclo seguinte: o período já pago permanece disponível até o vencimento. Reembolsos seguem as regras da loja em que a assinatura foi feita. Quem assinou numa loja pode restaurar a assinatura no app pelo botão "Restaurar Compras". Preços podem mudar com aviso prévio no app ou no site.',
     ),
     LegalSection(

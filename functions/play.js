@@ -8,7 +8,7 @@ const rights = require("./subscription_rights");
 
 const PACKAGE_NAME = "app.usepago";
 const PRODUCT_ID = "pago_premium_monthly";
-const DEFAULT_PRICE = 39.9;
+const DEFAULT_PRICE = 19.9;
 const PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
 
 const NOTIFICATION_TYPES = {

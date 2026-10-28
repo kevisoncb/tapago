@@ -61,17 +61,17 @@ class _PremiumPageState extends State<PremiumPage> {
                     child: Column(
                       children: [
                         Text(
-                          'Mais agilidade para sua rotina',
+                          'Cobre melhor. Controle o caixa.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 32,
+                            fontSize: 30,
                             height: 1.15,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'A caderneta essencial continua gratuita. O Premium adiciona atalhos e recursos para economizar tempo.',
+                          'A caderneta continua grátis. O Premium acrescenta as ferramentas de quem vive de vender a prazo.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
@@ -79,20 +79,16 @@ class _PremiumPageState extends State<PremiumPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        const _PlanSection(
-                          title: 'O que continua gratuito',
-                          benefits: PlanCatalog.free,
-                          icon: Icons.check_circle_outline_rounded,
-                          color: AppColors.success,
-                        ),
-                        const SizedBox(height: 22),
-                        const _PlanSection(
-                          title: 'O que o Premium acrescenta',
-                          benefits: PlanCatalog.premium,
-                          icon: Icons.auto_awesome_outlined,
-                          color: AppColors.primary,
-                        ),
+                        const SizedBox(height: 26),
+                        for (final group in PlanCatalog.premiumGroups) ...[
+                          _PremiumGroup(
+                            group: group,
+                            benefits: PlanCatalog.premiumIn(group),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        const SizedBox(height: 10),
+                        const _FreeSection(),
                         const SizedBox(height: 18),
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -110,9 +106,7 @@ class _PremiumPageState extends State<PremiumPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const _PriceCard(),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         const _RestoreButton(),
                         const SizedBox(height: 18),
                         Wrap(
@@ -148,6 +142,7 @@ class _PremiumPageState extends State<PremiumPage> {
               ],
             ),
           ),
+          const _SubscribeBar(),
         ],
       ),
     );
@@ -337,145 +332,176 @@ class _Benefit extends StatelessWidget {
   }
 }
 
-class _PlanSection extends StatelessWidget {
-  const _PlanSection({
-    required this.title,
-    required this.benefits,
-    required this.icon,
-    required this.color,
-  });
-  final String title;
+class _PremiumGroup extends StatelessWidget {
+  const _PremiumGroup({required this.group, required this.benefits});
+  final String group;
   final List<PlanBenefit> benefits;
-  final IconData icon;
-  final Color color;
+
+  IconData get _icon => switch (group) {
+    PlanCatalog.groupCobranca => Icons.chat_bubble_outline_rounded,
+    PlanCatalog.groupCaixa => Icons.account_balance_wallet_outlined,
+    _ => Icons.bolt_rounded,
+  };
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w800),
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+    decoration: BoxDecoration(
+      color: AppColors.primarySoft,
+      borderRadius: BorderRadius.circular(22),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(_icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              group.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-      ),
-      const SizedBox(height: 14),
-      for (final benefit in benefits)
-        _Benefit(
-          icon: icon,
-          iconColor: color,
-          title: benefit.title,
-          subtitle: benefit.description,
-        ),
-    ],
+        const SizedBox(height: 14),
+        for (final benefit in benefits)
+          _Benefit(
+            icon: Icons.check_rounded,
+            title: benefit.title,
+            subtitle: benefit.description,
+          ),
+      ],
+    ),
   );
 }
 
-class _PriceCard extends StatelessWidget {
-  const _PriceCard();
+class _FreeSection extends StatelessWidget {
+  const _FreeSection();
+
+  @override
+  Widget build(BuildContext context) => Theme(
+    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+      childrenPadding: const EdgeInsets.only(top: 8),
+      title: Text(
+        'O que continua grátis',
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontWeight: FontWeight.w800),
+      ),
+      children: [
+        for (final benefit in PlanCatalog.free)
+          _Benefit(
+            icon: Icons.check_circle_outline_rounded,
+            iconColor: AppColors.success,
+            title: benefit.title,
+            subtitle: benefit.description,
+          ),
+      ],
+    ),
+  );
+}
+
+class _SubscribeBar extends StatelessWidget {
+  const _SubscribeBar();
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final store = state.store;
     final price = state.storePriceLabel ?? AppConstants.premiumPriceLabel;
+    final active = state.user.premiumAtivo;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD7E6FF), width: 1.4),
+        border: const Border(top: BorderSide(color: Color(0xFFD7E6FF))),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 18,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, -6),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Text(
-            'Pagô Premium · Assinatura mensal',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.mutedDark,
-            ),
-          ),
-          const SizedBox(height: 6),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColors.text,
-                fontWeight: FontWeight.w800,
-              ),
-              children: [
-                TextSpan(text: price, style: const TextStyle(fontSize: 34)),
-                TextSpan(
-                  text: '/mês',
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active)
+              Text(
+                'Seu Premium está ativo.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: AppColors.premiumGreen,
+                ),
+              )
+            else ...[
+              RichText(
+                text: TextSpan(
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
+                    color: AppColors.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: price,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                    TextSpan(
+                      text: ' /mês · ${store.cancelHint}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.mutedDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              PrimaryButton(
+                label: state.billingBusy
+                    ? 'Aguardando a ${store.label}...'
+                    : 'Assinar Premium',
+                onPressed: state.billingBusy || state.restoringPurchases
+                    ? null
+                    : () => _subscribe(context),
+              ),
+              if (state.billingMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  state.billingMessage!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.mutedDark,
+                    color: AppColors.danger,
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
+              const SizedBox(height: 8),
               Text(
-                store.cancelHint,
+                premiumRenewalNotice(store, price),
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: 11,
+                  color: AppColors.mutedDark,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          PrimaryButton(
-            label: state.billingBusy
-                ? 'Aguardando a ${store.label}...'
-                : 'Assinar Premium',
-            onPressed: state.billingBusy || state.restoringPurchases
-                ? null
-                : () => _subscribe(context),
-          ),
-          if (state.billingMessage != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              state.billingMessage!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.danger,
-              ),
-            ),
           ],
-          const SizedBox(height: 10),
-          Text(
-            premiumRenewalNotice(store, price),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              color: AppColors.mutedDark,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -50,7 +50,7 @@ function env(name, fallback = "") {
 }
 
 const REGION = "southamerica-east1";
-const PREMIUM_VALUE = 39.9;
+const PREMIUM_VALUE = 19.9;
 
 const PAID_EVENTS = new Set([
   "PAYMENT_CONFIRMED",

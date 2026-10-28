@@ -644,12 +644,12 @@ Troco: R\$ 0,00
     // Mesmo valor de accountTokenFor('abc') em functions/apple.js.
     expect(appAccountTokenFor('abc'), 'b755f6e6-62f9-5eec-9ee3-7564068888e7');
 
-    final notice = premiumRenewalNotice(StoreKind.appStore, r'R$ 39,90');
+    final notice = premiumRenewalNotice(StoreKind.appStore, r'R$ 19,90');
     expect(notice, contains('renovação automática'));
     expect(notice, contains('24 horas'));
     expect(notice, contains('Ajustes → seu nome → Assinaturas'));
     expect(
-      premiumRenewalNotice(StoreKind.googlePlay, r'R$ 39,90'),
+      premiumRenewalNotice(StoreKind.googlePlay, r'R$ 19,90'),
       contains('Play Store → Pagamentos e assinaturas'),
     );
   });
@@ -673,7 +673,7 @@ Troco: R\$ 0,00
       await mmp.logRegistrationComplete();
       await mmp.logPremiumPaywallView();
       await mmp.logBillCreated();
-      await mmp.logFrontendPurchase(39.9, 'BRL');
+      await mmp.logFrontendPurchase(19.9, 'BRL');
       expect(mmp.started, isFalse);
       expect(mmp.appsFlyerId, isNull);
       expect(MmpService.eventRegistration, 'af_complete_registration');

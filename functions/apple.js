@@ -18,7 +18,7 @@ const rights = require("./subscription_rights");
 
 const PRODUCT_ID = "pago_premium_monthly_ios";
 const DEFAULT_BUNDLE_ID = "app.usepago";
-const DEFAULT_PRICE = 39.9;
+const DEFAULT_PRICE = 19.9;
 
 // Tem que ser igual a appAccountTokenFor() em lib/services/store_ids.dart.
 const ACCOUNT_TOKEN_NAMESPACE = Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex");

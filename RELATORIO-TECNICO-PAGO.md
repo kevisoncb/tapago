@@ -8,7 +8,7 @@ O Pagô é uma caderneta digital para pequenos comerciantes e profissionais que 
 
 O Pagô não é banco, carteira digital, gateway de pagamentos nem sistema de confirmação de PIX. Ele não consulta contas bancárias, não movimenta dinheiro e não consegue garantir que uma transferência aconteceu. Quando o usuário registra uma baixa, ele está informando ao seu organizador que recebeu aquele valor. Essa distinção aparece nos textos e na lógica financeira para evitar uma promessa que o produto não cumpre.
 
-A oferta gratuita preserva a caderneta essencial, a organização dos clientes, os extratos e a exportação. O Premium acrescenta conveniência: lançamento sugerido por voz, leitura assistida de imagem com conferência obrigatória, mensagem de cobrança personalizada, boletos de fornecedores e parcelamento a receber. O preço configurado no código é R$ 39,90 por mês, mas a tela de compra deve apresentar o preço devolvido pela Google Play ou App Store.
+A oferta gratuita preserva a caderneta essencial, a organização dos clientes, os extratos e a exportação. O Premium acrescenta conveniência: lançamento sugerido por voz, leitura assistida de imagem com conferência obrigatória, mensagem de cobrança personalizada, boletos de fornecedores e parcelamento a receber. O preço configurado no código é R$ 19,90 por mês, mas a tela de compra deve apresentar o preço devolvido pela Google Play ou App Store.
 
 ## Como o usuário utiliza o aplicativo
 

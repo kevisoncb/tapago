@@ -12,7 +12,7 @@ const require2faParam = defineString("ADMIN_REQUIRE_2FA", { default: "false" });
 
 const REGION = "southamerica-east1";
 const TIME_ZONE = "America/Sao_Paulo";
-const PREMIUM_VALUE = 39.9;
+const PREMIUM_VALUE = 19.9;
 const PLAY_FEE = 0.15;
 // Taxa de cada loja sobre a cobrança. A Apple usa 15% no Small Business Program
 // (até US$ 1 milhão por ano); sem ele, 30%. Ajuste aqui se o programa não valer.

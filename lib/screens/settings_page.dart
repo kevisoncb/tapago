@@ -198,27 +198,6 @@ class SettingsPage extends StatelessWidget {
                     : 'O plano livre usa esta. Premium deixa mudar.',
                 onTap: () => _editMensagem(context),
               ),
-              SettingsRow(
-                icon: Icons.schedule_rounded,
-                iconBackground: AppColors.whatsappSoft,
-                iconColor: AppColors.whatsapp,
-                title: 'Mensagem de atraso',
-                subtitle: user.isPremium
-                    ? 'Até ${firmOverdueDays - 1} dias vencida: tom firme, sem ofender'
-                    : 'Premium: texto próprio para quem atrasou',
-                onTap: () => _editMensagem(context, stage: _MsgStage.atraso),
-              ),
-              SettingsRow(
-                icon: Icons.priority_high_rounded,
-                iconBackground: AppColors.whatsappSoft,
-                iconColor: AppColors.whatsapp,
-                title: 'Mensagem de atraso longo',
-                subtitle: user.isPremium
-                    ? 'A partir de $firmOverdueDays dias: a mais dura'
-                    : 'Premium: o tom muda conforme os dias passam',
-                onTap: () =>
-                    _editMensagem(context, stage: _MsgStage.atrasoForte),
-              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -241,6 +220,47 @@ class SettingsPage extends StatelessWidget {
                 color: AppColors.mutedDark,
               ),
             ),
+          ),
+          const SizedBox(height: 22),
+          const SectionLabel('PREMIUM · COBRANÇA POR FASE'),
+          const SizedBox(height: 10),
+          GroupCard(
+            children: [
+              SettingsRow(
+                icon: Icons.schedule_rounded,
+                iconBackground: AppColors.whatsappSoft,
+                iconColor: AppColors.whatsapp,
+                title: 'Mensagem de atraso',
+                subtitle: user.premiumAtivo
+                    ? 'Até ${firmOverdueDays - 1} dias vencida: tom firme, sem ofender'
+                    : 'Premium: texto próprio para quem atrasou',
+                trailing: user.premiumAtivo
+                    ? null
+                    : const Icon(
+                        Icons.lock_outline_rounded,
+                        color: AppColors.muted,
+                      ),
+                onTap: () => _editMensagem(context, stage: _MsgStage.atraso),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
+                icon: Icons.priority_high_rounded,
+                iconBackground: AppColors.whatsappSoft,
+                iconColor: AppColors.whatsapp,
+                title: 'Mensagem de atraso longo',
+                subtitle: user.premiumAtivo
+                    ? 'A partir de $firmOverdueDays dias: a mais dura'
+                    : 'Premium: o tom muda conforme os dias passam',
+                trailing: user.premiumAtivo
+                    ? null
+                    : const Icon(
+                        Icons.lock_outline_rounded,
+                        color: AppColors.muted,
+                      ),
+                onTap: () =>
+                    _editMensagem(context, stage: _MsgStage.atrasoForte),
+              ),
+            ],
           ),
           const SizedBox(height: 22),
           const SectionLabel('PREFERÊNCIAS'),
@@ -356,7 +376,7 @@ class SettingsPage extends StatelessWidget {
                                 ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
                                 : user.premiumAtivo
                                 ? 'Assinatura ativa'
-                                : 'Voz e leitura de recibos',
+                                : 'R\$ 19,90/mês · caixa, parcelas, voz e mais',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.mutedDark,

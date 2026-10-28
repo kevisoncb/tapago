@@ -79,6 +79,6 @@ O comerciante abre o Pagô para responder três perguntas: quem me deve, quanto,
 
 ## Painel administrativo e preço
 
-- O preço cobrado de verdade fica no produto da Google Play (e da App Store). O app mostra o preço da loja; R$ 39,90 só aparece como valor reserva no app, nos textos legais e no site, e como estimativa fixa de receita no painel admin.
+- O preço cobrado de verdade fica no produto da Google Play (e da App Store). O app mostra o preço da loja; R$ 19,90 só aparece como valor reserva no app, nos textos legais e no site, e como estimativa fixa de receita no painel admin.
 - O admin hoje permite: visão geral e receita da Play, lista de pessoas, dar ou tirar Premium por dias, anotações, marcar "já chamei", excluir conta e registro de ações, com autenticação em dois fatores opcional.
 - Pendências: tornar o 2FA obrigatório; guardar o preço de referência em um só lugar (usado pelo admin, textos e site); mudar o preço na loja, não no admin.

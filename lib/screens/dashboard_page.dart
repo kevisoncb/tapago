@@ -8,6 +8,7 @@ import '../services/collection_follow_up.dart';
 import '../services/daily_overview.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
+import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/pago_logo.dart';
 import '../widgets/pago_menu.dart';
@@ -1196,7 +1197,7 @@ class _PremiumEntry extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Conheça voz, leitura de recibos, mensagens próprias e boletos a pagar.',
+          'Resumo do caixa, parcelamento, mensagens próprias, boletos a pagar, voz e leitura de recibos. ${AppConstants.premiumPriceLabel}/mês.',
           style: Theme.of(context).textTheme.bodySmall
               ?.copyWith(color: AppColors.mutedDark),
         ),

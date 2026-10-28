@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/cash_summary.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
@@ -30,9 +31,8 @@ class DashboardPage extends StatelessWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _NewDebtFab(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AddDebtPage()),
-          );
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const AddDebtPage()));
         },
       ),
       body: SafeArea(
@@ -85,6 +85,8 @@ class DashboardPage extends StatelessWidget {
                           ],
                           const SizedBox(height: 12),
                           const _BillsEntry(),
+                          const SizedBox(height: 12),
+                          const _CashSummaryCard(),
                           const SizedBox(height: 22),
                           Row(
                             children: [
@@ -155,9 +157,8 @@ class DashboardPage extends StatelessWidget {
   }
 
   void _openAll(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CadernetaPage()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const CadernetaPage()));
   }
 }
 
@@ -207,9 +208,8 @@ class _Header extends StatelessWidget {
         ),
         IconButton(
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            );
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const SettingsPage()));
           },
           icon: const Icon(Icons.settings_outlined),
         ),
@@ -254,7 +254,12 @@ class _MetricCard extends StatelessWidget {
     final color = danger ? AppColors.danger : AppColors.primary;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(18, compact ? 14 : 18, 18, compact ? 14 : 18),
+      padding: EdgeInsets.fromLTRB(
+        18,
+        compact ? 14 : 18,
+        18,
+        compact ? 14 : 18,
+      ),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(24),
@@ -320,7 +325,10 @@ class _PremiumBanner extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.workspace_premium_rounded, color: AppColors.text),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -347,9 +355,8 @@ class _PremiumBanner extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PremiumPage()),
-              );
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -386,7 +393,10 @@ class _BillsEntry extends StatelessWidget {
     );
     final Widget subtitle;
     if (!premium) {
-      subtitle = Text('Premium · parcelas e aviso antes de vencer', style: mutedStyle);
+      subtitle = Text(
+        'Premium · parcelas e aviso antes de vencer',
+        style: mutedStyle,
+      );
     } else if (state.pendingBills.isEmpty) {
       subtitle = Text('Cadastre o boleto do fornecedor', style: mutedStyle);
     } else if (overdue > 0) {
@@ -401,9 +411,7 @@ class _BillsEntry extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            TextSpan(
-              text: ' · ${Money.full(state.aPagarAberto)} no total',
-            ),
+            TextSpan(text: ' · ${Money.full(state.aPagarAberto)} no total'),
           ],
         ),
         style: mutedStyle,
@@ -420,9 +428,9 @@ class _BillsEntry extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const BillsPage()),
-        ),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const BillsPage())),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
@@ -448,7 +456,9 @@ class _BillsEntry extends StatelessWidget {
                 ),
               ),
               Icon(
-                premium ? Icons.chevron_right_rounded : Icons.lock_outline_rounded,
+                premium
+                    ? Icons.chevron_right_rounded
+                    : Icons.lock_outline_rounded,
                 color: AppColors.mutedDark,
               ),
             ],
@@ -579,6 +589,151 @@ class DebtTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CashSummaryCard extends StatelessWidget {
+  const _CashSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final titleStyle = GoogleFonts.plusJakartaSans(
+      fontWeight: FontWeight.w800,
+      fontSize: 14,
+    );
+    final mutedStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 11.5,
+      color: AppColors.mutedDark,
+      fontWeight: FontWeight.w500,
+    );
+    if (!state.user.premiumAtivo) {
+      return Material(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () =>
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const PremiumPage())),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_wallet_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Resumo do caixa', style: titleStyle),
+                      Text(
+                        'Premium · a receber × a pagar e quem mais deve',
+                        style: mutedStyle,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  color: AppColors.mutedDark,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final summary = buildCashSummary(
+      debts: state.debts,
+      saldoOf: state.saldoOf,
+      bills: state.bills,
+      now: DateTime.now(),
+    );
+    Widget line(String label, double receber, double pagar) {
+      final saldo = receber - pagar;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label, style: mutedStyle.copyWith(fontSize: 12.5)),
+            ),
+            Text(
+              '+${Money.compact(receber)}  −${Money.compact(pagar)}  ',
+              style: mutedStyle.copyWith(fontSize: 12.5),
+            ),
+            Text(
+              Money.compact(saldo),
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+                color: saldo < 0 ? AppColors.danger : AppColors.premiumGreen,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined),
+              const SizedBox(width: 10),
+              Text('Resumo do caixa', style: titleStyle),
+            ],
+          ),
+          const SizedBox(height: 6),
+          line('Próximos 7 dias', summary.receber7, summary.pagar7),
+          line('Próximos 30 dias', summary.receber30, summary.pagar30),
+          Text(
+            'Verde: sobra · Vermelho: falta (recebe − paga)',
+            style: mutedStyle,
+          ),
+          if (summary.devedores.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Quem mais deve em atraso',
+              style: titleStyle.copyWith(fontSize: 13),
+            ),
+            for (final item in summary.devedores)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${item.nome} · ${item.diasAtraso} ${item.diasAtraso == 1 ? 'dia' : 'dias'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: mutedStyle.copyWith(fontSize: 12.5),
+                      ),
+                    ),
+                    Text(
+                      Money.full(item.valor),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }

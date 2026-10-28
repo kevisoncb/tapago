@@ -6,6 +6,7 @@ import 'package:pago_app/services/client_match.dart';
 import 'package:pago_app/services/debt_balance.dart';
 import 'package:pago_app/services/auth_messages.dart';
 import 'package:pago_app/services/bill_installments.dart';
+import 'package:pago_app/services/cash_summary.dart';
 import 'package:pago_app/services/mmp_service.dart';
 import 'package:pago_app/services/pix_status.dart';
 import 'package:pago_app/services/password_hash.dart';
@@ -290,6 +291,57 @@ Troco: R\$ 0,00
     expect(debt.copyWith(valorPrincipal: 1).toFirestore().containsKey('grupo_id'), isTrue);
     final single = Debt.fromMap({'nome': 'A', 'valor_principal': 10});
     expect(single.toFirestore().containsKey('grupo_id'), isFalse);
+  });
+
+  test('resumo do caixa soma a receber × a pagar e ordena quem mais deve', () {
+    final now = DateTime(2026, 10, 10);
+    Debt debt(String nome, double valor, DateTime due, {bool pago = false}) =>
+        Debt(
+          id: '$nome$due',
+          userId: 'u',
+          nome: nome,
+          telefone: '',
+          valorPrincipal: valor,
+          taxaJuros: 0,
+          dataVencimento: due,
+          statusPago: pago,
+          clientScore: 80,
+        );
+    Bill bill(double valor, DateTime due, {bool pago = false}) => Bill(
+          id: '$valor$due',
+          userId: 'u',
+          fornecedor: 'F',
+          valor: valor,
+          dataVencimento: due,
+          pago: pago,
+        );
+    final summary = buildCashSummary(
+      debts: [
+        debt('Ana', 100, DateTime(2026, 10, 5)),
+        debt('Ana', 50, DateTime(2026, 10, 8)),
+        debt('Beto', 300, DateTime(2026, 10, 1)),
+        debt('Caio', 70, DateTime(2026, 10, 12)),
+        debt('Dani', 900, DateTime(2026, 11, 20)),
+        debt('Edu', 500, DateTime(2026, 10, 2), pago: true),
+      ],
+      saldoOf: (d) => d.valorPrincipal,
+      bills: [
+        bill(40, DateTime(2026, 10, 11)),
+        bill(60, DateTime(2026, 10, 30)),
+        bill(999, DateTime(2026, 10, 11), pago: true),
+      ],
+      now: now,
+    );
+    expect(summary.receber7, 520);
+    expect(summary.receber30, 520);
+    expect(summary.pagar7, 40);
+    expect(summary.pagar30, 100);
+    expect(summary.saldo7, 480);
+    expect(summary.vencidoReceber, 450);
+    expect(summary.devedores.map((d) => d.nome), ['Beto', 'Ana']);
+    expect(summary.devedores.first.diasAtraso, 9);
+    expect(summary.devedores.last.valor, 150);
+    expect(summary.devedores.last.diasAtraso, 5);
   });
 
   test('aviso de 3 dias antes do fiado é só Premium', () {

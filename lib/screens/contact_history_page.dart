@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/client_match.dart';
+import '../services/installment_group.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../utils/masks.dart';
+import '../widgets/amount_keypad.dart';
 import '../widgets/common.dart';
 import 'add_debt_page.dart';
 import 'client_profile_page.dart';
@@ -184,7 +186,9 @@ class ContactHistoryPage extends StatelessWidget {
           const SizedBox(height: 18),
           const SectionLabel('LANÇAMENTOS'),
           const SizedBox(height: 10),
-          ...loans.map((debt) {
+          ...groupInstallments(loans).map((item) {
+            if (item is InstallmentGroup) return _InstallmentCard(group: item);
+            final debt = item as Debt;
             final itemSaldo = state.saldoOf(debt);
             final itemQuitado = debt.statusPago || itemSaldo <= 0.009;
             return Padding(
@@ -407,6 +411,358 @@ class _ActionPair extends StatelessWidget {
           Expanded(child: children[i]),
         ],
       ],
+    );
+  }
+}
+
+enum _PayChoice { one, two, all, other }
+
+class _InstallmentCard extends StatefulWidget {
+  const _InstallmentCard({required this.group});
+
+  final InstallmentGroup group;
+
+  @override
+  State<_InstallmentCard> createState() => _InstallmentCardState();
+}
+
+class _InstallmentCardState extends State<_InstallmentCard> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppController>();
+    final group = widget.group;
+    final abertas = group.abertas(state.saldoOf);
+    final atual = abertas.firstOrNull;
+    final quitado = atual == null;
+    final restante = group.restante(state.saldoOf);
+    final pagas = group.pagas(state.saldoOf);
+    final atualSaldo = atual == null ? 0.0 : state.saldoOf(atual);
+    final parcial = atual != null && atualSaldo < atual.valorAtualizado - 0.009;
+    final atrasada = atual != null && atual.isOverdue;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD7E6FF)),
+          color: Colors.white,
+        ),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: quitado ? () => setState(() => _open = !_open) : _pay,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Parcelado em ${group.total}x · total ${Money.full(group.valorTotal)}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.mutedDark,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            quitado
+                                ? 'Parcelamento quitado'
+                                : Money.full(atual.valorAtualizado),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: quitado
+                                  ? AppColors.success
+                                  : AppColors.text,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            quitado
+                                ? '${group.total} de ${group.total} pagas'
+                                : 'Parcela ${atual.parcela} de ${group.total} · vence ${Dates.full(atual.dataVencimento)}${parcial ? ' · falta ${Money.full(atualSaldo)}' : ''}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: atrasada
+                                  ? AppColors.danger
+                                  : AppColors.mutedDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          quitado ? 'Quitado' : 'Falta ${Money.full(restante)}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            color: quitado ? AppColors.success : AppColors.text,
+                          ),
+                        ),
+                        Text(
+                          '$pagas de ${group.total} pagas',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.mutedDark,
+                          ),
+                        ),
+                        if (atrasada)
+                          Text(
+                            'Em atraso',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: pagas / group.total,
+                  minHeight: 6,
+                  backgroundColor: AppColors.primarySoft,
+                  color: AppColors.success,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Row(
+                children: [
+                  if (!quitado)
+                    TextButton.icon(
+                      onPressed: _pay,
+                      icon: const Icon(Icons.payments_outlined, size: 18),
+                      label: const Text('Registrar pagamento'),
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => setState(() => _open = !_open),
+                    child: Text(_open ? 'Ocultar parcelas' : 'Ver parcelas'),
+                  ),
+                ],
+              ),
+            ),
+            if (_open)
+              for (final debt in group.parcelas)
+                _InstallmentRow(
+                  debt: debt,
+                  saldo: state.saldoOf(debt),
+                  settled: InstallmentGroup.isSettled(debt, state.saldoOf),
+                ),
+            if (_open) const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pay() async {
+    final state = context.read<AppController>();
+    final group = widget.group;
+    final abertas = group.abertas(state.saldoOf);
+    if (abertas.isEmpty) return;
+    final restante = group.restante(state.saldoOf);
+    final first = abertas.first;
+    final firstSaldo = state.saldoOf(first);
+    final twoSaldo = abertas.length > 2
+        ? firstSaldo + state.saldoOf(abertas[1])
+        : null;
+
+    final choice = await showModalBottomSheet<_PayChoice>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheet) {
+        Widget option(
+          IconData icon,
+          String title,
+          String? value,
+          _PayChoice c,
+        ) => ListTile(
+          leading: CircleAvatar(
+            backgroundColor: AppColors.primarySoft,
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          title: Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+          ),
+          trailing: value == null
+              ? const Icon(Icons.chevron_right_rounded)
+              : Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+          onTap: () => Navigator.pop(sheet, c),
+        );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'O cliente pagou quanto?',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Falta ${Money.full(restante)} em ${abertas.length} ${abertas.length == 1 ? 'parcela' : 'parcelas'}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: AppColors.mutedDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                option(
+                  Icons.looks_one_outlined,
+                  'Parcela ${first.parcela} de ${group.total}',
+                  Money.full(firstSaldo),
+                  _PayChoice.one,
+                ),
+                if (twoSaldo != null)
+                  option(
+                    Icons.looks_two_outlined,
+                    'As 2 próximas parcelas',
+                    Money.full(twoSaldo),
+                    _PayChoice.two,
+                  ),
+                if (abertas.length > 1)
+                  option(
+                    Icons.done_all_rounded,
+                    'Quitar tudo de uma vez',
+                    Money.full(restante),
+                    _PayChoice.all,
+                  ),
+                option(
+                  Icons.edit_outlined,
+                  'Outro valor',
+                  null,
+                  _PayChoice.other,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (choice == null || !mounted) return;
+
+    final double? valor = switch (choice) {
+      _PayChoice.one => firstSaldo,
+      _PayChoice.two => twoSaldo,
+      _PayChoice.all => restante,
+      _PayChoice.other => await showAmountKeypad(
+        context: context,
+        title: 'Quanto entrou agora?',
+        confirmLabel: 'Abater',
+        max: restante,
+        maxLabel: 'Falta ${Money.full(restante)}',
+      ),
+    };
+    if (valor == null || !mounted) return;
+
+    final controller = context.read<AppController>();
+    final plan = planInstallmentPayment(
+      abertas: abertas,
+      saldoOf: state.saldoOf,
+      valor: valor,
+    );
+    String? error;
+    for (final step in plan) {
+      error = await controller.abate(debt: step.debt, valor: step.valor);
+      if (error != null) break;
+    }
+    if (!mounted) return;
+    final next = group.abertas(controller.saldoOf);
+    showPagoSnack(
+      context,
+      error ??
+          (next.isEmpty
+              ? 'Parcelamento quitado.'
+              : '${Money.full(valor)} recebido. Agora: parcela ${next.first.parcela} de ${group.total}.'),
+    );
+  }
+}
+
+class _InstallmentRow extends StatelessWidget {
+  const _InstallmentRow({
+    required this.debt,
+    required this.saldo,
+    required this.settled,
+  });
+
+  final Debt debt;
+  final double saldo;
+  final bool settled;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ClientProfilePage(debt: debt)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              settled
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              size: 20,
+              color: settled ? AppColors.success : AppColors.muted,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Parcela ${debt.parcela} de ${debt.totalParcelas} · ${Dates.full(debt.dataVencimento)}',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.mutedDark,
+                ),
+              ),
+            ),
+            Text(
+              settled ? 'Paga' : Money.full(saldo),
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                color: settled ? AppColors.success : AppColors.text,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

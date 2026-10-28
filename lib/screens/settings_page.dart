@@ -506,8 +506,6 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 28),
           const Divider(height: 1),
           const SizedBox(height: 22),
-          const SectionLabel('ZONA DE PERIGO'),
-          const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: () => _deleteAccount(context),
             icon: const Icon(Icons.delete_outline_rounded),

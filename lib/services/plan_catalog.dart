@@ -25,7 +25,7 @@ class PlanCatalog {
     ),
     PlanBenefit(
       'Seus dados acessíveis',
-      'Busca, importação CSV, extratos e exportação dos registros.',
+      'Busca, extratos e exportação dos registros.',
     ),
   ];
 

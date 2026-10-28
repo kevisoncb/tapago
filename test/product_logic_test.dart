@@ -292,6 +292,24 @@ Troco: R\$ 0,00
     expect(single.toFirestore().containsKey('grupo_id'), isFalse);
   });
 
+  test('aviso de 3 dias antes do fiado é só Premium', () {
+    final due = DateTime(2026, 10, 9);
+    final day = DateTime(2026, 10, 6);
+    expect(reminderKind(due: due, day: day, pago: false), isNull);
+    expect(
+      reminderKind(due: due, day: day, pago: false, premium: true),
+      ReminderKind.tresDias,
+    );
+    expect(
+      reminderKind(due: due, day: day, pago: true, premium: true),
+      isNull,
+    );
+    expect(
+      whatsAppActionForReminder(ReminderKind.tresDias),
+      WhatsAppAction.preventivo,
+    );
+  });
+
   test('lembrete cobre véspera, dia e atraso', () {
     final due = DateTime(2026, 10, 6);
     expect(

@@ -8,16 +8,21 @@ import '../models/models.dart';
 import '../utils/formatters.dart';
 import 'whatsapp_service.dart';
 
-enum ReminderKind { amanha, hoje, atraso }
+/// `tresDias` só é agendado para quem é Premium.
+enum ReminderKind { tresDias, amanha, hoje, atraso }
 
 ReminderKind? reminderKind({
   required DateTime due,
   required DateTime day,
   required bool pago,
+  bool premium = false,
 }) {
   if (pago) return null;
   final vencimento = DateTime(due.year, due.month, due.day);
   final start = DateTime(day.year, day.month, day.day);
+  if (premium && vencimento == start.add(const Duration(days: 3))) {
+    return ReminderKind.tresDias;
+  }
   if (vencimento == start) return ReminderKind.hoje;
   if (vencimento == start.add(const Duration(days: 1))) {
     return ReminderKind.amanha;
@@ -28,6 +33,7 @@ ReminderKind? reminderKind({
 
 WhatsAppAction whatsAppActionForReminder(ReminderKind kind) {
   switch (kind) {
+    case ReminderKind.tresDias:
     case ReminderKind.amanha:
       return WhatsAppAction.preventivo;
     case ReminderKind.hoje:
@@ -235,6 +241,7 @@ class ReminderService {
                     due: debt.dataVencimento,
                     day: day,
                     pago: debt.statusPago,
+                    premium: isPremium,
                   ) ==
                   kind,
             )
@@ -304,16 +311,22 @@ class ReminderService {
   String _title(ReminderKind kind, List<Debt> debts) {
     final nome = debts.first.nome;
     if (debts.length == 1) {
+      final parcela =
+          debts.first.parcelado ? ' (${debts.first.parcelaLabel})' : '';
       switch (kind) {
+        case ReminderKind.tresDias:
+          return 'O prazo de $nome$parcela se encerra em 3 dias.';
         case ReminderKind.amanha:
-          return 'O prazo de $nome se encerra amanhã.';
+          return 'O prazo de $nome$parcela se encerra amanhã.';
         case ReminderKind.hoje:
-          return 'O prazo de $nome vence hoje.';
+          return 'O prazo de $nome$parcela vence hoje.';
         case ReminderKind.atraso:
-          return '$nome está em atraso.';
+          return '$nome$parcela está em atraso.';
       }
     }
     switch (kind) {
+      case ReminderKind.tresDias:
+        return '${debts.length} prazos se encerram em 3 dias.';
       case ReminderKind.amanha:
         return '${debts.length} prazos se encerram amanhã.';
       case ReminderKind.hoje:

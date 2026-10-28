@@ -80,6 +80,8 @@ class FirestoreRepository implements AppRepository {
     await _users.doc(user.id).set({
       'email': user.email,
       'nome': user.nome,
+      'nome_loja': user.nomeLoja,
+      'limpeza_auto': user.limpezaAuto,
       'chave_pix': user.chavePix,
       'telefone': user.telefone,
       'whatsapp_conectado': user.whatsappConectado,

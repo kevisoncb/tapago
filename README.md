@@ -64,10 +64,15 @@ Em contêiner com diretório pessoal somente leitura, configurar `PUB_CACHE`, `X
 
 O roteiro para Android/iPhone e as configurações nativas estão em [VALIDACAO-MOBILE.md](docs/VALIDACAO-MOBILE.md).
 
-O site institucional usa uma configuração separada para que uma publicação não envie por engano a pasta de redirecionamento do backend:
+O `firebase.json` publica quatro endereços do Hosting. Publique só o que mudou:
 
-```sh
-firebase deploy --only hosting --config firebase.site.json --project tapago-ae948
-```
+| Endereço | Pasta | Comando |
+| --- | --- | --- |
+| `usepago.web.app` (site público) | `site` | `firebase deploy --only hosting:usepago` |
+| `pago-admin.web.app` (painel) | `admin` | `firebase deploy --only hosting:pago-admin` |
+| `sistema-pago.web.app` (sistema para computador) | `sistema` | `firebase deploy --only hosting:sistema-pago` |
+| `tapago-ae948.web.app` (redirecionamentos e `/api`) | `hosting-redirect` | `firebase deploy --only hosting:tapago-ae948` |
+
+Nunca troque a pasta `hosting-redirect`: ela leva as rotas `/api/...` das funções (inclusive o webhook do Asaas).
 
 Consulte [SISTEMA.md](SISTEMA.md) para o contexto atual e [VALIDACAO.md](docs/VALIDACAO.md) para a evidência desta entrega.

@@ -43,93 +43,215 @@
       }
     }
   },
-  "hosting": {
-    "public": "hosting-redirect",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "headers": [
-      {
-        "source": "**/*.html",
-        "headers": [
-          { "key": "Cache-Control", "value": "no-cache, max-age=0" }
-        ]
-      }
-    ],
-    "redirects": [
-      { "source": "/termos{,.html}", "destination": "https://usepago.web.app/termos", "type": 301 },
-      { "source": "/privacidade{,.html}", "destination": "https://usepago.web.app/privacidade", "type": 301 },
-      { "source": "/lgpd{,.html}", "destination": "https://usepago.web.app/lgpd", "type": 301 },
-      { "source": "/ajuda{,.html}", "destination": "https://usepago.web.app/ajuda", "type": 301 },
-      { "regex": "^/(?:a|ap|api)?$", "destination": "https://usepago.web.app/", "type": 301 },
-      { "regex": "^/(?:[^a]|a[^p]|ap[^i]|api[^/]).*$", "destination": "https://usepago.web.app/", "type": 301 }
-    ],
-    "rewrites": [
-      {
-        "source": "/api/premium/pix",
-        "function": {
-          "functionId": "createPremiumPix",
-          "region": "southamerica-east1"
+  "hosting": [
+    {
+      "site": "tapago-ae948",
+      "public": "hosting-redirect",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, max-age=0"
+            }
+          ]
         }
-      },
-      {
-        "source": "/api/premium/pix/**",
-        "function": {
-          "functionId": "premiumPixStatus",
-          "region": "southamerica-east1"
+      ],
+      "redirects": [
+        {
+          "source": "/termos{,.html}",
+          "destination": "https://usepago.web.app/termos",
+          "type": 301
+        },
+        {
+          "source": "/privacidade{,.html}",
+          "destination": "https://usepago.web.app/privacidade",
+          "type": 301
+        },
+        {
+          "source": "/lgpd{,.html}",
+          "destination": "https://usepago.web.app/lgpd",
+          "type": 301
+        },
+        {
+          "source": "/ajuda{,.html}",
+          "destination": "https://usepago.web.app/ajuda",
+          "type": 301
+        },
+        {
+          "regex": "^/(?:a|ap|api)?$",
+          "destination": "https://usepago.web.app/",
+          "type": 301
+        },
+        {
+          "regex": "^/(?:[^a]|a[^p]|ap[^i]|api[^/]).*$",
+          "destination": "https://usepago.web.app/",
+          "type": 301
         }
-      },
-      {
-        "source": "/api/play/confirm",
-        "function": {
-          "functionId": "confirmPlayPurchase",
-          "region": "southamerica-east1"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/premium/pix",
+          "function": {
+            "functionId": "createPremiumPix",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/premium/pix/**",
+          "function": {
+            "functionId": "premiumPixStatus",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/play/confirm",
+          "function": {
+            "functionId": "confirmPlayPurchase",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/apple/confirm",
+          "function": {
+            "functionId": "confirmApplePurchase",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/apple/notifications",
+          "function": {
+            "functionId": "appleNotifications",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/acquisition/register",
+          "function": {
+            "functionId": "registerAcquisition",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/devices/register",
+          "function": {
+            "functionId": "registerDevice",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/account/delete",
+          "function": {
+            "functionId": "deleteMyAccount",
+            "region": "southamerica-east1"
+          }
+        },
+        {
+          "source": "/api/webhooks/asaas",
+          "function": {
+            "functionId": "asaasWebhook",
+            "region": "southamerica-east1"
+          }
         }
-      },
-      {
-        "source": "/api/apple/confirm",
-        "function": {
-          "functionId": "confirmApplePurchase",
-          "region": "southamerica-east1"
+      ]
+    },
+    {
+      "site": "usepago",
+      "public": "site",
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, max-age=0"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(css|js)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=3600"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(jpg|jpeg|gif|png|webp|svg)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=604800, immutable"
+            }
+          ]
         }
-      },
-      {
-        "source": "/api/apple/notifications",
-        "function": {
-          "functionId": "appleNotifications",
-          "region": "southamerica-east1"
+      ]
+    },
+    {
+      "site": "pago-admin",
+      "public": "admin",
+      "cleanUrls": true,
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, max-age=0"
+            },
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            }
+          ]
         }
-      },
-      {
-        "source": "/api/acquisition/register",
-        "function": {
-          "functionId": "registerAcquisition",
-          "region": "southamerica-east1"
+      ]
+    },
+    {
+      "site": "sistema-pago",
+      "public": "sistema",
+      "cleanUrls": true,
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, max-age=0"
+            }
+          ]
         }
-      },
-      {
-        "source": "/api/devices/register",
-        "function": {
-          "functionId": "registerDevice",
-          "region": "southamerica-east1"
-        }
-      },
-      {
-        "source": "/api/account/delete",
-        "function": {
-          "functionId": "deleteMyAccount",
-          "region": "southamerica-east1"
-        }
-      },
-      {
-        "source": "/api/webhooks/asaas",
-        "function": {
-          "functionId": "asaasWebhook",
-          "region": "southamerica-east1"
-        }
-      }
-    ]
-  }
+      ]
+    }
+  ]
 }

@@ -20,7 +20,7 @@ Navegação principal inferior com Hoje, Clientes, Boletos e Mais. Conta nova se
 - `lib/models/models.dart`: usuário, dívida, pagamento e boleto, com campos aditivos de parcelamento e estorno.
 - `assets/fonts`: fontes Plus Jakarta Sans incluídas com licença e proveniência.
 - `functions`: Play, Apple, administração, exclusão, rotas legadas Asaas e atribuição de receita.
-- `site`: site institucional completo. `firebase.site.json` publica HTML, CSS, JavaScript e imagens no Hosting `usepago`; a configuração padrão continua reservada aos redirecionamentos e APIs em `hosting-redirect`.
+- `site`: site institucional completo. o `firebase.json` publica HTML, CSS, JavaScript e imagens no Hosting `usepago` (`firebase deploy --only hosting:usepago`). O mesmo arquivo cobre `pago-admin` (painel), `sistema-pago` (sistema para computador, hoje só uma página provisória) e `tapago-ae948`, reservado aos redirecionamentos e APIs em `hosting-redirect`.
 - `test`, `functions/test`, `tool/rules`: testes Flutter, servidor e regras.
 
 ## Dados e integridade

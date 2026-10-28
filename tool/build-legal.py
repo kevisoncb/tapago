@@ -5,7 +5,7 @@ import pathlib, shutil
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
-UPDATED = "27 de outubro de 2026"
+UPDATED = "28 de outubro de 2026"
 WA = "https://wa.me/5527999019162?text=Oi%2C%20vim%20pelo%20Pag%C3%B4%20e%20quero%20tirar%20uma%20d%C3%BAvida."
 WA_LGPD = "https://wa.me/5527999019162?text=Oi%2C%20quero%20fazer%20um%20pedido%20sobre%20meus%20dados%20(LGPD)."
 WA_DEL = "https://wa.me/5527999019162?text=Excluir%20minha%20conta"
@@ -131,9 +131,9 @@ PRIVACIDADE = f"""
 <div class="scroll"><table>
 <thead><tr><th>Dado</th><th>Para quê</th></tr></thead>
 <tbody>
-<tr><td><strong>Conta:</strong> nome, e-mail, senha (guardada de forma protegida), telefone (se informar) e aceite dos termos</td><td>Criar e proteger a sua conta, entrar no app e falar com você</td></tr>
+<tr><td><strong>Conta:</strong> nome, e-mail, senha (guardada de forma protegida), telefone (se informar), nome da loja (opcional) e aceite dos termos</td><td>Criar e proteger a sua conta, entrar no app e falar com você</td></tr>
 <tr><td><strong>Perfil de cobrança:</strong> chave PIX, dados bancários (opcionais), texto da mensagem de cobrança e preferências</td><td>Montar a mensagem de cobrança e personalizar o app</td></tr>
-<tr><td><strong>Caderneta:</strong> nome e telefone dos clientes, valores, juros, vencimentos e pagamentos registrados</td><td>Mostrar o que cada cliente deve e o que vence</td></tr>
+<tr><td><strong>Caderneta:</strong> nome e telefone dos clientes, valores, juros, vencimentos e pagamentos registrados; no lançamento por produto (Premium), os itens que o cliente levou (produto, quantidade, valor, data e hora)</td><td>Mostrar o que cada cliente deve e o que vence</td></tr>
 <tr><td><strong>Boletos a pagar</strong> (Premium): fornecedor, valor, vencimento, parcelas e o código do boleto, se você colar</td><td>Lembrar os vencimentos dos seus fornecedores</td></tr>
 <tr><td><strong>Assinatura:</strong> situação e identificadores da compra enviados pela loja (não recebemos número de cartão)</td><td>Liberar e manter o Premium</td></tr>
 <tr><td><strong>Voz</strong> (Premium): o que você dita para lançar</td><td>Sugerir o preenchimento do lançamento. O reconhecimento usa o serviço de voz do seu aparelho, que pode ser do fabricante ou do Google, conforme as configurações do aparelho</td></tr>
@@ -173,6 +173,7 @@ PRIVACIDADE = f"""
 
 <h2 id="retencao">7. Por quanto tempo guardamos</h2>
 <p>Guardamos os dados enquanto a sua conta existir. Quando você exclui a conta, apagamos login, perfil, clientes, lançamentos, pagamentos e boletos na hora. Ficam apenas os registros de pagamento da assinatura Premium (número do pedido, data e valor), pelo prazo exigido por lei fiscal, sem os dados da sua caderneta. Cópias de segurança são eliminadas por completo em até 30 dias. Veja <a href="./excluir-conta">como excluir a sua conta</a>.</p>
+<p><strong>Limpeza automática (opcional).</strong> Vem desligada. Se você ligar em Mais, a caderneta de um cliente quitado é apagada 7 dias depois do último pagamento, junto com o histórico e os itens. O app avisa antes e você pode tocar em Manter. Não dá para desfazer.</p>
 
 <h2 id="direitos">8. Seus direitos</h2>
 <p>Pela LGPD (art. 18), você pode pedir a qualquer momento:</p>
@@ -231,7 +232,7 @@ TERMOS = f"""
 
 <h2 id="premium">6. Assinatura Premium</h2>
 <ul>
-  <li><strong>O que inclui:</strong> lançamento por voz, leitura de comprovante por foto, mensagem de cobrança com o seu texto e boletos de fornecedores. O plano gratuito continua com a caderneta essencial.</li>
+  <li><strong>O que inclui:</strong> lançamento por voz, leitura de comprovante por foto, mensagem de cobrança com o seu texto, resumo do caixa, parcelamento a receber, boletos de fornecedores e lançamento por produto com relatório mensal. O plano gratuito continua com a caderneta essencial.</li>
   <li><strong>Preço:</strong> o valor mensal é exibido na loja antes da confirmação da compra (atualmente R$ 19,90 por mês). O valor da loja prevalece, e mudanças de preço são comunicadas pela loja antes de valerem para você.</li>
   <li><strong>Cobrança e renovação:</strong> a assinatura é feita pela loja do aparelho (Google Play no Android, App Store no iPhone) e renova automaticamente todo mês até você cancelar.</li>
   <li><strong>Cancelamento:</strong> feito na própria loja, antes da data de renovação (na App Store, pelo menos 24 horas antes do fim do período). O cancelamento vale para o ciclo seguinte e o período já pago continua disponível. Excluir a conta no Pagô não cancela a assinatura na loja.</li>

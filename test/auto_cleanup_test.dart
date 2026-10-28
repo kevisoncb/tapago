@@ -26,6 +26,11 @@ Payment _pay(String debtId, DateTime when, {bool estornado = false}) => Payment(
 );
 
 void main() {
+  test('desmarcar manter sobrescreve o valor antigo ao salvar', () {
+    expect(_debt('a', manter: true).toFirestore()['manter'], isTrue);
+    expect(_debt('a').toFirestore()['manter'], isFalse);
+  });
+
   final now = DateTime(2026, 11, 20, 12);
   double zero(Debt d) => 0;
 

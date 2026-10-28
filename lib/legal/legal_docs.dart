@@ -8,7 +8,7 @@ class LegalSection {
 }
 
 class LegalDocs {
-  static const updatedAt = '26 de outubro de 2026';
+  static const updatedAt = '28 de outubro de 2026';
   static const contact =
       'WhatsApp de suporte (Ajuda no app ou usepago.web.app/ajuda)';
 
@@ -50,7 +50,7 @@ class LegalDocs {
       '3. O serviço',
       'O plano gratuito permite cadastrar clientes e lançamentos, abater valores na caderneta (inclusive juros, quando você usa essa função) e abrir mensagens de cobrança no WhatsApp da sua conta (wa.me). O Pagô não envia mensagem em nome próprio ao seu cliente: o disparo sai do seu aplicativo de mensagens.\n\n'
           'A caderneta da conta fica no banco de dados do serviço. Isso vale no plano gratuito e no Premium: não é um extra pago. Juros são opcionais e definidos por você. O registro de “somente juros” ou “valor total” é ferramenta interna da sua conta e não substitui contrato, recibo ou título que você eventualmente emita com o cliente.\n\n'
-          'Recursos Premium (quando contratados) incluem cadastro por voz, leitura de recibos e mensagem de cobrança no seu texto. Funções anunciadas e ainda em implantação serão indicadas no app.',
+          'Recursos Premium (quando contratados) incluem cadastro por voz, leitura de recibos, mensagem de cobrança no seu texto, resumo do caixa, parcelamento a receber, boletos a pagar e lançamento por produto com relatório mensal. Funções anunciadas e ainda em implantação serão indicadas no app.',
     ),
     LegalSection(
       '4. Relação com os seus clientes',
@@ -94,8 +94,8 @@ class LegalDocs {
     ),
     LegalSection(
       '2. Dados que tratamos',
-      'Conta: nome, e-mail, senha (armazenada de forma protegida), telefone se informado, data e hora do aceite dos termos, chave PIX, dados bancários opcionais, preferências (notificações, biometria), status da assinatura.\n\n'
-          'Caderneta: nome e telefone dos seus clientes, valores, juros, vencimentos, abatimentos e histórico.\n\n'
+      'Conta: nome, e-mail, senha (armazenada de forma protegida), telefone se informado, nome da loja (opcional), data e hora do aceite dos termos, chave PIX, dados bancários opcionais, preferências (notificações, biometria), status da assinatura.\n\n'
+          'Caderneta: nome e telefone dos seus clientes, valores, juros, vencimentos, abatimentos e histórico. No lançamento por produto (Premium): os itens que o cliente levou (produto, quantidade, valor, data e hora).\n\n'
           'Boletos a pagar (Premium): fornecedor, valor, vencimento, parcelas e código do boleto, se você colar.\n\n'
           'Premium, quando usado: imagem de comprovante (OCR) e áudio para cadastro por voz.\n\n'
           'Uso do app: quando a medição de atribuição estiver configurada, identificador da instalação, origem da campanha e eventos mínimos como cadastro, abertura da oferta Premium, criação de lançamento e baixa manual na caderneta. Baixa manual é uma declaração no organizador, não uma confirmação bancária. Esses eventos não incluem nomes, telefones, valores, vencimentos, chave PIX ou conteúdo da caderneta. No iOS, identificadores de publicidade dependem da permissão da plataforma.\n\n'
@@ -119,7 +119,8 @@ class LegalDocs {
     ),
     LegalSection(
       '6. Retenção e exclusão',
-      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Para excluir a conta e os dados na hora: Configurações → Excluir minha conta (ou usepago.web.app/excluir-conta). Correção ou exclusão também podem ser pedidas pelo WhatsApp de suporte. Backups podem levar um período técnico para sumir por completo.',
+      'Mantemos os dados enquanto a conta existir e pelo prazo necessário a obrigações legais (por exemplo, comprovante de pagamento). Para excluir a conta e os dados na hora: Configurações → Excluir minha conta (ou usepago.web.app/excluir-conta). Correção ou exclusão também podem ser pedidas pelo WhatsApp de suporte. Backups podem levar um período técnico para sumir por completo.\n\n'
+          'Limpeza automática (opcional, desligada por padrão): se você ligar em Mais, a caderneta de um cliente quitado é apagada 7 dias depois do último pagamento, junto com o histórico e os itens. Você é avisado no app antes e pode tocar em Manter. Não dá para desfazer.',
     ),
     LegalSection(
       '7. Direitos do titular (art. 18)',

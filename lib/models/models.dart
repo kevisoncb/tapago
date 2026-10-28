@@ -352,7 +352,9 @@ class Debt {
       if (totalParcelas > 1) 'parcela': parcela,
       if (totalParcelas > 1) 'total_parcelas': totalParcelas,
       if (itens.isNotEmpty) 'itens': [for (final i in itens) i.toFirestore()],
-      if (manter) 'manter': true,
+      // Sempre enviado: o salvamento mescla campos, então 'false' precisa
+      // sobrescrever um 'true' antigo.
+      'manter': manter,
       'created_at': createdAt ?? DateTime.now(),
     };
   }

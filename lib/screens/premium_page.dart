@@ -90,7 +90,19 @@ class _PremiumPageState extends State<PremiumPage> {
                           icon: Icons.chat_bubble_outline_rounded,
                           title: 'Cobrança no seu texto',
                           subtitle:
-                              'A mensagem do WhatsApp sai com as suas palavras, não um texto genérico.',
+                              'Escreva a sua mensagem e uma para cada fase do atraso, de amigável a firme.',
+                        ),
+                        const _Benefit(
+                          icon: Icons.splitscreen_rounded,
+                          title: 'Parcelar a receber',
+                          subtitle:
+                              'Divida o fiado em 15/30/45 ou 30/60/90 com um toque. A cobrança cita "parcela 1 de 3".',
+                        ),
+                        const _Benefit(
+                          icon: Icons.account_balance_wallet_outlined,
+                          title: 'Resumo do caixa e avisos',
+                          subtitle:
+                              'O que entra e o que sai em 7 e 30 dias, quem mais deve e aviso 3 dias antes de vencer.',
                         ),
                         const _Benefit(
                           icon: Icons.receipt_long_rounded,

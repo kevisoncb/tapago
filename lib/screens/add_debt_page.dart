@@ -15,6 +15,7 @@ import '../utils/formatters.dart';
 import '../utils/input_masks.dart';
 import '../utils/masks.dart';
 import '../widgets/amount_keypad.dart';
+import '../widgets/product_items_editor.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
 import 'contact_history_page.dart';
@@ -48,6 +49,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
   final _voice = SpeechCapture();
   bool _saving = false;
   bool _parcelado = false;
+  bool _produto = false;
+  final List<DebtItem> _itens = [];
   int _parcelas = 3;
   String? _grupoId;
   final List<String> _newIds = [];
@@ -115,6 +118,30 @@ class _AddDebtPageState extends State<AddDebtPage> {
     } on ArgumentError {
       return const [];
     }
+  }
+
+  void _syncItems() {
+    final total = _itens.fold(0.0, (sum, item) => sum + item.total);
+    _valor.text = total > 0 ? Money.full(total) : '';
+  }
+
+  Future<void> _setProduto(bool enabled) async {
+    if (_saving || _pendingSave != null) return;
+    if (enabled && !context.read<AppController>().user.premiumAtivo) {
+      await Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
+      return;
+    }
+    setState(() {
+      _produto = enabled;
+      if (enabled) {
+        _juros.clear();
+        _syncItems();
+      } else {
+        _itens.clear();
+        _valor.clear();
+      }
+    });
   }
 
   Future<void> _setParcelado(bool enabled) async {
@@ -299,6 +326,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
       showPagoSnack(context, 'O parcelamento precisa de Premium ativo.');
       return;
     }
+    if (_produto && !state.user.premiumAtivo) {
+      showPagoSnack(context, 'O lançamento por produto precisa de Premium ativo.');
+      return;
+    }
+    if (_produto && _itens.isEmpty) {
+      showPagoSnack(context, 'Adicione ao menos um item ou desligue "Foi produto?".');
+      return;
+    }
     if (_parcelado && (_preview.isEmpty || _taxa != 0)) {
       showPagoSnack(
         context,
@@ -343,6 +378,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
             grupoId: _parcelado ? _grupoId! : '',
             parcela: i + 1,
             totalParcelas: count,
+            itens: i == 0 && _produto ? List.of(_itens) : const [],
           ),
       ];
     }
@@ -502,13 +538,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     children: [
                       Expanded(
                         child: AppTextField(
-                          label: _parcelado ? 'Total da venda' : 'Valor',
+                          label: _produto
+                              ? 'Total dos itens'
+                              : _parcelado
+                              ? 'Total da venda'
+                              : 'Valor',
                           hint: r'R$ 0,00',
                           icon: Icons.attach_money_rounded,
                           controller: _valor,
                           readOnly: true,
                           onTap: () async {
-                            if (financialLocked) return;
+                            if (financialLocked || _produto) return;
                             final value = await showAmountKeypad(
                               context: context,
                               title: _parcelado
@@ -531,7 +571,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                           hint: '0,00',
                           icon: Icons.percent_rounded,
                           controller: _juros,
-                          readOnly: financialLocked || _parcelado,
+                          readOnly: financialLocked || _parcelado || _produto,
                           keyboardType: TextInputType.number,
                           autocorrect: false,
                           enableSuggestions: false,
@@ -555,6 +595,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   ),
                   if (widget.debt == null) ...[
                     const SizedBox(height: 16),
+                    _productOptions(state),
+                    const SizedBox(height: 12),
                     _installmentOptions(state),
                   ],
                   const SizedBox(height: 16),
@@ -662,6 +704,49 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 : null,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _productOptions(AppController state) {
+    return Material(
+      color: AppColors.primarySoft,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          SwitchListTile.adaptive(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            title: Text(
+              'Foi produto?',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            subtitle: Text(
+              state.user.premiumAtivo
+                  ? 'Bar, padaria, mercearia: anote o que o cliente levou'
+                  : 'Premium · anote item por item e exporte no fim do mês',
+            ),
+            value: _produto,
+            onChanged: _setProduto,
+          ),
+          if (_produto)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: ProductItemsEditor(
+                itens: _itens,
+                onAdd: (item) => setState(() {
+                  _itens.add(item);
+                  _syncItems();
+                }),
+                onRemove: (index) => setState(() {
+                  _itens.removeAt(index);
+                  _syncItems();
+                }),
+              ),
+            ),
+        ],
       ),
     );
   }

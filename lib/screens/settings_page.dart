@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -139,17 +140,17 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          const SectionLabel('FINANCEIRO'),
+          const SectionLabel('MINHA CONTA'),
           const SizedBox(height: 10),
           GroupCard(
             children: [
               SettingsRow(
-                icon: Icons.insights_outlined,
-                title: 'Relatórios',
-                subtitle: 'Recebido, previsto, vencido e boletos',
-                onTap: () => Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
+                icon: Icons.storefront_outlined,
+                title: 'Nome da loja',
+                subtitle: user.nomeLoja.trim().isEmpty
+                    ? 'Aparece nos relatórios e comprovantes'
+                    : user.nomeLoja,
+                onTap: () => _editLoja(context),
               ),
               const Divider(height: 1, indent: 68),
               SettingsRow(
@@ -222,6 +223,83 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          const SectionLabel('PREMIUM'),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F8FF),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.workspace_premium_outlined,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pagô Premium',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            user.premiumAtivo && user.premiumVenceEm != null
+                                ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
+                                : user.premiumAtivo
+                                ? 'Assinatura ativa'
+                                : 'R\$ 19,90/mês · caixa, parcelas, voz e mais',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.mutedDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PremiumPage()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.text,
+                      side: const BorderSide(color: Color(0xFFD7E6FF)),
+                      backgroundColor: Colors.white.withValues(alpha: 0.7),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      user.premiumAtivo
+                          ? 'Gerenciar Assinatura'
+                          : 'Assinar Premium',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
           const SectionLabel('PREMIUM · COBRANÇA POR FASE'),
           const SizedBox(height: 10),
           GroupCard(
@@ -259,6 +337,30 @@ class SettingsPage extends StatelessWidget {
                       ),
                 onTap: () =>
                     _editMensagem(context, stage: _MsgStage.atrasoForte),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          const SectionLabel('RELATÓRIOS E DADOS'),
+          const SizedBox(height: 10),
+          GroupCard(
+            children: [
+              SettingsRow(
+                icon: Icons.insights_outlined,
+                title: 'Relatórios',
+                subtitle: 'Recebido, previsto, vencido e boletos',
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
+              ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
+                icon: Icons.file_download_outlined,
+                title: 'Exportar meus dados',
+                subtitle: 'Sua caderneta em CSV ou JSON',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AccountExportPage()),
+                ),
               ),
             ],
           ),
@@ -342,98 +444,6 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 22),
-          const SectionLabel('ASSINATURA'),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F8FF),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.workspace_premium_outlined,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Pagô Premium',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            user.premiumAtivo && user.premiumVenceEm != null
-                                ? 'Vence em ${Dates.full(user.premiumVenceEm!)}'
-                                : user.premiumAtivo
-                                ? 'Assinatura ativa'
-                                : 'R\$ 19,90/mês · caixa, parcelas, voz e mais',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: AppColors.mutedDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PremiumPage()),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.text,
-                      side: const BorderSide(color: Color(0xFFD7E6FF)),
-                      backgroundColor: Colors.white.withValues(alpha: 0.7),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      user.premiumAtivo
-                          ? 'Gerenciar Assinatura'
-                          : 'Assinar Premium',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const SectionLabel('MEUS DADOS'),
-          const SizedBox(height: 10),
-          GroupCard(
-            children: [
-              SettingsRow(
-                icon: Icons.file_download_outlined,
-                title: 'Exportar meus dados',
-                subtitle: 'Sua caderneta em CSV ou JSON',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AccountExportPage()),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
           const SectionLabel('SUPORTE'),
           const SizedBox(height: 10),
           GroupCard(
@@ -493,19 +503,25 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          Center(
-            child: TextButton(
-              onPressed: () => _deleteAccount(context),
-              child: Text(
-                'Excluir minha conta',
-                style: GoogleFonts.plusJakartaSans(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
+          const SizedBox(height: 28),
+          const Divider(height: 1),
+          const SizedBox(height: 22),
+          const SectionLabel('ZONA DE PERIGO'),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => _deleteAccount(context),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Excluir minha conta'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.danger,
+              side: const BorderSide(color: AppColors.danger),
+              minimumSize: const Size.fromHeight(50),
+              textStyle: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
+          const SizedBox(height: 28),
           const Center(child: PagoMark(size: 44)),
           const SizedBox(height: 10),
           Center(
@@ -634,6 +650,52 @@ class SettingsPage extends StatelessWidget {
     if (deleted != true || !context.mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
     await state.signOut();
+  }
+
+  Future<void> _editLoja(BuildContext context) async {
+    final state = context.read<AppController>();
+    final controller = TextEditingController(text: state.user.nomeLoja);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheet) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.viewInsetsOf(sheet).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppTextField(
+              label: 'Nome da loja',
+              hint: 'Ex.: Bar do Zé',
+              icon: Icons.storefront_outlined,
+              controller: controller,
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: [LengthLimitingTextInputFormatter(80)],
+            ),
+            const SizedBox(height: 16),
+            PrimaryButton(
+              label: 'Salvar nome',
+              onPressed: () async {
+                final nav = Navigator.of(sheet);
+                await state.saveUser(
+                  state.user.copyWith(nomeLoja: controller.text.trim()),
+                );
+                nav.pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
   }
 
   Future<void> _editPix(BuildContext context) async {

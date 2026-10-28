@@ -11,7 +11,6 @@ import '../theme/app_colors.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/pago_logo.dart';
-import '../widgets/pago_menu.dart';
 import '../widgets/whatsapp_charge.dart';
 import '../widgets/whatsapp_mark.dart';
 import 'add_debt_page.dart';
@@ -21,7 +20,6 @@ import 'client_profile_page.dart';
 import 'follow_up_page.dart';
 import 'follow_ups_page.dart';
 import 'premium_page.dart';
-import 'settings_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -152,8 +150,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ReceivablesCard(state: state),
-                        const SizedBox(height: 20),
-                        const _QuickActions(),
                         const SizedBox(height: 24),
                         FutureBuilder<List<CollectionFollowUp>>(
                           future: _followUps,
@@ -310,32 +306,9 @@ class _Header extends StatelessWidget {
                     ?.copyWith(color: AppColors.mutedDark),
               ),
               const SizedBox(height: 3),
-              Semantics(
-                button: true,
-                label: 'Abrir menu do Pagô',
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => showPagoMenu(context),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 9),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PagoWordmark(markSize: 27, fontSize: 25),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.expand_more_rounded,
-                            color: AppColors.mutedDark,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 9),
+                child: PagoWordmark(markSize: 27, fontSize: 25),
               ),
             ],
           ),
@@ -345,16 +318,6 @@ class _Header extends StatelessWidget {
           onPressed: () =>
               _open(context, const CadernetaPage(focusSearch: true)),
           icon: const Icon(Icons.search_rounded),
-        ),
-        const SizedBox(width: 4),
-        IconButton.filledTonal(
-          tooltip: 'Configurações da conta',
-          onPressed: () => _open(context, const SettingsPage()),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.limeSoft,
-            foregroundColor: AppColors.text,
-          ),
-          icon: const Icon(Icons.tune_rounded),
         ),
       ],
     );
@@ -604,27 +567,6 @@ class _SmallMetric extends StatelessWidget {
       ),
     );
   }
-}
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-  @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: [
-      OutlinedButton.icon(
-        onPressed: () => _open(context, const CadernetaPage()),
-        icon: const Icon(Icons.people_outline_rounded, size: 19),
-        label: const Text('Clientes'),
-      ),
-      OutlinedButton.icon(
-        onPressed: () => _open(context, const BillsPage()),
-        icon: const Icon(Icons.receipt_long_outlined, size: 19),
-        label: const Text('Boletos'),
-      ),
-    ],
-  );
 }
 
 class _CollectionAgenda extends StatelessWidget {

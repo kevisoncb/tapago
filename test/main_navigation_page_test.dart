@@ -90,6 +90,7 @@ void main() {
     );
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Relatórios'), 300);
     await tester.tap(find.text('Relatórios'));
     await tester.pumpAndSettle();
     expect(find.text('Recebimentos de clientes'), findsOneWidget);

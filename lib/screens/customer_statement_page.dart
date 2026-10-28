@@ -28,7 +28,8 @@ class _CustomerStatementPageState extends State<CustomerStatementPage> {
 
   Future<void> _export(CustomerStatement statement, {required bool pdf}) async {
     if (_exporting) return;
-    final merchant = context.read<AppController>().user.nome;
+    final owner = context.read<AppController>().user;
+    final merchant = owner.nomeLoja.trim().isNotEmpty ? owner.nomeLoja.trim() : owner.nome;
     setState(() => _exporting = true);
     try {
       final bytes = pdf

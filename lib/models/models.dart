@@ -12,6 +12,7 @@ class AppUser {
     this.notificacoesDiarias = true,
     this.lembretesAcompanhamento = false,
     this.acessoBiometrico = false,
+    this.nomeLoja = '',
     this.banco = '',
     this.agencia = '',
     this.conta = '',
@@ -34,6 +35,7 @@ class AppUser {
   final bool notificacoesDiarias;
   final bool lembretesAcompanhamento;
   final bool acessoBiometrico;
+  final String nomeLoja;
   final String banco;
   final String agencia;
   final String conta;
@@ -62,6 +64,7 @@ class AppUser {
     bool? notificacoesDiarias,
     bool? lembretesAcompanhamento,
     bool? acessoBiometrico,
+    String? nomeLoja,
     String? banco,
     String? agencia,
     String? conta,
@@ -85,6 +88,7 @@ class AppUser {
       lembretesAcompanhamento:
           lembretesAcompanhamento ?? this.lembretesAcompanhamento,
       acessoBiometrico: acessoBiometrico ?? this.acessoBiometrico,
+      nomeLoja: nomeLoja ?? this.nomeLoja,
       banco: banco ?? this.banco,
       agencia: agencia ?? this.agencia,
       conta: conta ?? this.conta,
@@ -110,6 +114,7 @@ class AppUser {
       'notificacoes_diarias': notificacoesDiarias,
       'lembretes_acompanhamento': lembretesAcompanhamento,
       'acesso_biometrico': acessoBiometrico,
+      'nome_loja': nomeLoja,
       'banco': banco,
       'agencia': agencia,
       'conta': conta,
@@ -136,6 +141,7 @@ class AppUser {
       lembretesAcompanhamento:
           map['lembretes_acompanhamento'] as bool? ?? false,
       acessoBiometrico: map['acesso_biometrico'] as bool? ?? false,
+      nomeLoja: map['nome_loja'] as String? ?? '',
       banco: map['banco'] as String? ?? '',
       agencia: map['agencia'] as String? ?? '',
       conta: map['conta'] as String? ?? '',
@@ -161,6 +167,46 @@ class AppUser {
   }
 }
 
+/// Item de produto levado no fiado (bar, padaria, mercearia). [em] é gravado
+/// automaticamente na hora do lançamento.
+class DebtItem {
+  const DebtItem({
+    required this.nome,
+    required this.quantidade,
+    required this.valorUnitario,
+    required this.em,
+  });
+
+  final String nome;
+  final double quantidade;
+  final double valorUnitario;
+  final DateTime em;
+
+  /// Quantidade × valor em centavos, sem sobra de arredondamento.
+  double get total => (quantidade * valorUnitario * 100).round() / 100;
+
+  Map<String, dynamic> toMap() => {
+    'nome': nome,
+    'qtd': quantidade,
+    'valor': valorUnitario,
+    'em': em.toIso8601String(),
+  };
+
+  Map<String, dynamic> toFirestore() => {
+    'nome': nome,
+    'qtd': quantidade,
+    'valor': valorUnitario,
+    'em': em,
+  };
+
+  factory DebtItem.fromMap(Map<String, dynamic> map) => DebtItem(
+    nome: map['nome'] as String? ?? '',
+    quantidade: (map['qtd'] as num?)?.toDouble() ?? 1,
+    valorUnitario: (map['valor'] as num?)?.toDouble() ?? 0,
+    em: Debt._parseDate(map['em']) ?? DateTime.now(),
+  );
+}
+
 class Debt {
   const Debt({
     required this.id,
@@ -176,6 +222,7 @@ class Debt {
     this.grupoId = '',
     this.parcela = 1,
     this.totalParcelas = 1,
+    this.itens = const [],
   });
 
   final String id;
@@ -191,6 +238,7 @@ class Debt {
   final String grupoId;
   final int parcela;
   final int totalParcelas;
+  final List<DebtItem> itens;
 
   bool get parcelado => totalParcelas > 1;
   String get parcelaLabel => 'Parcela $parcela de $totalParcelas';
@@ -238,6 +286,7 @@ class Debt {
     String? grupoId,
     int? parcela,
     int? totalParcelas,
+    List<DebtItem>? itens,
   }) {
     return Debt(
       id: id ?? this.id,
@@ -253,6 +302,7 @@ class Debt {
       grupoId: grupoId ?? this.grupoId,
       parcela: parcela ?? this.parcela,
       totalParcelas: totalParcelas ?? this.totalParcelas,
+      itens: itens ?? this.itens,
     );
   }
 
@@ -270,6 +320,7 @@ class Debt {
       if (grupoId.isNotEmpty) 'grupo_id': grupoId,
       if (totalParcelas > 1) 'parcela': parcela,
       if (totalParcelas > 1) 'total_parcelas': totalParcelas,
+      if (itens.isNotEmpty) 'itens': [for (final i in itens) i.toMap()],
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -287,6 +338,7 @@ class Debt {
       if (grupoId.isNotEmpty) 'grupo_id': grupoId,
       if (totalParcelas > 1) 'parcela': parcela,
       if (totalParcelas > 1) 'total_parcelas': totalParcelas,
+      if (itens.isNotEmpty) 'itens': [for (final i in itens) i.toFirestore()],
       'created_at': createdAt ?? DateTime.now(),
     };
   }
@@ -305,6 +357,10 @@ class Debt {
       grupoId: map['grupo_id'] as String? ?? '',
       parcela: (map['parcela'] as num?)?.toInt() ?? 1,
       totalParcelas: (map['total_parcelas'] as num?)?.toInt() ?? 1,
+      itens: [
+        for (final raw in (map['itens'] as List? ?? const []))
+          if (raw is Map) DebtItem.fromMap(Map<String, dynamic>.from(raw)),
+      ],
       createdAt: _parseDate(map['created_at']),
     );
   }

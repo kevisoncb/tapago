@@ -3,6 +3,7 @@
 /// Coleção `Users` (documentId = uid)
 /// - email: string
 /// - is_premium: boolean
+/// - nome_loja: string (opcional, nome do comércio nos relatórios)
 /// - chave_pix: string
 /// - nome: string
 /// - telefone: string (opcional; contato do usuário)

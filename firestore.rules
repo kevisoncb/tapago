@@ -95,6 +95,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
           'email',
           'nome',
+          'nome_loja',
           'chave_pix',
           'telefone',
           'whatsapp_conectado',
@@ -115,6 +116,7 @@ service cloud.firestore {
         ])
         && requiredString(data, 'email', 120)
         && requiredString(data, 'nome', 80)
+        && optionalString(data, 'nome_loja', 80)
         && optionalString(data, 'chave_pix', 120)
         && optionalString(data, 'telefone', 24)
         && optionalString(data, 'banco', 80)
@@ -166,6 +168,7 @@ service cloud.firestore {
           'grupo_id',
           'parcela',
           'total_parcelas',
+          'itens',
           'created_at',
           'grupo_id',
           'parcela',
@@ -195,6 +198,8 @@ service cloud.firestore {
         && data.get('total_parcelas', 1) <= 12
         && data.get('parcela', 1) >= 1
         && data.get('parcela', 1) <= data.get('total_parcelas', 1)
+        && data.get('itens', []) is list
+        && data.get('itens', []).size() <= 100
         && data.get('ledger_revision', 0) is int
         && data.get('ledger_revision', 0) >= 0
         && optionalString(data, 'ledger_payment_id', 80)
@@ -330,6 +335,8 @@ service cloud.firestore {
         && request.resource.data.get('ledger_revision', 0) == 0
         && request.resource.data.get('ledger_payment_id', '') == ''
         && (request.resource.data.get('total_parcelas', 1) <= 1
+          || hasActivePremium())
+        && (request.resource.data.get('itens', []).size() == 0
           || hasActivePremium());
       allow update: if isAuthenticated()
         && resource.data.user_id == request.auth.uid

@@ -15,6 +15,7 @@ import 'add_debt_page.dart';
 import 'client_profile_page.dart';
 import 'customer_statement_page.dart';
 import 'follow_up_page.dart';
+import 'product_items_page.dart';
 
 class ContactHistoryPage extends StatelessWidget {
   const ContactHistoryPage({super.key, required this.contactKey});
@@ -183,6 +184,21 @@ class ContactHistoryPage extends StatelessWidget {
               ),
             ],
           ),
+          if (contact.debts.any((debt) => debt.itens.isNotEmpty)) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ProductItemsPage(contactKey: contact.key),
+                  ),
+                ),
+                icon: const Icon(Icons.shopping_basket_outlined),
+                label: const Text('Itens do mês (produtos)'),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           const SectionLabel('LANÇAMENTOS'),
           const SizedBox(height: 10),

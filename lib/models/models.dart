@@ -13,6 +13,7 @@ class AppUser {
     this.lembretesAcompanhamento = false,
     this.acessoBiometrico = false,
     this.nomeLoja = '',
+    this.limpezaAuto = false,
     this.banco = '',
     this.agencia = '',
     this.conta = '',
@@ -36,6 +37,7 @@ class AppUser {
   final bool lembretesAcompanhamento;
   final bool acessoBiometrico;
   final String nomeLoja;
+  final bool limpezaAuto;
   final String banco;
   final String agencia;
   final String conta;
@@ -65,6 +67,7 @@ class AppUser {
     bool? lembretesAcompanhamento,
     bool? acessoBiometrico,
     String? nomeLoja,
+    bool? limpezaAuto,
     String? banco,
     String? agencia,
     String? conta,
@@ -89,6 +92,7 @@ class AppUser {
           lembretesAcompanhamento ?? this.lembretesAcompanhamento,
       acessoBiometrico: acessoBiometrico ?? this.acessoBiometrico,
       nomeLoja: nomeLoja ?? this.nomeLoja,
+      limpezaAuto: limpezaAuto ?? this.limpezaAuto,
       banco: banco ?? this.banco,
       agencia: agencia ?? this.agencia,
       conta: conta ?? this.conta,
@@ -115,6 +119,7 @@ class AppUser {
       'lembretes_acompanhamento': lembretesAcompanhamento,
       'acesso_biometrico': acessoBiometrico,
       'nome_loja': nomeLoja,
+      'limpeza_auto': limpezaAuto,
       'banco': banco,
       'agencia': agencia,
       'conta': conta,
@@ -142,6 +147,7 @@ class AppUser {
           map['lembretes_acompanhamento'] as bool? ?? false,
       acessoBiometrico: map['acesso_biometrico'] as bool? ?? false,
       nomeLoja: map['nome_loja'] as String? ?? '',
+      limpezaAuto: map['limpeza_auto'] as bool? ?? false,
       banco: map['banco'] as String? ?? '',
       agencia: map['agencia'] as String? ?? '',
       conta: map['conta'] as String? ?? '',
@@ -223,6 +229,7 @@ class Debt {
     this.parcela = 1,
     this.totalParcelas = 1,
     this.itens = const [],
+    this.manter = false,
   });
 
   final String id;
@@ -239,6 +246,9 @@ class Debt {
   final int parcela;
   final int totalParcelas;
   final List<DebtItem> itens;
+
+  /// O dono pediu para não apagar esta caderneta na limpeza automática.
+  final bool manter;
 
   bool get parcelado => totalParcelas > 1;
   String get parcelaLabel => 'Parcela $parcela de $totalParcelas';
@@ -287,6 +297,7 @@ class Debt {
     int? parcela,
     int? totalParcelas,
     List<DebtItem>? itens,
+    bool? manter,
   }) {
     return Debt(
       id: id ?? this.id,
@@ -303,6 +314,7 @@ class Debt {
       parcela: parcela ?? this.parcela,
       totalParcelas: totalParcelas ?? this.totalParcelas,
       itens: itens ?? this.itens,
+      manter: manter ?? this.manter,
     );
   }
 
@@ -321,6 +333,7 @@ class Debt {
       if (totalParcelas > 1) 'parcela': parcela,
       if (totalParcelas > 1) 'total_parcelas': totalParcelas,
       if (itens.isNotEmpty) 'itens': [for (final i in itens) i.toMap()],
+      if (manter) 'manter': true,
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -339,6 +352,7 @@ class Debt {
       if (totalParcelas > 1) 'parcela': parcela,
       if (totalParcelas > 1) 'total_parcelas': totalParcelas,
       if (itens.isNotEmpty) 'itens': [for (final i in itens) i.toFirestore()],
+      if (manter) 'manter': true,
       'created_at': createdAt ?? DateTime.now(),
     };
   }
@@ -361,6 +375,7 @@ class Debt {
         for (final raw in (map['itens'] as List? ?? const []))
           if (raw is Map) DebtItem.fromMap(Map<String, dynamic>.from(raw)),
       ],
+      manter: map['manter'] as bool? ?? false,
       createdAt: _parseDate(map['created_at']),
     );
   }

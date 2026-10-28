@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/auto_cleanup.dart';
 import '../services/client_match.dart';
 import '../services/installment_group.dart';
 import '../state/app_controller.dart';
@@ -184,6 +185,18 @@ class ContactHistoryPage extends StatelessWidget {
               ),
             ],
           ),
+          if (state.user.limpezaAuto)
+            ..._cleanupBanner(
+              context,
+              state,
+              contact,
+              cleanupNoticeFor(
+                debts: contact.debts,
+                payments: state.payments,
+                saldoOf: state.saldoOf,
+                now: DateTime.now(),
+              ),
+            ),
           if (contact.debts.any((debt) => debt.itens.isNotEmpty)) ...[
             const SizedBox(height: 10),
             SizedBox(
@@ -782,3 +795,77 @@ class _InstallmentRow extends StatelessWidget {
     );
   }
 }
+
+List<Widget> _cleanupBanner(
+  BuildContext context,
+  AppController state,
+  CadernetaContact contact,
+  CleanupNotice? notice,
+) {
+  if (notice == null) return const [];
+  final when = notice.daysLeft == 0
+      ? 'hoje, na próxima limpeza'
+      : notice.daysLeft == 1
+      ? 'em 1 dia'
+      : 'em ${notice.daysLeft} dias';
+  return [
+    const SizedBox(height: 14),
+    Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: notice.kept ? AppColors.successSoft : const Color(0xFFFFF4E0),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            notice.kept
+                ? 'Esta caderneta está marcada para ser mantida.'
+                : 'Quitada. Esta caderneta será apagada $when (${dayLabelOf(notice.deleteAt)}).',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w800,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            notice.kept
+                ? 'A limpeza automática não vai apagar este cliente.'
+                : 'Exporte o extrato antes, se quiser guardar uma cópia.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              color: AppColors.mutedDark,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: [
+              if (!notice.kept)
+                OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CustomerStatementPage(contactKey: contact.key),
+                    ),
+                  ),
+                  child: const Text('Exportar extrato'),
+                ),
+              FilledButton(
+                onPressed: () => state.setKeepNotebook(
+                  contact.debts,
+                  !notice.kept,
+                ),
+                child: Text(notice.kept ? 'Voltar a limpar' : 'Manter'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ];
+}
+
+String dayLabelOf(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';

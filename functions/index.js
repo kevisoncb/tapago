@@ -14,6 +14,7 @@ const mmp = require("./mmp_s2s");
 const { sendEmail, escapeHtml } = require("./alerts");
 const adminModule = require("./admin");
 const reminders = require("./reminders");
+const cleanup = require("./cleanup");
 const acquisition = require("./acquisition");
 
 exports.adminApi = adminModule.adminApi;
@@ -27,6 +28,12 @@ exports.retryMmpRevenue = onSchedule(
 exports.sendDailyReminders = onSchedule(
   { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", region: "southamerica-east1", timeoutSeconds: 540, maxInstances: 1 },
   () => reminders.runDailyReminders(),
+);
+
+// Limpeza opcional de cadernetas quitadas há 7+ dias (só quem ligou em Mais).
+exports.cleanSettledNotebooks = onSchedule(
+  { schedule: "30 3 * * *", timeZone: "America/Sao_Paulo", region: "southamerica-east1", timeoutSeconds: 540, maxInstances: 1 },
+  () => cleanup.runCleanup(),
 );
 
 const asaasKeyParam = defineString("ASAAS_API_KEY");

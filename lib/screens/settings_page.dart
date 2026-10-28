@@ -362,6 +362,18 @@ class SettingsPage extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const AccountExportPage()),
                 ),
               ),
+              const Divider(height: 1, indent: 68),
+              SettingsRow(
+                icon: Icons.auto_delete_outlined,
+                title: 'Limpar cadernetas quitadas',
+                subtitle: user.limpezaAuto
+                    ? 'Apaga 7 dias depois de quitada. Você é avisado antes.'
+                    : 'Desligado · nada é apagado',
+                trailing: Switch.adaptive(
+                  value: user.limpezaAuto,
+                  onChanged: (value) => _toggleCleanup(context, value),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 22),
@@ -648,6 +660,34 @@ class SettingsPage extends StatelessWidget {
     if (deleted != true || !context.mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
     await state.signOut();
+  }
+
+  Future<void> _toggleCleanup(BuildContext context, bool value) async {
+    final state = context.read<AppController>();
+    if (value) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: const Text('Ligar a limpeza automática?'),
+          content: const Text(
+            'Quando todos os lançamentos de um cliente estiverem quitados, a caderneta dele será APAGADA 7 dias depois do último pagamento, junto com o histórico e os itens. Não dá para desfazer.\n\n'
+            'Você vê a contagem regressiva no contato e pode exportar o extrato ou tocar em "Manter" antes do prazo.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Ligar'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    await state.saveUser(state.user.copyWith(limpezaAuto: value));
   }
 
   Future<void> _editLoja(BuildContext context) async {

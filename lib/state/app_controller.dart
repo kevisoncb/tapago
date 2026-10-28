@@ -274,6 +274,13 @@ class AppController extends ChangeNotifier {
     );
   }
 
+  /// "Manter" na limpeza automática: vale para todos os lançamentos do cliente.
+  Future<void> setKeepNotebook(List<Debt> items, bool keep) async {
+    for (final debt in items) {
+      await upsertDebt(debt.copyWith(manter: keep));
+    }
+  }
+
   Future<void> upsertDebt(Debt debt) async {
     final existed = debts.any((item) => item.id == debt.id);
     final firstDebt = debts.isEmpty;

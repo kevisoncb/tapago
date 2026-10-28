@@ -4,6 +4,7 @@
 /// - email: string
 /// - is_premium: boolean
 /// - nome_loja: string (opcional, nome do comércio nos relatórios)
+/// - limpeza_auto: bool (opcional, apaga cadernetas quitadas há 7 dias)
 /// - chave_pix: string
 /// - nome: string
 /// - telefone: string (opcional; contato do usuário)

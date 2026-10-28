@@ -83,6 +83,8 @@ class FirestoreRepository implements AppRepository {
       'agencia': user.agencia,
       'conta': user.conta,
       'mensagem_cobranca': user.mensagemCobranca,
+      'mensagem_atraso': user.mensagemAtraso,
+      'mensagem_atraso_forte': user.mensagemAtrasoForte,
       'aceite_termos_em': user.aceiteTermosEm,
       'aceite_privacidade_em': user.aceitePrivacidadeEm,
     }, SetOptions(merge: true));

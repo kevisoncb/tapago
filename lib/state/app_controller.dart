@@ -212,6 +212,16 @@ class AppController extends ChangeNotifier {
     await _syncReminders();
   }
 
+  /// Lançamento parcelado: cada parcela é um débito do mesmo cliente.
+  Future<void> createDebts(List<Debt> next) async {
+    for (final debt in next) {
+      await _repository.upsertDebt(debt);
+    }
+    debts = [...debts, ...next];
+    notifyListeners();
+    await _syncReminders();
+  }
+
   Future<void> addPayment(Payment payment) async {
     await _repository.addPayment(payment);
     payments = [...payments, payment];
@@ -424,6 +434,8 @@ class AppController extends ChangeNotifier {
         },
         chavePix: user.chavePix,
         customTemplate: user.mensagemCobranca,
+        atrasoTemplate: user.mensagemAtraso,
+        atrasoForteTemplate: user.mensagemAtrasoForte,
         isPremium: user.isPremium,
         bills: user.premiumAtivo ? pendingBills : const [],
       );

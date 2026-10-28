@@ -14,9 +14,14 @@ Future<void> chargeOnWhatsApp({
   WhatsAppAction? action,
 }) async {
   final state = context.read<AppController>();
-  final custom = state.user.mensagemCobranca.trim();
-  final useCustom = state.user.isPremium && custom.isNotEmpty;
+  final user = state.user;
+  final custom = user.mensagemCobranca.trim();
   final chosenAction = action ?? whatsAppActionForDue(debt.dataVencimento);
+  final stageCustom =
+      chosenAction == WhatsAppAction.atraso &&
+      (user.mensagemAtraso.trim().isNotEmpty ||
+          user.mensagemAtrasoForte.trim().isNotEmpty);
+  final useCustom = user.isPremium && (custom.isNotEmpty || stageCustom);
 
   var tone = WhatsAppTone.amigavel;
   if (!useCustom) {
@@ -101,6 +106,8 @@ Future<void> chargeOnWhatsApp({
     saldo: state.saldoOf(debt),
     chavePix: state.user.chavePix,
     customTemplate: custom,
+    atrasoTemplate: user.mensagemAtraso,
+    atrasoForteTemplate: user.mensagemAtrasoForte,
     isPremium: state.user.isPremium,
   );
   if (!context.mounted) return;

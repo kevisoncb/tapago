@@ -193,8 +193,8 @@ class ContactHistoryPage extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 debt.taxaJuros > 0
-                                    ? 'Vence ${Dates.full(debt.dataVencimento)} · juros ${debt.taxaJuros.toStringAsFixed(debt.taxaJuros == debt.taxaJuros.roundToDouble() ? 0 : 2).replaceAll('.', ',')}%'
-                                    : 'Vence ${Dates.full(debt.dataVencimento)}',
+                                    ? 'Vence ${Dates.full(debt.dataVencimento)} · juros ${debt.taxaJuros.toStringAsFixed(debt.taxaJuros == debt.taxaJuros.roundToDouble() ? 0 : 2).replaceAll('.', ',')}%${debt.parcelado ? ' · ${debt.parcelaLabel}' : ''}'
+                                    : 'Vence ${Dates.full(debt.dataVencimento)}${debt.parcelado ? ' · ${debt.parcelaLabel}' : ''}',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,

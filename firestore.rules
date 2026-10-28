@@ -17,6 +17,7 @@ service cloud.firestore {
     //   - acesso_biometrico: bool
     //   - banco, agencia, conta: string
     //   - mensagem_cobranca: string
+    //   - mensagem_atraso, mensagem_atraso_forte: string (opcional; Premium)
     //   - aceite_termos_em, aceite_privacidade_em: timestamp (optional)
     //   - is_premium: bool (server-only after create)
     //   - premium_vence_em: timestamp (server-only)
@@ -102,6 +103,8 @@ service cloud.firestore {
           'agencia',
           'conta',
           'mensagem_cobranca',
+          'mensagem_atraso',
+          'mensagem_atraso_forte',
           'aceite_termos_em',
           'aceite_privacidade_em',
           'is_premium',
@@ -116,6 +119,8 @@ service cloud.firestore {
         && optionalString(data, 'agencia', 20)
         && optionalString(data, 'conta', 24)
         && optionalString(data, 'mensagem_cobranca', 2000)
+        && optionalString(data, 'mensagem_atraso', 2000)
+        && optionalString(data, 'mensagem_atraso_forte', 2000)
         && optionalBool(data, 'whatsapp_conectado')
         && optionalBool(data, 'notificacoes_diarias')
         && optionalBool(data, 'acesso_biometrico')
@@ -155,6 +160,9 @@ service cloud.firestore {
           'data_vencimento',
           'status_pago',
           'client_score',
+          'grupo_id',
+          'parcela',
+          'total_parcelas',
           'created_at',
         ])
         && data.user_id is string
@@ -172,6 +180,14 @@ service cloud.firestore {
         && data.client_score is number
         && data.client_score >= 0
         && data.client_score <= 100
+        && optionalString(data, 'grupo_id', 64)
+        && (!('total_parcelas' in data)
+          || (data.total_parcelas is number
+            && data.total_parcelas >= 1
+            && data.total_parcelas <= 12
+            && data.parcela is number
+            && data.parcela >= 1
+            && data.parcela <= data.total_parcelas))
         && optionalTimestamp(data, 'created_at');
     }
 
@@ -251,7 +267,11 @@ service cloud.firestore {
 
     match /Debts/{debtId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && isValidDebt(request.resource.data);
+      allow create: if isAuthenticated()
+        && isValidDebt(request.resource.data)
+        && (!('total_parcelas' in request.resource.data)
+          || request.resource.data.total_parcelas <= 1
+          || hasActivePremium());
       allow update: if isAuthenticated()
         && resource.data.user_id == request.auth.uid
         && isValidDebt(request.resource.data)

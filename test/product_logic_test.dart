@@ -66,10 +66,7 @@ void main() {
 
   test('premium só vale com data futura', () {
     final now = DateTime(2026, 10, 2);
-    expect(
-      premiumIsActive(isPremium: true, until: null, now: now),
-      isFalse,
-    );
+    expect(premiumIsActive(isPremium: true, until: null, now: now), isFalse);
     expect(
       premiumIsActive(
         isPremium: true,
@@ -208,6 +205,91 @@ Troco: R\$ 0,00
       whatsAppActionForDue(DateTime(2026, 10, 6), now: DateTime(2026, 10, 7)),
       WhatsAppAction.atraso,
     );
+  });
+
+  test('Premium escolhe a mensagem pelo tempo de atraso e preenche {dias}', () {
+    final debt = Debt(
+      id: 'd',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '11987654321',
+      valorPrincipal: 450,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 10, 1),
+      statusPago: false,
+      clientScore: 80,
+    );
+    String msg(
+      DateTime now, {
+      bool premium = true,
+      String forte = 'FORTE {dias}',
+    }) => WhatsAppService.messageFor(
+      action: WhatsAppAction.atraso,
+      tone: WhatsAppTone.amigavel,
+      debt: debt,
+      saldo: 450,
+      chavePix: '',
+      atrasoTemplate: 'LEVE {dias}',
+      atrasoForteTemplate: forte,
+      isPremium: premium,
+      now: now,
+    );
+    expect(msg(DateTime(2026, 10, 9)), 'LEVE 8 dias');
+    expect(msg(DateTime(2026, 10, 16)), 'LEVE 15 dias');
+    expect(msg(DateTime(2026, 10, 17)), 'FORTE 16 dias');
+    // sem texto "forte", o longo reaproveita o de atraso
+    expect(msg(DateTime(2026, 11, 20), forte: ''), 'LEVE 50 dias');
+    // plano livre ignora os textos próprios
+    expect(
+      msg(DateTime(2026, 10, 17), premium: false),
+      isNot(contains('FORTE')),
+    );
+    expect(daysOverdue(DateTime(2026, 10, 5), now: DateTime(2026, 10, 3)), 0);
+  });
+
+  test('débito parcelado vai para o mapa e a mensagem cita a parcela', () {
+    final debt = Debt(
+      id: 'd',
+      userId: 'u',
+      nome: 'Carlos Oliveira',
+      telefone: '11987654321',
+      valorPrincipal: 150,
+      taxaJuros: 0,
+      dataVencimento: DateTime(2026, 10, 30),
+      statusPago: false,
+      clientScore: 80,
+      grupoId: 'g1',
+      parcela: 1,
+      totalParcelas: 3,
+    );
+    final back = Debt.fromMap(debt.toMap());
+    expect(back.parcelado, isTrue);
+    expect(back.parcelaLabel, 'parcela 1 de 3');
+    expect(debt.toFirestore()['total_parcelas'], 3);
+    expect(
+      WhatsAppService.messageFor(
+        action: WhatsAppAction.preventivo,
+        tone: WhatsAppTone.amigavel,
+        debt: debt,
+        saldo: 150,
+        chavePix: '',
+      ),
+      contains('parcela 1 de 3'),
+    );
+    final custom = WhatsAppService.messageFor(
+      action: WhatsAppAction.preventivo,
+      tone: WhatsAppTone.amigavel,
+      debt: debt,
+      saldo: 150,
+      chavePix: '',
+      customTemplate: 'Oi {primeiro}, {valor}',
+      isPremium: true,
+    );
+    expect(custom, contains('parcela 1 de 3'));
+    // débito comum não grava campos de parcela no Firestore
+    expect(debt.copyWith(valorPrincipal: 1).toFirestore().containsKey('grupo_id'), isTrue);
+    final single = Debt.fromMap({'nome': 'A', 'valor_principal': 10});
+    expect(single.toFirestore().containsKey('grupo_id'), isFalse);
   });
 
   test('lembrete cobre véspera, dia e atraso', () {
@@ -427,8 +509,10 @@ Troco: R\$ 0,00
     );
     expect(parcelas, hasLength(3));
     expect(parcelas.map((item) => item.valor), [333.33, 333.33, 333.34]);
-    expect(parcelas.fold<double>(0, (sum, item) => sum + item.valor),
-        closeTo(1000, 0.001));
+    expect(
+      parcelas.fold<double>(0, (sum, item) => sum + item.valor),
+      closeTo(1000, 0.001),
+    );
     expect(parcelas.first.vencimento, DateTime(2026, 11, 8));
     expect(parcelas.last.vencimento, DateTime(2027, 1, 7));
     expect(parcelas.last.parcela, 3);
@@ -442,8 +526,7 @@ Troco: R\$ 0,00
     expect(parsePrazos(''), isNull);
     expect(normalizeBoletoCode(''), '');
     expect(normalizeBoletoCode('123'), isNull);
-    final linha =
-        '23793.38128 60000.000003 00000.000400 1 84340000010000';
+    final linha = '23793.38128 60000.000003 00000.000400 1 84340000010000';
     expect(normalizeBoletoCode(linha), hasLength(47));
   });
 
@@ -463,10 +546,10 @@ Troco: R\$ 0,00
     expect(back.pago, isFalse);
 
     BillReminderKind? on(int day) => billReminderKind(
-          due: bill.dataVencimento,
-          day: DateTime(2026, 10, day),
-          pago: false,
-        );
+      due: bill.dataVencimento,
+      day: DateTime(2026, 10, day),
+      pago: false,
+    );
     expect(on(7), BillReminderKind.tresDias);
     expect(on(8), isNull);
     expect(on(9), BillReminderKind.amanha);
@@ -485,8 +568,10 @@ Troco: R\$ 0,00
       billReminderTitle(BillReminderKind.tresDias, [bill]),
       'Boleto de Distribuidora Silva vence em 3 dias.',
     );
-    expect(billReminderTitle(BillReminderKind.atraso, [bill, bill]),
-        '2 boletos atrasados.');
+    expect(
+      billReminderTitle(BillReminderKind.atraso, [bill, bill]),
+      '2 boletos atrasados.',
+    );
   });
 
   test('produto, conta e aviso de renovação por loja', () {
@@ -497,8 +582,9 @@ Troco: R\$ 0,00
 
     final token = appAccountTokenFor('xpAcinvGjbfUeh34ayiTm2ytarb2');
     expect(
-      RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
-          .hasMatch(token),
+      RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      ).hasMatch(token),
       isTrue,
     );
     expect(appAccountTokenFor('xpAcinvGjbfUeh34ayiTm2ytarb2'), token);
@@ -518,23 +604,29 @@ Troco: R\$ 0,00
 
   test('pedido de rastreio fica desligado sem PAGO_ATT', () async {
     expect(AppConstants.trackingEnabled, isFalse);
-    expect(await TrackingService.instance.status(), TrackingStatus.notSupported);
+    expect(
+      await TrackingService.instance.status(),
+      TrackingStatus.notSupported,
+    );
     expect(await TrackingService.instance.requestIfNeeded(), isFalse);
   });
 
-  test('MMP sem chave não faz nada e não quebra a ordem login/launch', () async {
-    final mmp = MmpService.instance;
-    await mmp.setUserId('uid-antes-do-init');
-    await mmp.init(trackingAuthorized: false);
-    await mmp.setUserId('');
-    await mmp.logRegistrationComplete();
-    await mmp.logPremiumPaywallView();
-    await mmp.logBillCreated();
-    await mmp.logFrontendPurchase(39.9, 'BRL');
-    expect(mmp.started, isFalse);
-    expect(mmp.appsFlyerId, isNull);
-    expect(MmpService.eventRegistration, 'af_complete_registration');
-    expect(MmpService.eventPaywallView, 'af_premium_paywall_view');
-    expect(MmpService.eventBillCreated, 'af_bill_created');
-  });
+  test(
+    'MMP sem chave não faz nada e não quebra a ordem login/launch',
+    () async {
+      final mmp = MmpService.instance;
+      await mmp.setUserId('uid-antes-do-init');
+      await mmp.init(trackingAuthorized: false);
+      await mmp.setUserId('');
+      await mmp.logRegistrationComplete();
+      await mmp.logPremiumPaywallView();
+      await mmp.logBillCreated();
+      await mmp.logFrontendPurchase(39.9, 'BRL');
+      expect(mmp.started, isFalse);
+      expect(mmp.appsFlyerId, isNull);
+      expect(MmpService.eventRegistration, 'af_complete_registration');
+      expect(MmpService.eventPaywallView, 'af_premium_paywall_view');
+      expect(MmpService.eventBillCreated, 'af_bill_created');
+    },
+  );
 }

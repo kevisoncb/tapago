@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/bill_installments.dart';
 import '../services/client_match.dart';
 import '../services/speech_capture.dart';
 import '../services/voice_debt_parser.dart';
@@ -41,7 +42,10 @@ class _AddDebtPageState extends State<AddDebtPage> {
   final _valor = TextEditingController();
   final _juros = TextEditingController();
   final _date = TextEditingController();
+  final _prazosCustom = TextEditingController();
   DateTime? _vencimento;
+  bool _parcelado = false;
+  List<int>? _preset = billPresets.first;
   bool _listening = false;
   String _heard = '';
   final _voice = SpeechCapture();
@@ -81,6 +85,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     _valor.dispose();
     _juros.dispose();
     _date.dispose();
+    _prazosCustom.dispose();
     super.dispose();
   }
 
@@ -89,6 +94,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
   double get _taxa => parsePercentInput(_juros.text);
 
   double get _total => _principal * (1 + _taxa / 100);
+
+  List<int>? get _prazos => _preset ?? parsePrazos(_prazosCustom.text);
+
+  List<BillInstallment> get _parcelas {
+    final prazos = _prazos;
+    if (prazos == null || _principal <= 0) return const [];
+    return splitBill(total: _principal, base: DateTime.now(), prazos: prazos);
+  }
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -113,9 +126,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
   Future<void> _listenVoice() async {
     final state = context.read<AppController>();
     if (!state.user.isPremium) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PremiumPage()),
-      );
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PremiumPage()));
       return;
     }
     if (_listening) {
@@ -184,16 +196,20 @@ class _AddDebtPageState extends State<AddDebtPage> {
       if (draft.juros != null) 'juros',
       if (draft.vencimento != null) 'vencimento',
     ];
-    showPagoSnack(
-      context,
-      'Preenchi ${filled.join(', ')}. Confira e salve.',
-    );
+    showPagoSnack(context, 'Preenchi ${filled.join(', ')}. Confira e salve.');
   }
 
   Future<void> _save() async {
     final phone = digitsOnly(_whatsapp.text);
-    if (_nome.text.trim().isEmpty || _principal <= 0 || _vencimento == null) {
+    final parcelar = _parcelado && widget.debt == null;
+    if (_nome.text.trim().isEmpty ||
+        _principal <= 0 ||
+        (!parcelar && _vencimento == null)) {
       showPagoSnack(context, 'Preencha nome, valor e vencimento.');
+      return;
+    }
+    if (parcelar && _parcelas.isEmpty) {
+      showPagoSnack(context, 'Escolha os prazos, ex.: 30/60/90.');
       return;
     }
     if (phone.isNotEmpty && !isValidPhoneBr(phone)) {
@@ -218,6 +234,32 @@ class _AddDebtPageState extends State<AddDebtPage> {
             ? phoneTakenMessage
             : '${blocked.debt.nome} já está na caderneta. Abra o contato.',
       );
+      return;
+    }
+
+    if (parcelar) {
+      final parcelas = _parcelas;
+      final grupo = state.newId();
+      await state.createDebts([
+        for (final item in parcelas)
+          Debt(
+            id: state.newId(),
+            userId: state.user.id,
+            nome: _nome.text.trim(),
+            telefone: digitsOnly(_whatsapp.text),
+            valorPrincipal: item.valor,
+            taxaJuros: _taxa,
+            dataVencimento: item.vencimento,
+            statusPago: false,
+            clientScore: 80,
+            grupoId: grupo,
+            parcela: item.parcela,
+            totalParcelas: parcelas.length,
+            createdAt: DateTime.now(),
+          ),
+      ]);
+      if (!mounted) return;
+      Navigator.of(context).pop();
       return;
     }
 
@@ -261,7 +303,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.debt == null ? 'Novo lançamento' : 'Editar lançamento'),
+        title: Text(
+          widget.debt == null ? 'Novo lançamento' : 'Editar lançamento',
+        ),
       ),
       body: Column(
         children: [
@@ -357,22 +401,37 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     color: AppColors.mutedDark,
                   ),
                 ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  label: 'Data de Vencimento',
-                  hint: 'Selecionar data',
-                  icon: Icons.event_outlined,
-                  readOnly: true,
-                  onTap: _pickDate,
-                  controller: _date,
-                  suffix: IconButton(
-                    onPressed: _pickDate,
-                    icon: const Icon(
-                      Icons.calendar_month_outlined,
-                      color: AppColors.muted,
+                if (widget.debt == null) ...[
+                  const SizedBox(height: 16),
+                  _ParcelarBox(
+                    isPremium: state.user.isPremium,
+                    parcelado: _parcelado,
+                    preset: _preset,
+                    prazosCustom: _prazosCustom,
+                    parcelas: _parcelas,
+                    onParcelado: (value) => setState(() => _parcelado = value),
+                    onPreset: (value) => setState(() => _preset = value),
+                    onChanged: () => setState(() {}),
+                  ),
+                ],
+                if (!(_parcelado && widget.debt == null)) ...[
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    label: 'Data de Vencimento',
+                    hint: 'Selecionar data',
+                    icon: Icons.event_outlined,
+                    readOnly: true,
+                    onTap: _pickDate,
+                    controller: _date,
+                    suffix: IconButton(
+                      onPressed: _pickDate,
+                      icon: const Icon(
+                        Icons.calendar_month_outlined,
+                        color: AppColors.muted,
+                      ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -437,7 +496,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: PrimaryButton(
                 label: blocked == null
-                    ? 'Salvar na caderneta'
+                    ? (_parcelado && widget.debt == null && _parcelas.length > 1
+                          ? 'Salvar ${_parcelas.length} parcelas'
+                          : 'Salvar na caderneta')
                     : 'Já existe na caderneta',
                 onPressed: blocked == null ? _save : null,
               ),
@@ -465,12 +526,10 @@ class _VoiceBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitle = listening
-        ? (heard.isEmpty
-            ? 'Dite nome, valor e vencimento'
-            : heard)
+        ? (heard.isEmpty ? 'Dite nome, valor e vencimento' : heard)
         : isPremium
-            ? 'Toque e fale. O app preenche o lançamento.'
-            : 'Premium: dite nome, valor e vencimento';
+        ? 'Toque e fale. O app preenche o lançamento.'
+        : 'Premium: dite nome, valor e vencimento';
 
     return Material(
       color: AppColors.primarySoft,
@@ -503,8 +562,8 @@ class _VoiceBanner extends StatelessWidget {
                       listening
                           ? 'Ouvindo...'
                           : isPremium
-                              ? 'Cadastro por voz'
-                              : 'Cadastro por voz · Premium',
+                          ? 'Cadastro por voz'
+                          : 'Cadastro por voz · Premium',
                       style: GoogleFonts.plusJakartaSans(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w800,
@@ -579,8 +638,8 @@ class _ExistingClientHint extends StatelessWidget {
     final text = hit.phoneTaken
         ? phoneTakenMessage
         : hit.confirmed
-            ? '${hit.debt.nome} já está na caderneta. Abra o contato para um novo lançamento.'
-            : 'Já existe ${hit.debt.nome}. Confira se o telefone é outro.';
+        ? '${hit.debt.nome} já está na caderneta. Abra o contato para um novo lançamento.'
+        : 'Já existe ${hit.debt.nome}. Confira se o telefone é outro.';
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -605,9 +664,7 @@ class _ExistingClientHint extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  blocking
-                      ? Icons.block_rounded
-                      : Icons.person_search_rounded,
+                  blocking ? Icons.block_rounded : Icons.person_search_rounded,
                   color: blocking ? AppColors.danger : AppColors.primary,
                   size: 20,
                 ),
@@ -629,6 +686,139 @@ class _ExistingClientHint extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ParcelarBox extends StatelessWidget {
+  const _ParcelarBox({
+    required this.isPremium,
+    required this.parcelado,
+    required this.preset,
+    required this.prazosCustom,
+    required this.parcelas,
+    required this.onParcelado,
+    required this.onPreset,
+    required this.onChanged,
+  });
+
+  final bool isPremium;
+  final bool parcelado;
+  final List<int>? preset;
+  final TextEditingController prazosCustom;
+  final List<BillInstallment> parcelas;
+  final ValueChanged<bool> onParcelado;
+  final ValueChanged<List<int>?> onPreset;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isPremium) {
+      return ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFEEF2F7)),
+        ),
+        leading: const Icon(
+          Icons.splitscreen_rounded,
+          color: AppColors.primary,
+        ),
+        title: Text(
+          'Parcelar em 30/60/90',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+        ),
+        subtitle: const Text('Premium: divide o valor e avisa cada parcela.'),
+        trailing: const Icon(Icons.lock_outline_rounded, size: 18),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const PremiumPage())),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('À vista')),
+            ButtonSegment(value: true, label: Text('Parcelado')),
+          ],
+          selected: {parcelado},
+          showSelectedIcon: false,
+          onSelectionChanged: (value) => onParcelado(value.first),
+        ),
+        if (parcelado) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Prazos (dias), contados a partir de hoje',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final item in billPresets)
+                ChoiceChip(
+                  label: Text(prazosLabel(item)),
+                  selected: preset == item,
+                  onSelected: (_) => onPreset(item),
+                ),
+              ChoiceChip(
+                label: const Text('Outro'),
+                selected: preset == null,
+                onSelected: (_) => onPreset(null),
+              ),
+            ],
+          ),
+          if (preset == null) ...[
+            const SizedBox(height: 10),
+            AppTextField(
+              label: 'Seus prazos',
+              hint: '30/60/90',
+              icon: Icons.date_range_rounded,
+              controller: prazosCustom,
+              keyboardType: TextInputType.text,
+              onChanged: (_) => onChanged(),
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (parcelas.isEmpty)
+            Text(
+              'Digite o valor e os prazos para ver as parcelas.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: AppColors.mutedDark,
+              ),
+            )
+          else
+            for (final item in parcelas)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Text(
+                      'Parcela ${item.parcela} de ${parcelas.length}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.mutedDark,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${Dates.full(item.vencimento)} · ${Money.full(item.valor)}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        ],
+      ],
     );
   }
 }

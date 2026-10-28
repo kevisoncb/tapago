@@ -15,6 +15,8 @@ class AppUser {
     this.agencia = '',
     this.conta = '',
     this.mensagemCobranca = '',
+    this.mensagemAtraso = '',
+    this.mensagemAtrasoForte = '',
     this.premiumVenceEm,
     this.premiumTransactionId,
     this.aceiteTermosEm,
@@ -34,16 +36,18 @@ class AppUser {
   final String agencia;
   final String conta;
   final String mensagemCobranca;
+  final String mensagemAtraso;
+  final String mensagemAtrasoForte;
   final DateTime? premiumVenceEm;
   final String? premiumTransactionId;
   final DateTime? aceiteTermosEm;
   final DateTime? aceitePrivacidadeEm;
 
   bool get premiumAtivo => premiumIsActive(
-        isPremium: isPremium,
-        until: premiumVenceEm,
-        now: DateTime.now(),
-      );
+    isPremium: isPremium,
+    until: premiumVenceEm,
+    now: DateTime.now(),
+  );
 
   AppUser copyWith({
     String? id,
@@ -59,6 +63,8 @@ class AppUser {
     String? agencia,
     String? conta,
     String? mensagemCobranca,
+    String? mensagemAtraso,
+    String? mensagemAtrasoForte,
     DateTime? premiumVenceEm,
     String? premiumTransactionId,
     DateTime? aceiteTermosEm,
@@ -78,6 +84,8 @@ class AppUser {
       agencia: agencia ?? this.agencia,
       conta: conta ?? this.conta,
       mensagemCobranca: mensagemCobranca ?? this.mensagemCobranca,
+      mensagemAtraso: mensagemAtraso ?? this.mensagemAtraso,
+      mensagemAtrasoForte: mensagemAtrasoForte ?? this.mensagemAtrasoForte,
       premiumVenceEm: premiumVenceEm ?? this.premiumVenceEm,
       premiumTransactionId: premiumTransactionId ?? this.premiumTransactionId,
       aceiteTermosEm: aceiteTermosEm ?? this.aceiteTermosEm,
@@ -100,6 +108,8 @@ class AppUser {
       'agencia': agencia,
       'conta': conta,
       'mensagem_cobranca': mensagemCobranca,
+      'mensagem_atraso': mensagemAtraso,
+      'mensagem_atraso_forte': mensagemAtrasoForte,
       'premium_vence_em': premiumVenceEm?.toIso8601String(),
       'premium_transaction_id': premiumTransactionId,
       'aceite_termos_em': aceiteTermosEm?.toIso8601String(),
@@ -122,6 +132,8 @@ class AppUser {
       agencia: map['agencia'] as String? ?? '',
       conta: map['conta'] as String? ?? '',
       mensagemCobranca: map['mensagem_cobranca'] as String? ?? '',
+      mensagemAtraso: map['mensagem_atraso'] as String? ?? '',
+      mensagemAtrasoForte: map['mensagem_atraso_forte'] as String? ?? '',
       premiumVenceEm: _parseDate(map['premium_vence_em']),
       premiumTransactionId: map['premium_transaction_id'] as String?,
       aceiteTermosEm: _parseDate(map['aceite_termos_em']),
@@ -152,6 +164,9 @@ class Debt {
     required this.dataVencimento,
     required this.statusPago,
     required this.clientScore,
+    this.grupoId = '',
+    this.parcela = 1,
+    this.totalParcelas = 1,
     this.createdAt,
   });
 
@@ -164,10 +179,16 @@ class Debt {
   final DateTime dataVencimento;
   final bool statusPago;
   final int clientScore;
+  final String grupoId;
+  final int parcela;
+  final int totalParcelas;
   final DateTime? createdAt;
 
-  double get valorAtualizado =>
-      valorPrincipal * (1 + (taxaJuros / 100));
+  bool get parcelado => totalParcelas > 1;
+
+  String get parcelaLabel => 'parcela $parcela de $totalParcelas';
+
+  double get valorAtualizado => valorPrincipal * (1 + (taxaJuros / 100));
 
   bool get isOverdue {
     if (statusPago) return false;
@@ -218,6 +239,9 @@ class Debt {
       dataVencimento: dataVencimento ?? this.dataVencimento,
       statusPago: statusPago ?? this.statusPago,
       clientScore: clientScore ?? this.clientScore,
+      grupoId: grupoId,
+      parcela: parcela,
+      totalParcelas: totalParcelas,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -233,6 +257,9 @@ class Debt {
       'data_vencimento': dataVencimento.toIso8601String(),
       'status_pago': statusPago,
       'client_score': clientScore,
+      'grupo_id': grupoId,
+      'parcela': parcela,
+      'total_parcelas': totalParcelas,
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -247,6 +274,11 @@ class Debt {
       'data_vencimento': dataVencimento,
       'status_pago': statusPago,
       'client_score': clientScore,
+      if (parcelado) ...{
+        'grupo_id': grupoId,
+        'parcela': parcela,
+        'total_parcelas': totalParcelas,
+      },
       'created_at': createdAt ?? DateTime.now(),
     };
   }
@@ -262,6 +294,9 @@ class Debt {
       dataVencimento: _parseDate(map['data_vencimento']) ?? DateTime.now(),
       statusPago: map['status_pago'] as bool? ?? false,
       clientScore: map['client_score'] as int? ?? 80,
+      grupoId: map['grupo_id'] as String? ?? '',
+      parcela: (map['parcela'] as num?)?.toInt() ?? 1,
+      totalParcelas: (map['total_parcelas'] as num?)?.toInt() ?? 1,
       createdAt: _parseDate(map['created_at']),
     );
   }

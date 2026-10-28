@@ -102,6 +102,8 @@ class ReminderService {
   var _saldos = <String, double>{};
   var _chavePix = '';
   var _customTemplate = '';
+  var _atrasoTemplate = '';
+  var _atrasoForteTemplate = '';
   var _isPremium = false;
 
   bool get _supported {
@@ -165,6 +167,8 @@ class ReminderService {
     Map<String, double> saldos = const {},
     String chavePix = '',
     String customTemplate = '',
+    String atrasoTemplate = '',
+    String atrasoForteTemplate = '',
     bool isPremium = false,
     List<Bill> bills = const [],
   }) async {
@@ -177,6 +181,8 @@ class ReminderService {
     _saldos = Map<String, double>.from(saldos);
     _chavePix = chavePix;
     _customTemplate = customTemplate;
+    _atrasoTemplate = atrasoTemplate;
+    _atrasoForteTemplate = atrasoForteTemplate;
     _isPremium = isPremium;
     if (!enabled) return;
 
@@ -289,6 +295,8 @@ class ReminderService {
       saldo: _saldos[debt.id] ?? debt.valorPrincipal,
       chavePix: _chavePix,
       customTemplate: _customTemplate,
+      atrasoTemplate: _atrasoTemplate,
+      atrasoForteTemplate: _atrasoForteTemplate,
       isPremium: _isPremium,
     );
   }

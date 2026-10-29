@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   cloud_firestore: ^6.0.0
   crypto: ^3.0.6
   firebase_auth: ^6.1.0

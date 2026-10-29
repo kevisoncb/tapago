@@ -234,8 +234,9 @@
     },
     {
       "site": "sistema-pago",
-      "public": "sistema",
-      "cleanUrls": true,
+      "public": "build/web",
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "cleanUrls": false,
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -243,7 +244,7 @@
       ],
       "headers": [
         {
-          "source": "**/*.html",
+          "source": "**/*.{html,js,json}",
           "headers": [
             {
               "key": "Cache-Control",

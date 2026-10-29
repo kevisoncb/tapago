@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import 'screens/auth_page.dart';
 import 'screens/bills_page.dart';
 import 'screens/client_profile_page.dart';
 import 'screens/follow_ups_page.dart';
+import 'screens/inicio_page.dart';
 import 'screens/main_navigation_page.dart';
 import 'services/app_repository.dart';
 import 'services/billing_service.dart';
@@ -48,6 +50,9 @@ class _PagoAppState extends State<PagoApp> {
           final repository = gate.repository;
           final userId = gate.userId;
           if (repository == null || userId == null) {
+            if (kIsWeb) {
+              return _materialApp(home: const InicioPage(), framed: false);
+            }
             return _materialApp(home: const AuthPage());
           }
           return SignedInApp(
@@ -177,9 +182,12 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
 Widget _materialApp({
   required Widget home,
   bool lock = false,
+  bool framed = true,
   GlobalKey<NavigatorState>? navigatorKey,
 }) {
   return MaterialApp(
+    // O endereço do navegador (/inicio, /) sempre abre a tela inicial do estado.
+    onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => home),
     title: 'Pagô',
     navigatorKey: navigatorKey,
     debugShowCheckedModeBanner: false,
@@ -193,7 +201,8 @@ Widget _materialApp({
     ],
     builder: (context, child) {
       final page = child ?? const SizedBox.shrink();
-      return PhoneShell(child: lock ? BiometricLock(child: page) : page);
+      final inner = lock ? BiometricLock(child: page) : page;
+      return framed ? PhoneShell(child: inner) : inner;
     },
     home: home,
   );

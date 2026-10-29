@@ -13,7 +13,9 @@ import '../widgets/common.dart';
 import '../widgets/fields.dart';
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key});
+  const AuthPage({super.key, this.startCreating = false});
+
+  final bool startCreating;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -25,7 +27,7 @@ class _AuthPageState extends State<AuthPage> {
   final _email = TextEditingController();
   final _senha = TextEditingController();
   final _confirma = TextEditingController();
-  var _creating = false;
+  late var _creating = widget.startCreating;
   var _busy = false;
   var _obscure = true;
   var _accepted = false;

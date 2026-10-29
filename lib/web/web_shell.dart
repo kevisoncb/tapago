@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../screens/bills_page.dart';
 import '../screens/premium_page.dart';
-import '../screens/reports_page.dart';
 import '../screens/settings_page.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
+import 'web_bills.dart';
 import 'web_clients.dart';
 import 'web_home.dart';
+import 'web_reports.dart';
 import 'web_sale.dart';
 
 enum WebSection {
@@ -48,8 +48,8 @@ class _WebShellState extends State<WebShell> {
       WebSection.inicio => WebHome(onGo: _go),
       WebSection.venda => WebSale(onDone: () => _go(WebSection.clientes)),
       WebSection.clientes => WebClients(onNewSale: () => _go(WebSection.venda)),
-      WebSection.boletos => const _Narrow(child: BillsPage(embedded: true)),
-      WebSection.relatorios => const _Narrow(child: ReportsPage()),
+      WebSection.boletos => const WebBills(),
+      WebSection.relatorios => const WebReports(),
       WebSection.premium => const _Narrow(child: PremiumPage()),
       WebSection.conta => const _Narrow(child: SettingsPage(embedded: true)),
     };

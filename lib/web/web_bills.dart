@@ -157,9 +157,13 @@ class _WebBillsState extends State<WebBills> {
             },
           ),
           const SizedBox(height: 20),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: 320,
                 child: TextField(
                   controller: _search,
                   onChanged: (_) => setState(() {}),
@@ -175,7 +179,6 @@ class _WebBillsState extends State<WebBills> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
               Wrap(
                 spacing: 8,
                 children: [

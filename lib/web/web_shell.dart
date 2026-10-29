@@ -68,6 +68,7 @@ class _WebShellState extends State<WebShell> {
             storeName: state.user.nomeLoja.trim().isNotEmpty
                 ? state.user.nomeLoja.trim()
                 : state.user.nome,
+            premium: state.user.premiumAtivo,
             onSignOut: () => state.signOut(),
           ),
           const VerticalDivider(width: 1, color: AppColors.primaryMuted),
@@ -87,9 +88,11 @@ class _Sidebar extends StatelessWidget {
     required this.current,
     required this.onSelect,
     required this.storeName,
+    required this.premium,
     required this.onSignOut,
   });
 
+  final bool premium;
   final WebSection current;
   final ValueChanged<WebSection> onSelect;
   final String storeName;
@@ -129,7 +132,8 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
           for (final section in WebSection.values)
-            _SidebarItem(
+            if (section != WebSection.premium || !premium)
+              _SidebarItem(
               section: section,
               selected: section == current,
               onTap: () => onSelect(section),

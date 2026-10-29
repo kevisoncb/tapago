@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -24,7 +25,7 @@ Future<void> main() async {
 
   final gate = SessionGate();
   await gate.bootstrap();
-  runApp(PagoApp(gate: gate));
+  runApp(PagoApp(gate: gate, splash: !kIsWeb));
   unawaited(_startAttribution());
 }
 

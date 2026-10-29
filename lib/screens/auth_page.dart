@@ -13,9 +13,16 @@ import '../widgets/common.dart';
 import '../widgets/fields.dart';
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key, this.startCreating = false});
+  const AuthPage({
+    super.key,
+    this.startCreating = false,
+    this.showBrand = true,
+  });
 
   final bool startCreating;
+
+  /// Na web o nome e a marca já aparecem no painel azul ao lado.
+  final bool showBrand;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -100,145 +107,117 @@ class _AuthPageState extends State<AuthPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: AutofillGroup(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            children: [
-              Text(
-                AppConstants.appName,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-              Text(
-                AppConstants.tagline,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _creating
-                    ? 'Crie sua conta para começar'
-                    : 'Entre para cuidar da sua caderneta',
-                style: GoogleFonts.plusJakartaSans(
-                  color: AppColors.mutedDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (gate.bootError != null) ...[
-                const SizedBox(height: 18),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    gate.bootError!,
-                    style: const TextStyle(color: AppColors.danger),
+        child: Align(
+          alignment: widget.showBrand ? Alignment.topCenter : Alignment.center,
+          child: AutofillGroup(
+            child: ListView(
+              shrinkWrap: !widget.showBrand,
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              children: [
+                if (widget.showBrand) ...[
+                  Text(
+                    AppConstants.appName,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    AppConstants.tagline,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  _creating
+                      ? 'Crie sua conta para começar'
+                      : 'Entre para cuidar da sua caderneta',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppColors.mutedDark,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: _busy ? null : gate.bootstrap,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Tentar conectar novamente'),
-                ),
-              ],
-              const SizedBox(height: 28),
-              if (_creating) ...[
+                if (gate.bootError != null) ...[
+                  const SizedBox(height: 18),
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      gate.bootError!,
+                      style: const TextStyle(color: AppColors.danger),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _busy ? null : gate.bootstrap,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Tentar conectar novamente'),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                if (_creating) ...[
+                  AppTextField(
+                    label: 'Nome completo',
+                    hint: 'Seu nome',
+                    icon: Icons.person_outline_rounded,
+                    controller: _nome,
+                    textCapitalization: TextCapitalization.words,
+                    keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.name],
+                    inputFormatters: [NameMaskFormatter()],
+                    maxLength: 80,
+                  ),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    label: 'WhatsApp (opcional)',
+                    hint: '(00) 00000-0000',
+                    icon: Icons.phone_outlined,
+                    controller: _telefone,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    inputFormatters: [PhoneMaskFormatter()],
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 AppTextField(
-                  label: 'Nome completo',
-                  hint: 'Seu nome',
-                  icon: Icons.person_outline_rounded,
-                  controller: _nome,
-                  textCapitalization: TextCapitalization.words,
-                  keyboardType: TextInputType.name,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.name],
-                  inputFormatters: [NameMaskFormatter()],
-                  maxLength: 80,
-                ),
-                const SizedBox(height: 14),
-                AppTextField(
-                  label: 'WhatsApp (opcional)',
-                  hint: '(00) 00000-0000',
-                  icon: Icons.phone_outlined,
-                  controller: _telefone,
-                  keyboardType: TextInputType.phone,
+                  label: 'E-mail',
+                  hint: 'voce@email.com',
+                  icon: Icons.mail_outline_rounded,
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
                   enableSuggestions: false,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  inputFormatters: [PhoneMaskFormatter()],
+                  autofillHints: [
+                    _creating ? AutofillHints.email : AutofillHints.username,
+                  ],
+                  inputFormatters: [EmailMaskFormatter()],
+                  maxLength: 120,
                 ),
-                const SizedBox(height: 14),
-              ],
-              AppTextField(
-                label: 'E-mail',
-                hint: 'voce@email.com',
-                icon: Icons.mail_outline_rounded,
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autocorrect: false,
-                enableSuggestions: false,
-                autofillHints: [
-                  _creating ? AutofillHints.email : AutofillHints.username,
-                ],
-                inputFormatters: [EmailMaskFormatter()],
-                maxLength: 120,
-              ),
-              const SizedBox(height: 14),
-              AppTextField(
-                label: 'Senha',
-                hint: 'Mínimo de 6 caracteres',
-                icon: Icons.lock_outline_rounded,
-                controller: _senha,
-                obscureText: _obscure,
-                autocorrect: false,
-                enableSuggestions: false,
-                textInputAction: _creating
-                    ? TextInputAction.next
-                    : TextInputAction.done,
-                autofillHints: [
-                  _creating
-                      ? AutofillHints.newPassword
-                      : AutofillHints.password,
-                ],
-                inputFormatters: [
-                  NoSpaceFormatter(),
-                  LengthLimitingTextInputFormatter(64),
-                ],
-                suffix: IconButton(
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
-              if (!_creating)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _busy || !firebase ? null : _requestReset,
-                    child: const Text('Esqueci minha senha'),
-                  ),
-                ),
-              if (_creating) ...[
                 const SizedBox(height: 14),
                 AppTextField(
-                  label: 'Confirmar senha',
-                  hint: 'Repita a senha',
+                  label: 'Senha',
+                  hint: 'Mínimo de 6 caracteres',
                   icon: Icons.lock_outline_rounded,
-                  controller: _confirma,
+                  controller: _senha,
                   obscureText: _obscure,
                   autocorrect: false,
                   enableSuggestions: false,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: _creating
+                      ? TextInputAction.next
+                      : TextInputAction.done,
+                  autofillHints: [
+                    _creating
+                        ? AutofillHints.newPassword
+                        : AutofillHints.password,
+                  ],
                   inputFormatters: [
                     NoSpaceFormatter(),
                     LengthLimitingTextInputFormatter(64),
@@ -252,72 +231,106 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
-                _TermsAccept(
-                  accepted: _accepted,
-                  onChanged: (value) => setState(() => _accepted = value),
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 14),
-                Text(
-                  _error!,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.w600,
+                if (!_creating)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _busy || !firebase ? null : _requestReset,
+                      child: const Text('Esqueci minha senha'),
+                    ),
                   ),
+                if (_creating) ...[
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    label: 'Confirmar senha',
+                    hint: 'Repita a senha',
+                    icon: Icons.lock_outline_rounded,
+                    controller: _confirma,
+                    obscureText: _obscure,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.newPassword],
+                    inputFormatters: [
+                      NoSpaceFormatter(),
+                      LengthLimitingTextInputFormatter(64),
+                    ],
+                    suffix: IconButton(
+                      onPressed: () => setState(() => _obscure = !_obscure),
+                      icon: Icon(
+                        _obscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _TermsAccept(
+                    accepted: _accepted,
+                    onChanged: (value) => setState(() => _accepted = value),
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _error!,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (_notice != null) ...[
+                  const SizedBox(height: 14),
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _notice!,
+                      style: const TextStyle(color: AppColors.text),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                PrimaryButton(
+                  label: _busy
+                      ? 'Aguarde...'
+                      : _creating
+                      ? 'Criar conta'
+                      : 'Entrar',
+                  onPressed: _busy || !canAuthenticate ? null : _submit,
                 ),
-              ],
-              if (_notice != null) ...[
-                const SizedBox(height: 14),
-                Semantics(
-                  liveRegion: true,
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _busy || !canAuthenticate
+                      ? null
+                      : () => setState(() {
+                          _creating = !_creating;
+                          _error = null;
+                          _accepted = false;
+                        }),
                   child: Text(
-                    _notice!,
-                    style: const TextStyle(color: AppColors.text),
+                    _creating ? 'Já tenho conta' : 'Criar uma conta',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  firebase
+                      ? 'Sua caderneta fica vinculada à sua conta. Confira a sincronização no aplicativo.'
+                      : gate.localAccountsEnabled
+                      ? 'Modo de teste local: os dados ficam apenas neste aparelho e não migram automaticamente para uma conta na nuvem.'
+                      : 'Seus dados não foram substituídos por uma conta local. Reconecte para continuar.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: AppColors.muted,
                   ),
                 ),
               ],
-              const SizedBox(height: 22),
-              PrimaryButton(
-                label: _busy
-                    ? 'Aguarde...'
-                    : _creating
-                    ? 'Criar conta'
-                    : 'Entrar',
-                onPressed: _busy || !canAuthenticate ? null : _submit,
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _busy || !canAuthenticate
-                    ? null
-                    : () => setState(() {
-                        _creating = !_creating;
-                        _error = null;
-                        _accepted = false;
-                      }),
-                child: Text(
-                  _creating ? 'Já tenho conta' : 'Criar uma conta',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                firebase
-                    ? 'Sua caderneta fica vinculada à sua conta. Confira a sincronização no aplicativo.'
-                    : gate.localAccountsEnabled
-                    ? 'Modo de teste local: os dados ficam apenas neste aparelho e não migram automaticamente para uma conta na nuvem.'
-                    : 'Seus dados não foram substituídos por uma conta local. Reconecte para continuar.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: AppColors.muted,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -223,6 +223,7 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          if (!user.premiumAtivo) ...[
           const SectionLabel('PREMIUM'),
           const SizedBox(height: 10),
           Container(
@@ -300,7 +301,10 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          const SectionLabel('PREMIUM · COBRANÇA POR FASE'),
+          ],
+          SectionLabel(
+            user.premiumAtivo ? 'COBRANÇA POR FASE' : 'PREMIUM · COBRANÇA POR FASE',
+          ),
           const SizedBox(height: 10),
           GroupCard(
             children: [

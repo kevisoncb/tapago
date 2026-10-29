@@ -94,9 +94,13 @@ class _WebClientsState extends State<WebClients> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: 320,
                 child: TextField(
                   controller: _search,
                   onChanged: (_) => setState(() {}),
@@ -112,7 +116,6 @@ class _WebClientsState extends State<WebClients> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
               Wrap(
                 spacing: 8,
                 children: [

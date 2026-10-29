@@ -70,7 +70,7 @@ O `firebase.json` publica quatro endereços do Hosting. Publique só o que mudou
 | --- | --- | --- |
 | `usepago.web.app` (site público) | `site` | `firebase deploy --only hosting:usepago` |
 | `pago-admin.web.app` (painel) | `admin` | `firebase deploy --only hosting:pago-admin` |
-| `sistema-pago.web.app` (sistema para computador) | `sistema` | `firebase deploy --only hosting:sistema-pago` |
+| `sistema-pago.web.app` (sistema para computador) | `build/web` | `flutter build web --release --no-tree-shake-icons --pwa-strategy=none`, depois `python tool/web-postbuild.py build/web` e `firebase deploy --only hosting:sistema-pago` |
 | `tapago-ae948.web.app` (redirecionamentos e `/api`) | `hosting-redirect` | `firebase deploy --only hosting:tapago-ae948` |
 
 Nunca troque a pasta `hosting-redirect`: ela leva as rotas `/api/...` das funções (inclusive o webhook do Asaas).

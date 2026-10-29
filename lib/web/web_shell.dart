@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../screens/premium_page.dart';
-import '../screens/settings_page.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
+import 'web_account.dart';
 import 'web_bills.dart';
 import 'web_clients.dart';
 import 'web_home.dart';
+import 'web_premium.dart';
 import 'web_reports.dart';
 import 'web_sale.dart';
 
@@ -50,8 +50,8 @@ class _WebShellState extends State<WebShell> {
       WebSection.clientes => WebClients(onNewSale: () => _go(WebSection.venda)),
       WebSection.boletos => const WebBills(),
       WebSection.relatorios => const WebReports(),
-      WebSection.premium => const _Narrow(child: PremiumPage()),
-      WebSection.conta => const _Narrow(child: SettingsPage(embedded: true)),
+      WebSection.premium => const WebPremium(),
+      WebSection.conta => const WebAccount(),
     };
   }
 
@@ -77,23 +77,6 @@ class _WebShellState extends State<WebShell> {
                 : _content(),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Páginas que já existem no app entram numa coluna de leitura confortável.
-class _Narrow extends StatelessWidget {
-  const _Narrow({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: child,
       ),
     );
   }

@@ -16,6 +16,7 @@ import 'services/push_service.dart';
 import 'services/reminder_service.dart';
 import 'services/session_gate.dart';
 import 'state/app_controller.dart';
+import 'web/web_shell.dart';
 import 'theme/app_theme.dart';
 import 'widgets/biometric_lock.dart';
 import 'widgets/brand_splash.dart';
@@ -173,7 +174,8 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
       child: _materialApp(
         lock: true,
         navigatorKey: _navigatorKey,
-        home: const MainNavigationPage(),
+        framed: !kIsWeb,
+        home: kIsWeb ? const _WebHome() : const MainNavigationPage(),
       ),
     );
   }
@@ -206,6 +208,19 @@ Widget _materialApp({
     },
     home: home,
   );
+}
+
+/// Na web, telas largas abrem o painel com menu lateral; telas estreitas
+/// (celular no navegador) continuam com a navegação do aplicativo.
+class _WebHome extends StatelessWidget {
+  const _WebHome();
+
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery.sizeOf(context).width >= 900
+        ? const WebShell()
+        : const MainNavigationPage();
+  }
 }
 
 class _BootScreen extends StatelessWidget {

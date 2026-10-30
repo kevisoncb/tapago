@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'billing_purchase_stub.dart'
     if (dart.library.io) 'billing_purchase_io.dart'
     as purchase;
+import 'crash_reporter.dart';
 import 'store_ids.dart';
 
 enum PurchaseOutcome {
@@ -39,13 +40,18 @@ class PurchaseUpdate {
   static const pending = PurchaseUpdate(outcome: PurchaseOutcome.pending);
   static const canceled = PurchaseUpdate(outcome: PurchaseOutcome.canceled);
 
-  static PurchaseUpdate unavailable(StoreKind store) => PurchaseUpdate(
-    outcome: PurchaseOutcome.unavailable,
-    store: store,
-    message: store == StoreKind.googlePlay
-        ? 'Não foi possível conectar à Google Play para assinar. Confira se o Pagô foi instalado pela Google Play, se a Play Store está atualizada e se há uma conta Google ativa no aparelho.'
-        : 'Não foi possível conectar à App Store para assinar. Confira a conexão e a sua conta Apple e tente de novo.',
-  );
+  /// [code] é o motivo técnico da falha; vai no fim da mensagem para o
+  /// suporte saber o que a loja respondeu.
+  static PurchaseUpdate unavailable(StoreKind store, {String? code}) =>
+      PurchaseUpdate(
+        outcome: PurchaseOutcome.unavailable,
+        store: store,
+        message:
+            (store == StoreKind.googlePlay
+                ? 'Não foi possível conectar à Google Play para assinar. Confira se o Pagô foi instalado pela Google Play, se a Play Store está atualizada e se há uma conta Google ativa no aparelho.'
+                : 'Não foi possível conectar à App Store para assinar. Confira a conexão e a sua conta Apple e tente de novo.') +
+            (code == null ? '' : '\n\nCódigo para o suporte: $code'),
+      );
 
   static PurchaseUpdate missing(StoreKind store) => PurchaseUpdate(
     outcome: PurchaseOutcome.missing,
@@ -63,8 +69,12 @@ class PurchaseUpdate {
 }
 
 class BillingService {
-  BillingService({InAppPurchase? store, this.restoreWait = restoreTimeout})
-    : _store = store ?? InAppPurchase.instance,
+  BillingService({
+    InAppPurchase? store,
+    this.restoreWait = restoreTimeout,
+    this.prepareAttempts = 3,
+    this.prepareDelay = const Duration(milliseconds: 900),
+  }) : _store = store ?? InAppPurchase.instance,
       _supported =
           store != null ||
           (!kIsWeb &&
@@ -76,6 +86,13 @@ class BillingService {
   final InAppPurchase _store;
   final bool _supported;
   final Duration restoreWait;
+
+  /// A primeira conexão com a Play costuma falhar quando o serviço da loja
+  /// ainda está acordando; por isso a preparação tenta de novo antes de
+  /// desistir (espera [prepareDelay], depois o dobro, e assim por diante).
+  final int prepareAttempts;
+  final Duration prepareDelay;
+  String? _issue;
   Future<void> _purchaseWork = Future.value();
   Future<PurchaseUpdate>? _restoreRequest;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -144,6 +161,8 @@ class BillingService {
     if (ready != null) return ready;
     try {
       final response = await _store.queryProductDetails({productId});
+      final failure = _queryFailure(response);
+      if (failure != null) return failure;
       if (response.productDetails.isEmpty) return PurchaseUpdate.missing(store);
       _product = response.productDetails.first;
       final started = await _store.buyNonConsumable(
@@ -199,17 +218,46 @@ class BillingService {
     }
   }
 
+  /// Último motivo técnico de falha ao falar com a loja (null quando ok).
+  String? get lastIssue => _issue;
+
   Future<PurchaseUpdate?> _prepare() async {
-    if (!_supported) return PurchaseUpdate.unavailable(store);
-    try {
-      await start();
-      final available = await _store.isAvailable();
-      if (!available) return PurchaseUpdate.unavailable(store);
-    } catch (error) {
-      debugPrint('Loja indisponível: $error');
-      return PurchaseUpdate.unavailable(store);
+    if (!_supported) {
+      _issue = 'plataforma-sem-loja';
+      return PurchaseUpdate.unavailable(store, code: _issue);
     }
-    return null;
+    final attempts = prepareAttempts < 1 ? 1 : prepareAttempts;
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        await start();
+        if (await _store.isAvailable()) {
+          _issue = null;
+          return null;
+        }
+        _issue = 'loja-indisponivel';
+      } catch (error) {
+        debugPrint('Loja indisponível: $error');
+        final text = '$error'.replaceAll(RegExp(r'\s+'), ' ').trim();
+        _issue =
+            'erro-loja: ${text.length > 80 ? text.substring(0, 80) : text}';
+      }
+      if (attempt < attempts) await Future<void>.delayed(prepareDelay * attempt);
+    }
+    unawaited(CrashReporter.recordIssue('Cobrança: $_issue'));
+    return PurchaseUpdate.unavailable(store, code: _issue);
+  }
+
+  /// Falha ao consultar o produto: a loja respondeu com erro (não é produto
+  /// ausente) e o código dela ajuda a achar a causa.
+  PurchaseUpdate? _queryFailure(ProductDetailsResponse response) {
+    final error = response.error;
+    if (error == null) return null;
+    final text = '${error.code}: ${error.message}'
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    _issue = 'consulta ${text.length > 80 ? text.substring(0, 80) : text}';
+    unawaited(CrashReporter.recordIssue('Cobrança: $_issue'));
+    return PurchaseUpdate.unavailable(store, code: _issue);
   }
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {

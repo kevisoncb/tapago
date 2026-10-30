@@ -23,6 +23,19 @@ class CrashReporter {
     _on = true;
   }
 
+  /// Registra um problema que não derruba o app (ex.: a Play não respondeu).
+  static Future<void> recordIssue(String reason) async {
+    if (!_on) return;
+    try {
+      await FirebaseCrashlytics.instance.recordError(
+        StateError(reason),
+        StackTrace.current,
+        fatal: false,
+        reason: reason,
+      );
+    } catch (_) {}
+  }
+
   static Future<void> setUser(String? uid) async {
     if (!_on) return;
     await FirebaseCrashlytics.instance.setUserIdentifier(uid ?? '');

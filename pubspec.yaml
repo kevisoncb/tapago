@@ -1,7 +1,7 @@
 name: pago_app
 description: Pagô — caderneta de fiado, a prazo e empréstimo.
 publish_to: "none"
-version: 2.5.0+27
+version: 2.5.1+28
 
 environment:
   sdk: ^3.13.5

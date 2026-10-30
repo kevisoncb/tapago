@@ -25,11 +25,7 @@ class PlanCatalog {
     ),
     PlanBenefit(
       'Seus dados acessíveis',
-<<<<<<< HEAD
       'Busca, extratos e exportação dos registros.',
-=======
-      'Busca, extratos em PDF e CSV e exportação dos registros.',
->>>>>>> f37e4c700c22397e04cbe6fcad75bf881996cb92
     ),
   ];
 

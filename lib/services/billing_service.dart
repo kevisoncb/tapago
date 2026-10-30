@@ -42,7 +42,9 @@ class PurchaseUpdate {
   static PurchaseUpdate unavailable(StoreKind store) => PurchaseUpdate(
     outcome: PurchaseOutcome.unavailable,
     store: store,
-    message: 'A ${store.label} não está disponível neste aparelho.',
+    message: store == StoreKind.googlePlay
+        ? 'Não foi possível conectar à Google Play para assinar. Confira se o Pagô foi instalado pela Google Play, se a Play Store está atualizada e se há uma conta Google ativa no aparelho.'
+        : 'Não foi possível conectar à App Store para assinar. Confira a conexão e a sua conta Apple e tente de novo.',
   );
 
   static PurchaseUpdate missing(StoreKind store) => PurchaseUpdate(

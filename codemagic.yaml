@@ -1,0 +1,54 @@
+# Build do iPhone na nuvem (Codemagic). Só roda depois da conta Apple Developer
+# e da integração com o App Store Connect (ver docs/IOS.md).
+workflows:
+  ios-testflight:
+    name: Pagô iOS (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Codemagic → Teams → Integrations → App Store Connect (chave .p8 da API).
+      app_store_connect: PagoAppStoreConnect
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: app.usepago
+      vars:
+        BUNDLE_ID: "app.usepago"
+        # Apple ID numérico do app (App Store Connect → Informações do app).
+        APP_STORE_APPLE_ID: "UNSET"
+      groups:
+        # Grupo "pago_ios" em Codemagic → Environment variables (marcar como secure):
+        #   PAGO_AF_DEV_KEY  chave do AppsFlyer; vazia deixa a medição desligada
+        - pago_ios
+    scripts:
+      - name: Dependências do Flutter
+        script: flutter pub get
+      - name: Testes
+        script: flutter test
+      - name: Instalar pods
+        script: |
+          cd ios
+          pod install
+      - name: Assinatura automática
+        script: xcode-project use-profiles
+      - name: Número do build (continua depois do último do TestFlight)
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+      - name: Gerar o .ipa
+        script: |
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist \
+            --dart-define=PAGO_AF_DEV_KEY="${PAGO_AF_DEV_KEY:-}"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Envia para o TestFlight. Não envia para revisão da App Store.
+        submit_to_testflight: true

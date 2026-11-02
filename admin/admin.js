@@ -20,6 +20,7 @@ const AUTO_REFRESH_MS = 60 * 1000;
 const SIGNATURE = "Kevison";
 const CONTACT_COOLDOWN = 7 * DAY;
 const SESSION_KEY = "pago_admin_2fa";
+const FOCUS_LIMIT = 8;
 
 const EVENT_LABELS = {
   COMPRA: "assinou o Premium",
@@ -1070,6 +1071,17 @@ function renderFocus() {
     )
     .join("");
   $("focus-why").textContent = SEGMENTS[state.focus].why;
+  const strip = $("attn-strip");
+  const total = Object.values(lists).reduce((sum, item) => sum + item.pending.length, 0);
+  strip.hidden = total === 0;
+  strip.innerHTML = total
+    ? `<strong>${total} ${total === 1 ? "pessoa precisa" : "pessoas precisam"} de atenção</strong>` +
+      Object.entries(SEGMENTS)
+        .filter(([key]) => lists[key].pending.length)
+        .map(([key, segment]) => `<button class="chip" data-attn="${key}">${segment.label} · ${lists[key].pending.length}</button>`)
+        .join("") +
+      `<button class="btn ghost" data-attn="">Ver a fila</button>`
+    : "";
 
   const { pending, done } = lists[state.focus];
   if (!pending.length && !done.length) {
@@ -1077,9 +1089,30 @@ function renderFocus() {
     return;
   }
   $("focus").innerHTML =
-    (pending.length ? pending.map((user) => focusCard(user, now, null)).join("") : `<div class="empty">Todo mundo desta lista já foi chamado.</div>`) +
+    (pending.length
+      ? pending
+          .slice(0, state.focusAll === state.focus ? pending.length : FOCUS_LIMIT)
+          .map((user) => focusCard(user, now, null))
+          .join("") +
+        (pending.length > FOCUS_LIMIT && state.focusAll !== state.focus
+          ? `<div class="more"><button class="btn ghost" data-focus-more>Mostrar mais ${pending.length - FOCUS_LIMIT}</button></div>`
+          : "")
+      : `<div class="empty">Todo mundo desta lista já foi chamado.</div>`) +
     done.map((user) => focusCard(user, now, user.chamadoEm)).join("");
 }
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-focus-more]")) {
+    state.focusAll = state.focus;
+    renderFocus();
+    return;
+  }
+  const chip = event.target.closest("[data-attn]");
+  if (!chip) return;
+  if (chip.dataset.attn) state.focus = chip.dataset.attn;
+  renderFocus();
+  $("attention").scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 function focusCard(user, now, calledAt) {
   const segment = SEGMENTS[state.focus];

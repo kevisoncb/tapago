@@ -1433,3 +1433,21 @@ body { font-size: 14px; }
   .main { padding: 0 14px 40px; }
   .top { margin: 0 -14px 14px; padding: 12px 14px; }
 }
+
+/* faixa de atenção da visão geral */
+.attn-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: var(--amber-soft);
+  border: 1px solid #f3d9a4;
+  border-radius: var(--radius);
+  color: var(--amber);
+}
+.attn-strip strong { margin-right: 6px; font-size: 13.5px; }
+.attn-strip .chip { background: #fff; border-color: #f3d9a4; color: var(--amber); }
+.attn-strip .btn { margin-left: auto; padding: 5px 10px; font-size: 12.5px; }
+.more { text-align: center; padding: 12px; border-top: 1px solid #eef2f7; }

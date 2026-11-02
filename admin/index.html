@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="admin.css?v=8" />
+    <link rel="stylesheet" href="admin.css?v=10" />
   </head>
   <body>
     <main id="login" class="login" hidden>
@@ -83,30 +83,28 @@
       <div id="banner"></div>
       <div data-page="geral">
         <section class="stats" id="stats"></section>
+        <div id="attn-strip" class="attn-strip" hidden></div>
 
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Precisa de atenção</h2>
-            <span class="muted small">Chame no WhatsApp e marque "Já chamei" para sair da fila por 7 dias.</span>
-          </div>
-          <div class="chips" id="focus-tabs"></div>
-          <p class="muted small focus-why" id="focus-why"></p>
-          <div id="focus" class="users"></div>
-        </section>
+        <div class="grid2">
+          <section class="panel">
+            <div class="panel-head"><h2>Cadastros nos últimos 14 dias</h2></div>
+            <div class="chart" id="chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Funil</h2>
+              <div class="chips tight" id="funnel-range">
+                <button data-range="all" class="chip active">Todos</button>
+                <button data-range="30" class="chip">Últimos 30 dias</button>
+              </div>
+            </div>
+            <div id="funnel" class="funnel"></div>
+          </section>
+        </div>
 
         <section class="panel">
           <div class="panel-head"><h2>Mês a mês</h2></div>
           <div id="monthly"></div>
-        </section>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Funil</h2>
-            <div class="chips tight" id="funnel-range">
-              <button data-range="all" class="chip active">Todos</button>
-              <button data-range="30" class="chip">Cadastros dos últimos 30 dias</button>
-            </div>
-          </div>
-          <div id="funnel" class="funnel"></div>
         </section>
 
         <section class="panel">
@@ -117,16 +115,20 @@
           <div id="retention"></div>
         </section>
 
-        <div class="grid2">
-          <section class="panel">
-            <div class="panel-head"><h2>Cadastros nos últimos 14 dias</h2></div>
-            <div class="chart" id="chart"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h2>Últimos acontecimentos</h2></div>
-            <div id="feed" class="feed"></div>
-          </section>
-        </div>
+        <section class="panel" id="attention">
+          <div class="panel-head">
+            <h2>Precisa de atenção</h2>
+            <span class="muted small">Chame no WhatsApp e marque "Já chamei" para sair da fila por 7 dias.</span>
+          </div>
+          <div class="chips" id="focus-tabs"></div>
+          <p class="muted small focus-why" id="focus-why"></p>
+          <div id="focus" class="users"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Últimos acontecimentos</h2></div>
+          <div id="feed" class="feed"></div>
+        </section>
       </div>
 
       <div data-page="receita" hidden>
@@ -278,6 +280,6 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="admin.js?v=8"></script>
+    <script type="module" src="admin.js?v=10"></script>
   </body>
 </html>

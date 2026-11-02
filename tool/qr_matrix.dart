@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, depend_on_referenced_packages
 // Imprime a matriz de um QR code (uma linha de 0/1 por linha do código).
 // Uso: dart run tool/qr_matrix.dart arquivo-com-a-url.txt
 // (a URL vem de um arquivo porque o "&" quebra o argumento no Windows).

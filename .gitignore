@@ -63,3 +63,4 @@ key.properties
 
 # Ferramentas locais de testes
 /tool/rules/node_modules/
+lancamento/

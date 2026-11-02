@@ -1198,7 +1198,10 @@ function renderUsers() {
     $("users").innerHTML = `<div class="empty">Ninguém por aqui.</div>`;
     return;
   }
-  $("users").innerHTML = list.map(userCard).join("");
+  $("users").innerHTML = `<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Pessoa</th><th>Plano</th><th>Último acesso</th><th>Plataforma</th><th class="num">Uso</th><th class="c-actions">Ações</th></tr></thead>
+      <tbody>${list.map(userCard).join("")}</tbody>
+    </table></div>`;
 }
 
 function planBadge(user) {
@@ -1216,26 +1219,26 @@ function userCard(user) {
   const now = Date.now();
   const online = user.ultimoAcesso && now - user.ultimoAcesso <= ONLINE_MS;
   const uso = user.uso
-    ? `${user.uso.lancamentos} lançamentos · ${user.uso.pagamentos} pagamentos · ${user.uso.boletos} boletos`
-    : "";
-  const meta = [
-    `Último acesso: ${online ? "online agora" : relative(user.ultimoAcesso)}`,
-    user.criadoEm ? `Cadastro: ${dateFmt.format(user.criadoEm)}` : "",
-    user.plataforma ? platformName(user.plataforma) : "",
-    user.telefone ? phone(user.telefone) : "",
-    uso,
-  ].filter(Boolean);
+    ? `<strong>${user.uso.lancamentos}</strong> lanç.<span class="sub">${user.uso.pagamentos} pag. · ${user.uso.boletos} bol.</span>`
+    : "—";
 
   return `
-    <article class="user" data-uid="${escapeHtml(user.uid)}">
-      <div class="avatar${online ? " online" : ""}">${escapeHtml(initials(user.nome || user.email))}</div>
-      <div class="user-main">
-        <div class="user-name"><button class="link strong" data-file="${escapeHtml(user.uid)}">${escapeHtml(user.nome || (user.admin ? "Administrador" : "Sem nome"))}</button> ${planBadge(user)}${user.admin ? ' <span class="badge admin">admin</span>' : ""}</div>
-        <div class="user-mail">${escapeHtml(user.email)}</div>
-        <div class="user-meta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
-      </div>
-      <div class="user-actions">${premiumControls(user)}</div>
-    </article>`;
+    <tr class="user" data-uid="${escapeHtml(user.uid)}">
+      <td class="c-person">
+        <div class="who">
+          <div class="avatar sm${online ? " online" : ""}">${escapeHtml(initials(user.nome || user.email))}</div>
+          <div class="who-text">
+            <button class="link strong" data-file="${escapeHtml(user.uid)}">${escapeHtml(user.nome || (user.admin ? "Administrador" : "Sem nome"))}</button>${user.admin ? ' <span class="badge admin">admin</span>' : ""}
+            <div class="user-mail">${escapeHtml(user.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td>${planBadge(user)}</td>
+      <td>${online ? '<span class="on">online agora</span>' : escapeHtml(relative(user.ultimoAcesso))}<div class="sub">${user.criadoEm ? `cadastro ${escapeHtml(dateFmt.format(user.criadoEm))}` : ""}</div></td>
+      <td>${user.plataforma ? escapeHtml(platformName(user.plataforma)) : "—"}<div class="sub">${user.telefone ? escapeHtml(phone(user.telefone)) : ""}</div></td>
+      <td class="num">${uso}</td>
+      <td class="c-actions"><div class="user-actions">${premiumControls(user)}</div></td>
+    </tr>`;
 }
 
 function premiumControls(user) {

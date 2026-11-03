@@ -216,7 +216,7 @@ exports.adminDailyDigest = onSchedule(
       `Usuários: ${s.total} · ativos em 7 dias: ${s.ativos7d} · Premium: ${s.premium} (${s.premiumPagantes} pagantes)`,
       `Receita do mês até agora: <b>${money(data.receita.mesAtual.bruto)}</b> bruto · ${money(data.receita.mesAtual.liquido)} líquido`,
       `<b>Precisa de atenção</b>`,
-      `Premium sumido: ${segments.risco} · Prontos para Premium: ${segments.prontos}`,
+      `Premium sem abrir: ${segments.risco} · Prontos para Premium: ${segments.prontos}`,
     ];
     await sendEmail(`Pagô: resumo de ${formatDate(yesterday)}`, lines);
   },

@@ -50,13 +50,13 @@ const ACTION_LABELS = {
 
 const SEGMENTS = {
   risco: {
-    label: "Premium sumido",
-    why: "Têm Premium ativo e não abrem o app há 7 dias ou mais. São os que mais podem cancelar.",
+    label: "Premium sem abrir",
+    why: "Têm Premium ativo e não abrem o app há 7 dias ou mais. Vale um oi, sem cobrança.",
     test: (user, now) => user.premiumAtivo && idleFor(user, now) >= 7 * DAY,
     reason: (user, now) =>
       `Premium${originLabel(user) ? ` ${originLabel(user)}` : ""} até ${dateFmt.format(user.premiumAte)} · sem abrir há ${daysText(idleFor(user, now))}`,
     message: (name) =>
-      `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Vi que faz uns dias que você não abre o app. Ficou alguma dúvida ou travou em alguma coisa? Posso te ajudar por aqui.`,
+      `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Passando só para saber se está tudo certo com o app. Se precisar de alguma coisa, é só me chamar por aqui.`,
     sort: (a, b, now) => idleFor(b, now) - idleFor(a, now),
   },
   prontos: {

@@ -74,19 +74,6 @@ const SEGMENTS = {
     sort: (a, b) => (b.uso?.lancamentos || 0) - (a.uso?.lancamentos || 0),
     trial: true,
   },
-  travados: {
-    label: "Travou no começo",
-    why: "Criaram a conta há 1 a 30 dias e ainda não fizeram nenhum lançamento.",
-    test: (user, now) =>
-      user.uso?.lancamentos === 0 &&
-      user.criadoEm &&
-      now - user.criadoEm >= DAY &&
-      now - user.criadoEm <= 30 * DAY,
-    reason: (user) => `Cadastro ${relative(user.criadoEm)} · nenhum lançamento`,
-    message: (name) =>
-      `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Vi que você criou sua conta mas ainda não lançou ninguém na caderneta. Quer que eu te mostre como lançar o primeiro fiado? Leva 1 minuto.`,
-    sort: (a, b) => (b.criadoEm || 0) - (a.criadoEm || 0),
-  },
 };
 
 const auth = DEMO ? { currentUser: { email: "demo@pago.app" } } : fbAuth.getAuth(fbApp.initializeApp(firebaseConfig));

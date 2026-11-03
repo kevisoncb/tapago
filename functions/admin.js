@@ -216,7 +216,7 @@ exports.adminDailyDigest = onSchedule(
       `Usuários: ${s.total} · ativos em 7 dias: ${s.ativos7d} · Premium: ${s.premium} (${s.premiumPagantes} pagantes)`,
       `Receita do mês até agora: <b>${money(data.receita.mesAtual.bruto)}</b> bruto · ${money(data.receita.mesAtual.liquido)} líquido`,
       `<b>Precisa de atenção</b>`,
-      `Premium sumido: ${segments.risco} · Prontos para Premium: ${segments.prontos} · Travou no começo: ${segments.travados}`,
+      `Premium sumido: ${segments.risco} · Prontos para Premium: ${segments.prontos}`,
     ];
     await sendEmail(`Pagô: resumo de ${formatDate(yesterday)}`, lines);
   },
@@ -624,9 +624,6 @@ function attentionCounts(people, at) {
         !user.premiumAtivo &&
         (((user.uso?.lancamentos || 0) >= 10 && idle(user) <= 7 * DAY_MS) ||
           (user.premiumAte && user.premiumAte <= at && at - user.premiumAte <= 30 * DAY_MS)),
-    ).length,
-    travados: list.filter(
-      (user) => user.uso?.lancamentos === 0 && user.criadoEm && at - user.criadoEm >= DAY_MS && at - user.criadoEm <= 30 * DAY_MS,
     ).length,
   };
 }

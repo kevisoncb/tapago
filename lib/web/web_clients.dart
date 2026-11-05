@@ -28,16 +28,16 @@ enum _Filter {
 }
 
 class WebClients extends StatefulWidget {
-  const WebClients({super.key, required this.onNewSale});
+  const WebClients({super.key, this.initialQuery = ''});
 
-  final VoidCallback onNewSale;
+  final String initialQuery;
 
   @override
   State<WebClients> createState() => _WebClientsState();
 }
 
 class _WebClientsState extends State<WebClients> {
-  final _search = TextEditingController();
+  late final _search = TextEditingController(text: widget.initialQuery);
   var _filter = _Filter.todos;
 
   @override
@@ -68,25 +68,21 @@ class _WebClientsState extends State<WebClients> {
             .saldoAbertoOf(state.saldoOf)
             .compareTo(a.saldoAbertoOf(state.saldoOf));
       });
+    final head = WebTableHeader.style;
     return WebPage(
       title: 'Clientes',
       subtitle: '${all.length} ${all.length == 1 ? 'cliente' : 'clientes'} na caderneta.',
-      action: WebPrimaryButton(
-        label: 'Novo lançamento',
-        icon: Icons.add_rounded,
-        onPressed: widget.onNewSale,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: 14,
+            runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               WebSearchField(
                 controller: _search,
-                hint: 'Buscar por nome ou telefone',
+                hint: 'Filtrar por nome ou telefone',
                 onChanged: (_) => setState(() {}),
               ),
               Wrap(
@@ -104,49 +100,35 @@ class _WebClientsState extends State<WebClients> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           WebCard(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            padding: EdgeInsets.zero,
             child: contacts.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 28),
-                    child: Text(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: WebEmpty(
                       state.debts.isEmpty
                           ? 'A caderneta ainda está vazia. Comece por um novo lançamento.'
                           : 'Nenhum cliente encontrado.',
-                      style: webText(14.5, color: AppColors.mutedDark),
                     ),
                   )
                 : Column(
                     children: [
-                      const _HeaderRow(),
+                      WebTableHeader(
+                        children: [
+                          Expanded(flex: 4, child: Text('CLIENTE', style: head)),
+                          Expanded(flex: 3, child: Text('WHATSAPP', style: head)),
+                          Expanded(flex: 2, child: Text('SITUAÇÃO', style: head)),
+                          SizedBox(
+                            width: 130,
+                            child: Text('SALDO', textAlign: TextAlign.right, style: head),
+                          ),
+                        ],
+                      ),
                       for (final contact in contacts)
                         _ClientRow(contact: contact),
                     ],
                   ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderRow extends StatelessWidget {
-  const _HeaderRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final style = webText(12.5, weight: FontWeight.w700, color: AppColors.mutedDark);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text('CLIENTE', style: style)),
-          Expanded(flex: 3, child: Text('WHATSAPP', style: style)),
-          Expanded(flex: 2, child: Text('SITUAÇÃO', style: style)),
-          SizedBox(
-            width: 130,
-            child: Text('SALDO', textAlign: TextAlign.right, style: style),
           ),
         ],
       ),
@@ -169,47 +151,36 @@ class _ClientRow extends StatelessWidget {
         : open
             ? ('Em aberto', AppColors.warning)
             : ('Quitado', AppColors.success);
-    return InkWell(
+    return WebTableRow(
       onTap: () => openWebClient(context, contact.debts.first),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.primarySoft)),
+      children: [
+        Expanded(
+          flex: 4,
+          child: Text(
+            contact.nome,
+            overflow: TextOverflow.ellipsis,
+            style: webText(13.5, weight: FontWeight.w700),
+          ),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 4,
-              child: Text(
-                contact.nome,
-                overflow: TextOverflow.ellipsis,
-                style: webText(15, weight: FontWeight.w700),
-              ),
-            ),
-            Expanded(
-              flex: 3,
-              child: Text(
-                contact.telefone.isEmpty
-                    ? '—'
-                    : formatPhoneBr(contact.telefone),
-                style: webText(14, weight: FontWeight.w500, color: AppColors.mutedDark),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Text(label, style: webText(13.5, weight: FontWeight.w700, color: color)),
-            ),
-            SizedBox(
-              width: 130,
-              child: Text(
-                Money.full(contact.saldoAbertoOf(state.saldoOf)),
-                textAlign: TextAlign.right,
-                style: webText(15, weight: FontWeight.w800),
-              ),
-            ),
-          ],
+        Expanded(
+          flex: 3,
+          child: Text(
+            contact.telefone.isEmpty
+                ? '—'
+                : formatPhoneBr(contact.telefone),
+            style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
+          ),
         ),
-      ),
+        Expanded(flex: 2, child: WebBadge(label, color: color)),
+        SizedBox(
+          width: 130,
+          child: Text(
+            Money.full(contact.saldoAbertoOf(state.saldoOf)),
+            textAlign: TextAlign.right,
+            style: webText(13.5, weight: FontWeight.w800),
+          ),
+        ),
+      ],
     );
   }
 }

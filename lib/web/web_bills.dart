@@ -134,7 +134,7 @@ class _WebBillsState extends State<WebBills> {
             ],
           ),
           if (!premium) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             WebCard(
               child: Wrap(
                 spacing: 16,
@@ -143,7 +143,7 @@ class _WebBillsState extends State<WebBills> {
                 children: [
                   Text(
                     'Boletos a pagar é do Premium.',
-                    style: webText(15, weight: FontWeight.w800),
+                    style: webText(14.5, weight: FontWeight.w800),
                   ),
                   OutlinedButton(
                     onPressed: widget.onPremium,
@@ -153,10 +153,10 @@ class _WebBillsState extends State<WebBills> {
               ),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: 14,
+            runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               WebSearchField(
@@ -179,19 +179,18 @@ class _WebBillsState extends State<WebBills> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           WebCard(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            padding: EdgeInsets.zero,
             child: bills.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 28),
-                    child: Text(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: WebEmpty(
                       state.bills.isEmpty
                           ? (premium
                               ? 'Nenhum boleto cadastrado. Use "Novo boleto".'
                               : 'Nenhum boleto cadastrado.')
                           : 'Nenhum boleto neste filtro.',
-                      style: webText(14.5, color: AppColors.mutedDark),
                     ),
                   )
                 : LayoutBuilder(
@@ -224,22 +223,19 @@ class _BillHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = webText(12.5, weight: FontWeight.w700, color: AppColors.mutedDark);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text('FORNECEDOR', style: style)),
-          Expanded(flex: 2, child: Text('PARCELA', style: style)),
-          Expanded(flex: 2, child: Text('VENCIMENTO', style: style)),
-          Expanded(flex: 2, child: Text('SITUAÇÃO', style: style)),
-          SizedBox(
-            width: 110,
-            child: Text('VALOR', textAlign: TextAlign.right, style: style),
-          ),
-          const SizedBox(width: _actionsWidth),
-        ],
-      ),
+    final style = WebTableHeader.style;
+    return WebTableHeader(
+      children: [
+        Expanded(flex: 4, child: Text('FORNECEDOR', style: style)),
+        Expanded(flex: 2, child: Text('PARCELA', style: style)),
+        Expanded(flex: 2, child: Text('VENCIMENTO', style: style)),
+        Expanded(flex: 2, child: Text('SITUAÇÃO', style: style)),
+        SizedBox(
+          width: 110,
+          child: Text('VALOR', textAlign: TextAlign.right, style: style),
+        ),
+        const SizedBox(width: _actionsWidth),
+      ],
     );
   }
 }
@@ -281,7 +277,7 @@ class _BillRow extends StatelessWidget {
                 IconButton(
                   tooltip: 'Excluir',
                   onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
                   color: AppColors.mutedDark,
                 ),
               ],
@@ -292,92 +288,52 @@ class _BillRow extends StatelessWidget {
       child: Text(
         Money.full(bill.valor),
         textAlign: TextAlign.right,
-        style: webText(15, weight: FontWeight.w800),
+        style: webText(13.5, weight: FontWeight.w800),
       ),
     );
+    final name = Text(
+      bill.fornecedor,
+      overflow: TextOverflow.ellipsis,
+      style: webText(13.5, weight: FontWeight.w700),
+    );
+    final muted = webText(13, weight: FontWeight.w500, color: AppColors.mutedDark);
     if (compact) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.primarySoft)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
+      return WebTableRow(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    bill.fornecedor,
-                    overflow: TextOverflow.ellipsis,
-                    style: webText(15, weight: FontWeight.w700),
-                  ),
+                  name,
                   const SizedBox(height: 2),
-                  Text.rich(
-                    TextSpan(
-                      style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
-                      children: [
-                        TextSpan(
-                          text: bill.parcelado
-                              ? '$parcela · ${Dates.full(bill.dataVencimento)} · '
-                              : '${Dates.full(bill.dataVencimento)} · ',
-                        ),
-                        TextSpan(
-                          text: label,
-                          style: webText(13, weight: FontWeight.w700, color: color),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    bill.parcelado
+                        ? '$parcela · ${Dates.full(bill.dataVencimento)}'
+                        : Dates.full(bill.dataVencimento),
+                    style: muted,
                   ),
+                  const SizedBox(height: 4),
+                  WebBadge(label, color: color),
                 ],
               ),
-            ),
-            value,
-            actions,
-          ],
-        ),
-      );
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.primarySoft)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: Text(
-              bill.fornecedor,
-              overflow: TextOverflow.ellipsis,
-              style: webText(15, weight: FontWeight.w700),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              parcela,
-              style: webText(14, weight: FontWeight.w500, color: AppColors.mutedDark),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              Dates.full(bill.dataVencimento),
-              style: webText(14, weight: FontWeight.w500, color: AppColors.mutedDark),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: webText(13.5, weight: FontWeight.w700, color: color),
             ),
           ),
           value,
           actions,
         ],
-      ),
+      );
+    }
+    return WebTableRow(
+      children: [
+        Expanded(flex: 4, child: name),
+        Expanded(flex: 2, child: Text(parcela, style: muted)),
+        Expanded(flex: 2, child: Text(Dates.full(bill.dataVencimento), style: muted)),
+        Expanded(flex: 2, child: WebBadge(label, color: color)),
+        value,
+        actions,
+      ],
     );
   }
 }

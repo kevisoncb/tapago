@@ -43,7 +43,7 @@ class WebPremium extends StatelessWidget {
                     children: [
                       Text(
                         active ? 'Seu Premium está ativo.' : 'Você está no plano grátis.',
-                        style: webText(18, weight: FontWeight.w800),
+                        style: webText(15.5, weight: FontWeight.w800),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -64,7 +64,7 @@ class WebPremium extends StatelessWidget {
                     label: const Text('Assinar no app'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      minimumSize: const Size(0, 48),
+                      minimumSize: const Size(0, 40),
                     ),
                   ),
               ],
@@ -133,16 +133,16 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: highlight ? AppColors.primary : AppColors.primaryMuted,
+          color: highlight ? AppColors.primary : WebColors.border,
           width: highlight ? 2 : 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: webText(22, weight: FontWeight.w800, color: accent)),
+          Text(title, style: webText(18, weight: FontWeight.w800, color: accent)),
           const SizedBox(height: 2),
           Text(price, style: webText(15, color: AppColors.mutedDark)),
           const SizedBox(height: 18),
@@ -161,11 +161,11 @@ class _PlanCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.title, style: webText(15, weight: FontWeight.w800)),
+                        Text(item.title, style: webText(14, weight: FontWeight.w800)),
                         const SizedBox(height: 2),
                         Text(
                           item.description,
-                          style: webText(13.5, weight: FontWeight.w500, color: AppColors.mutedDark),
+                          style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
                         ),
                       ],
                     ),

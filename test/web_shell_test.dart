@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pago_app/data/seed_data.dart';
 import 'package:pago_app/models/models.dart';
+import 'package:pago_app/screens/customer_statement_page.dart';
 import 'package:pago_app/services/local_repository.dart';
 import 'package:pago_app/state/app_controller.dart';
 import 'package:pago_app/theme/app_theme.dart';
@@ -98,11 +99,52 @@ void main() {
     final controller = await _controller(premium: false);
     addTearDown(controller.dispose);
     await _pump(tester, controller, const Size(900, 800));
-    expect(find.text('Sair da conta'), findsNothing);
+    expect(find.text('Ajuda'), findsNothing);
     expect(find.byIcon(Icons.help_outline_rounded), findsOneWidget);
     await _pump(tester, controller, const Size(1280, 800));
-    expect(find.text('Sair da conta'), findsOneWidget);
     expect(find.text('Ajuda'), findsOneWidget);
+    expect(find.text('OPERAÇÃO'), findsOneWidget);
+  });
+
+  testWidgets('tela aberta a partir do cliente fica no painel, e voltar fecha o painel', (tester) async {
+    final controller = await _controller(premium: true);
+    addTearDown(controller.dispose);
+    await _pump(tester, controller, const Size(1600, 1000));
+    await _open(tester, WebSection.clientes, compact: false);
+
+    await tester.tap(find.text(SeedData.debts().first.nome).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Extrato do cliente'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CustomerStatementPage), findsOneWidget);
+    expect(tester.getSize(find.byType(CustomerStatementPage)).width, lessThanOrEqualTo(720));
+    expect(find.byType(WebShell), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Voltar').last);
+    await tester.pumpAndSettle();
+    expect(find.byType(CustomerStatementPage), findsNothing);
+    expect(find.text('Extrato do cliente'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('busca da barra superior abre Clientes já filtrado', (tester) async {
+    final controller = await _controller(premium: false);
+    addTearDown(controller.dispose);
+    await _pump(tester, controller, const Size(1280, 900));
+    final name = SeedData.debts().first.nome;
+
+    await tester.enterText(find.byType(TextField).first, name);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clientes'), findsWidgets);
+    expect(find.text(SeedData.debts()[1].nome), findsNothing);
+    expect(find.text(name), findsWidgets);
   });
 
   testWidgets('Ajuda mostra os primeiros passos, os atalhos levam à área e o tópico abre', (

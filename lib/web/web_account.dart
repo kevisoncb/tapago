@@ -134,16 +134,16 @@ class _WebAccountState extends State<WebAccount> {
     return WebPage(
       title: 'Minha conta',
       subtitle: user.email,
-      maxWidth: 760,
+      maxWidth: 860,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           WebCard(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Dados da loja', style: webText(18, weight: FontWeight.w800)),
+                Text('Dados da loja', style: webText(15.5, weight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(
                   'O nome aparece nos relatórios; a chave PIX vai junto na cobrança.',
@@ -183,15 +183,15 @@ class _WebAccountState extends State<WebAccount> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           WebCard(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Mensagens de cobrança',
-                  style: webText(18, weight: FontWeight.w800),
+                  style: webText(15.5, weight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -225,7 +225,7 @@ class _WebAccountState extends State<WebAccount> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF7F9FC),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       WhatsAppService.preview('', chavePix: user.chavePix),
@@ -235,7 +235,7 @@ class _WebAccountState extends State<WebAccount> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           WebCard(
             padding: const EdgeInsets.fromLTRB(24, 12, 16, 12),
             child: SwitchListTile(
@@ -252,13 +252,13 @@ class _WebAccountState extends State<WebAccount> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           WebCard(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ajuda e documentos', style: webText(18, weight: FontWeight.w800)),
+                Text('Ajuda e documentos', style: webText(15.5, weight: FontWeight.w800)),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 10,
@@ -270,16 +270,15 @@ class _WebAccountState extends State<WebAccount> {
                       label: const Text('Ajuda no WhatsApp'),
                     ),
                     OutlinedButton(
-                      onPressed: () => LegalPage.open(context, LegalDoc.termos),
+                      onPressed: () => openWebPanel(context, const LegalPage(doc: LegalDoc.termos)),
                       child: const Text('Termos de Uso'),
                     ),
                     OutlinedButton(
-                      onPressed: () =>
-                          LegalPage.open(context, LegalDoc.privacidade),
+                      onPressed: () => openWebPanel(context, const LegalPage(doc: LegalDoc.privacidade)),
                       child: const Text('Privacidade'),
                     ),
                     OutlinedButton(
-                      onPressed: () => LegalPage.open(context, LegalDoc.lgpd),
+                      onPressed: () => openWebPanel(context, const LegalPage(doc: LegalDoc.lgpd)),
                       child: const Text('LGPD'),
                     ),
                   ],
@@ -318,7 +317,7 @@ class _MessageField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         alignLabelWithHint: true,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }

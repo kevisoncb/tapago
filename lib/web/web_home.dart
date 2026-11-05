@@ -27,11 +27,6 @@ class WebHome extends StatelessWidget {
     return WebPage(
       title: first.isEmpty ? 'Início' : 'Olá, $first',
       subtitle: 'Resumo da sua caderneta hoje.',
-      action: WebPrimaryButton(
-        label: 'Novo lançamento',
-        icon: Icons.add_rounded,
-        onPressed: () => onGo(WebSection.venda),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -44,7 +39,7 @@ class WebHome extends StatelessWidget {
                 children: [
                   Text(
                     'Primeira vez por aqui? Veja como começar.',
-                    style: webText(15.5, weight: FontWeight.w800),
+                    style: webText(14.5, weight: FontWeight.w800),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => onGo(WebSection.ajuda),
@@ -54,18 +49,20 @@ class WebHome extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
           WebGrid(
             children: [
               WebStat(
                 label: 'Total a receber',
                 value: Money.full(state.saldoAberto),
+                icon: Icons.account_balance_wallet_outlined,
                 onTap: () => onGo(WebSection.clientes),
               ),
               WebStat(
                 label: 'Em atraso',
                 value: Money.full(state.aReceberVencido),
+                icon: Icons.warning_amber_rounded,
                 color: state.aReceberVencido > 0
                     ? AppColors.danger
                     : AppColors.text,
@@ -74,23 +71,25 @@ class WebHome extends StatelessWidget {
               WebStat(
                 label: 'Vence em 7 dias',
                 value: Money.full(state.aReceberNaSemana),
+                icon: Icons.event_outlined,
                 onTap: () => onGo(WebSection.clientes),
               ),
               WebStat(
                 label: 'Boletos a pagar',
                 value: Money.full(state.aPagarAberto),
+                icon: Icons.receipt_long_outlined,
                 onTap: () => onGo(WebSection.boletos),
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           _DebtTable(
             title: 'Em atraso',
             empty: 'Nenhum recebimento em atraso.',
             debts: overdue,
             onSeeAll: () => onGo(WebSection.clientes),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _DebtTable(
             title: 'Vencem nos próximos 7 dias',
             empty: 'Nenhum vencimento nos próximos 7 dias.',
@@ -122,52 +121,55 @@ class _DebtTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
     final shown = debts.take(_limit).toList();
-    return WebCard(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$title${debts.isEmpty ? '' : ' (${debts.length})'}',
-            style: webText(17, weight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          if (shown.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Text(
-                empty,
-                style: webText(14, color: AppColors.mutedDark),
-              ),
+    final head = WebTableHeader.style;
+    return WebTablePanel(
+      title: '$title${debts.isEmpty ? '' : ' (${debts.length})'}',
+      trailing: debts.length > _limit
+          ? TextButton(
+              onPressed: onSeeAll,
+              child: Text('Ver todos os ${debts.length} em Clientes'),
             )
-          else
-            for (final debt in shown)
-              InkWell(
-                onTap: () => openWebClient(context, debt),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
+          : null,
+      child: shown.isEmpty
+          ? WebEmpty(empty)
+          : Column(
+              children: [
+                WebTableHeader(
+                  children: [
+                    Expanded(flex: 3, child: Text('CLIENTE', style: head)),
+                    Expanded(flex: 2, child: Text('PARCELA', style: head)),
+                    Expanded(flex: 2, child: Text('VENCIMENTO', style: head)),
+                    SizedBox(
+                      width: 120,
+                      child: Text('SALDO', textAlign: TextAlign.right, style: head),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
+                ),
+                for (final debt in shown)
+                  WebTableRow(
+                    onTap: () => openWebClient(context, debt),
                     children: [
                       Expanded(
                         flex: 3,
                         child: Text(
                           debt.nome,
                           overflow: TextOverflow.ellipsis,
-                          style: webText(15, weight: FontWeight.w700),
+                          style: webText(13.5, weight: FontWeight.w700),
                         ),
                       ),
                       Expanded(
                         flex: 2,
                         child: Text(
                           debt.parcelado ? debt.parcelaLabel : 'À vista',
-                          style: webText(13.5, color: AppColors.mutedDark),
+                          style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
                         ),
                       ),
                       Expanded(
                         flex: 2,
                         child: Text(
                           Dates.full(debt.dataVencimento),
-                          style: webText(13.5, color: AppColors.mutedDark),
+                          style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
                         ),
                       ),
                       SizedBox(
@@ -175,7 +177,7 @@ class _DebtTable extends StatelessWidget {
                         child: Text(
                           Money.full(state.saldoOf(debt)),
                           textAlign: TextAlign.right,
-                          style: webText(15, weight: FontWeight.w800),
+                          style: webText(13.5, weight: FontWeight.w800),
                         ),
                       ),
                       SizedBox(
@@ -188,21 +190,14 @@ class _DebtTable extends StatelessWidget {
                                   context: context,
                                   debt: debt,
                                 ),
-                                icon: const Icon(Icons.chat_outlined, size: 20),
+                                icon: const Icon(Icons.chat_outlined, size: 18),
                                 color: AppColors.primary,
                               ),
                       ),
                     ],
                   ),
-                ),
-              ),
-          if (debts.length > _limit)
-            TextButton(
-              onPressed: onSeeAll,
-              child: Text('Ver todos os ${debts.length} em Clientes'),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

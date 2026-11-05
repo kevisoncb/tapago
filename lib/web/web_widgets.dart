@@ -3,6 +3,17 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
 
+/// Cores só do painel web: fundo neutro e menu escuro, como um sistema de gestão.
+class WebColors {
+  static const canvas = Color(0xFFF3F5F9);
+  static const border = Color(0xFFE2E7EF);
+  static const headerBand = Color(0xFFF7F9FC);
+  static const sidebar = Color(0xFF0F2350);
+  static const sidebarText = Color(0xFFB9C6E3);
+  static const sidebarMuted = Color(0xFF7F90B6);
+  static const sidebarLine = Color(0xFF243A6E);
+}
+
 TextStyle webText(
   double size, {
   FontWeight weight = FontWeight.w600,
@@ -22,7 +33,7 @@ class WebPage extends StatelessWidget {
     this.subtitle,
     this.action,
     required this.child,
-    this.maxWidth = 1080,
+    this.maxWidth = 1280,
   });
 
   final String title;
@@ -34,7 +45,7 @@ class WebPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 28, 32, 40),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -49,14 +60,14 @@ class WebPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: webText(28, weight: FontWeight.w800)),
+                        Text(title, style: webText(21, weight: FontWeight.w800)),
                         if (subtitle case final text?)
                           Padding(
-                            padding: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.only(top: 2),
                             child: Text(
                               text,
                               style: webText(
-                                14.5,
+                                13.5,
                                 weight: FontWeight.w500,
                                 color: AppColors.mutedDark,
                               ),
@@ -68,7 +79,7 @@ class WebPage extends StatelessWidget {
                   ?action,
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               child,
             ],
           ),
@@ -78,20 +89,48 @@ class WebPage extends StatelessWidget {
   }
 }
 
-/// Painel por cima da tela, com o mesmo tamanho para cadastros e detalhes.
+/// Painel por cima da tela para cadastros e detalhes. As telas abertas a partir
+/// dele ficam dentro do próprio painel, sem ocupar a janela inteira.
 Future<void> openWebPanel(BuildContext context, Widget child) {
   return showDialog<void>(
     context: context,
-    builder: (_) => Dialog(
+    builder: (dialog) => Dialog(
       clipBehavior: Clip.antiAlias,
       insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
-        child: child,
+        constraints: const BoxConstraints(maxWidth: 720, maxHeight: 860),
+        child: Navigator(
+          observers: [_ClosePanelOnLastPop(dialog)],
+          onGenerateInitialRoutes: (_, _) => [
+            PageRouteBuilder<void>(
+              settings: const RouteSettings(name: _panelBase),
+              pageBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+            MaterialPageRoute<void>(builder: (_) => child),
+          ],
+        ),
       ),
     ),
   );
+}
+
+const _panelBase = 'painel-base';
+
+/// A primeira tela do painel tem por baixo uma rota vazia, para o botão de
+/// voltar funcionar; ao chegar nela, quem fecha é o diálogo.
+class _ClosePanelOnLastPop extends NavigatorObserver {
+  _ClosePanelOnLastPop(this.dialog);
+
+  final BuildContext dialog;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (previousRoute?.settings.name != _panelBase) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (dialog.mounted) Navigator.of(dialog).pop();
+    });
+  }
 }
 
 class WebPrimaryButton extends StatelessWidget {
@@ -110,11 +149,14 @@ class WebPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return FilledButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon),
+      icon: Icon(icon, size: 18),
       label: Text(label),
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        minimumSize: const Size(0, 48),
+        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        textStyle: webText(13.5, weight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -125,29 +167,40 @@ class WebSearchField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hint,
-    required this.onChanged,
+    this.onChanged,
+    this.onSubmitted,
+    this.maxWidth = 320,
   });
 
   final TextEditingController controller;
   final String hint;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: WebColors.border),
+    );
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320),
+      constraints: BoxConstraints(maxWidth: maxWidth),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        style: webText(13.5, weight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: const Icon(Icons.search_rounded),
+          hintStyle: webText(13.5, weight: FontWeight.w500, color: AppColors.muted),
+          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 11),
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.primaryMuted),
-          ),
+          border: border,
+          enabledBorder: border,
         ),
       ),
     );
@@ -167,7 +220,7 @@ class WebGrid extends StatelessWidget {
   final double minItemWidth;
   final int maxColumns;
 
-  static const _gap = 16.0;
+  static const _gap = 14.0;
 
   @override
   Widget build(BuildContext context) {
@@ -200,14 +253,141 @@ class WebCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: padding ?? const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
+      padding: padding ?? const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primaryMuted),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: WebColors.border),
       ),
       // Linhas clicáveis e listas dentro do cartão precisam de um Material.
       child: Material(type: MaterialType.transparency, child: child),
+    );
+  }
+}
+
+/// Cartão com barra de título, usado em volta das tabelas.
+class WebTablePanel extends StatelessWidget {
+  const WebTablePanel({
+    super.key,
+    required this.title,
+    this.trailing,
+    required this.child,
+  });
+
+  final String title;
+  final Widget? trailing;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return WebCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(title, style: webText(14.5, weight: FontWeight.w800)),
+                ),
+                ?trailing,
+              ],
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// Faixa de títulos das colunas de uma tabela.
+class WebTableHeader extends StatelessWidget {
+  const WebTableHeader({super.key, required this.children});
+
+  final List<Widget> children;
+
+  static TextStyle get style =>
+      webText(11.5, weight: FontWeight.w700, color: AppColors.mutedDark);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: const BoxDecoration(
+        color: WebColors.headerBand,
+        border: Border(
+          top: BorderSide(color: WebColors.border),
+          bottom: BorderSide(color: WebColors.border),
+        ),
+      ),
+      child: Row(children: children),
+    );
+  }
+}
+
+/// Linha de tabela com altura uniforme e destaque ao passar o mouse.
+class WebTableRow extends StatelessWidget {
+  const WebTableRow({super.key, required this.children, this.onTap});
+
+  final List<Widget> children;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Container(
+      constraints: const BoxConstraints(minHeight: 46),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: WebColors.canvas)),
+      ),
+      child: Row(children: children),
+    );
+    if (onTap == null) return row;
+    return InkWell(onTap: onTap, hoverColor: WebColors.headerBand, child: row);
+  }
+}
+
+/// Texto vazio de tabela ou lista.
+class WebEmpty extends StatelessWidget {
+  const WebEmpty(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      child: Text(
+        text,
+        style: webText(13.5, weight: FontWeight.w500, color: AppColors.mutedDark),
+      ),
+    );
+  }
+}
+
+/// Situação em destaque na tabela (em atraso, pago, a vencer).
+class WebBadge extends StatelessWidget {
+  const WebBadge(this.label, {super.key, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(label, style: webText(12, weight: FontWeight.w700, color: color)),
+      ),
     );
   }
 }
@@ -218,17 +398,22 @@ class WebStat extends StatelessWidget {
     required this.label,
     required this.value,
     this.color = AppColors.text,
+    this.icon,
+    this.detail,
     this.onTap,
   });
 
   final String label;
   final String value;
   final Color color;
+  final IconData? icon;
+  final String? detail;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final card = WebCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -237,32 +422,36 @@ class WebStat extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: webText(13, color: AppColors.mutedDark),
+                  style: webText(12.5, color: AppColors.mutedDark),
                 ),
               ),
-              if (onTap != null)
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: AppColors.mutedDark,
-                ),
+              if (icon case final data?)
+                Icon(data, size: 18, color: AppColors.muted),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: webText(24, weight: FontWeight.w800, color: color),
+              style: webText(21, weight: FontWeight.w800, color: color),
             ),
           ),
+          if (detail case final text?)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                text,
+                style: webText(12.5, weight: FontWeight.w500, color: AppColors.mutedDark),
+              ),
+            ),
         ],
       ),
     );
     if (onTap == null) return card;
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(10),
       onTap: onTap,
       child: card,
     );

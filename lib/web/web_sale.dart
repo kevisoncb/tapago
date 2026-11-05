@@ -196,7 +196,7 @@ class _WebSaleState extends State<WebSale> {
     return WebPage(
       title: 'Novo lançamento',
       subtitle: 'Registre um valor a receber de um cliente.',
-      maxWidth: 720,
+      maxWidth: 820,
       child: WebCard(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -387,7 +387,7 @@ class _WebSaleState extends State<WebSale> {
               onPressed: _saving ? null : () => _save(state),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                minimumSize: const Size(double.infinity, 52),
+                minimumSize: const Size(double.infinity, 46),
               ),
               child: Text(_saving ? 'Salvando…' : 'Salvar lançamento'),
             ),

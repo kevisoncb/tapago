@@ -99,7 +99,7 @@ const webHelpTopics = <WebHelpTopic>[
   WebHelpTopic('Usar no celular e no computador', Icons.devices_outlined, [
     'Entre com o mesmo e-mail e a mesma senha nos dois.',
     'Clientes, lançamentos e boletos são os mesmos.',
-    'Em computador de outra pessoa, clique em "Sair da conta" ao terminar.',
+    'Em computador de outra pessoa, ao terminar, clique na sua inicial, no alto à direita, e em "Sair da conta".',
   ]),
   WebHelpTopic('Excluir a conta', Icons.person_off_outlined, [
     'Em Minha conta, vá até o fim da página e clique em "Excluir minha conta".',
@@ -119,11 +119,11 @@ class WebHelp extends StatelessWidget {
     return WebPage(
       title: 'Ajuda',
       subtitle: 'Como usar o ${AppConstants.appName}, passo a passo.',
-      maxWidth: 820,
+      maxWidth: 900,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Primeiros passos', style: webText(18, weight: FontWeight.w800)),
+          Text('Primeiros passos', style: webText(15.5, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           WebCard(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -140,7 +140,7 @@ class WebHelp extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 28),
-          Text('Como fazer', style: webText(18, weight: FontWeight.w800)),
+          Text('Como fazer', style: webText(15.5, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           WebCard(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -194,7 +194,7 @@ class _StartRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
         border: divider
-            ? const Border(top: BorderSide(color: AppColors.primarySoft))
+            ? const Border(top: BorderSide(color: WebColors.border))
             : null,
       ),
       child: Row(

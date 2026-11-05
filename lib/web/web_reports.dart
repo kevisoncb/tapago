@@ -74,12 +74,12 @@ class _WebReportsState extends State<WebReports> {
         onPressed: _pickRange,
         icon: const Icon(Icons.date_range_outlined),
         label: Text('${Dates.full(_range.start)} a ${Dates.full(_range.end)}'),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Recebimentos de clientes', style: webText(18, weight: FontWeight.w800)),
+          Text('Recebimentos de clientes', style: webText(15.5, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           _grid(context, [
             _Metric(
@@ -102,7 +102,7 @@ class _WebReportsState extends State<WebReports> {
             ),
           ]),
           const SizedBox(height: 28),
-          Text('Boletos de fornecedores', style: webText(18, weight: FontWeight.w800)),
+          Text('Boletos de fornecedores', style: webText(15.5, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           _grid(context, [
             _Metric(
@@ -130,7 +130,7 @@ class _WebReportsState extends State<WebReports> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Idade dos atrasos', style: webText(17, weight: FontWeight.w800)),
+                  Text('Idade dos atrasos', style: webText(14.5, weight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   for (final bucket in report.aging)
                     Padding(
@@ -160,26 +160,27 @@ class _WebReportsState extends State<WebReports> {
             ),
           ],
           const SizedBox(height: 28),
-          WebCard(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Pagamentos recebidos', style: webText(17, weight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                if (received.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: Text(
-                      'Nenhum pagamento neste período.',
-                      style: webText(14, color: AppColors.mutedDark),
-                    ),
-                  )
-                else
-                  for (final payment in received.take(50))
-                    _PaymentRow(payment: payment, nome: names[payment.debtId] ?? 'Cliente'),
-              ],
-            ),
+          WebTablePanel(
+            title: 'Pagamentos recebidos',
+            child: received.isEmpty
+                ? const WebEmpty('Nenhum pagamento neste período.')
+                : Column(
+                    children: [
+                      WebTableHeader(
+                        children: [
+                          Expanded(flex: 3, child: Text('CLIENTE', style: WebTableHeader.style)),
+                          Expanded(flex: 2, child: Text('DESCRIÇÃO', style: WebTableHeader.style)),
+                          Expanded(flex: 2, child: Text('DATA', style: WebTableHeader.style)),
+                          SizedBox(
+                            width: 120,
+                            child: Text('VALOR', textAlign: TextAlign.right, style: WebTableHeader.style),
+                          ),
+                        ],
+                      ),
+                      for (final payment in received.take(50))
+                        _PaymentRow(payment: payment, nome: names[payment.debtId] ?? 'Cliente'),
+                    ],
+                  ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -210,7 +211,7 @@ class _WebReportsState extends State<WebReports> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     Money.full(item.cents / 100),
-                    style: webText(24, weight: FontWeight.w800, color: item.color),
+                    style: webText(21, weight: FontWeight.w800, color: item.color),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -243,46 +244,40 @@ class _PaymentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.primarySoft)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              nome,
-              overflow: TextOverflow.ellipsis,
-              style: webText(15, weight: FontWeight.w700),
-            ),
+    return WebTableRow(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            nome,
+            overflow: TextOverflow.ellipsis,
+            style: webText(13.5, weight: FontWeight.w700),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              payment.descricao,
-              overflow: TextOverflow.ellipsis,
-              style: webText(13.5, weight: FontWeight.w500, color: AppColors.mutedDark),
-            ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            payment.descricao,
+            overflow: TextOverflow.ellipsis,
+            style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              Dates.full(payment.data),
-              style: webText(13.5, weight: FontWeight.w500, color: AppColors.mutedDark),
-            ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            Dates.full(payment.data),
+            style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
           ),
-          SizedBox(
-            width: 120,
-            child: Text(
-              Money.full(payment.valor),
-              textAlign: TextAlign.right,
-              style: webText(15, weight: FontWeight.w800, color: AppColors.success),
-            ),
+        ),
+        SizedBox(
+          width: 120,
+          child: Text(
+            Money.full(payment.valor),
+            textAlign: TextAlign.right,
+            style: webText(13.5, weight: FontWeight.w800, color: AppColors.success),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

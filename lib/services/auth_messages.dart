@@ -7,7 +7,7 @@ String authErrorMessage(String code) {
     case 'invalid-email':
       return 'E-mail inválido.';
     case 'weak-password':
-      return 'A senha precisa ter pelo menos 6 caracteres.';
+      return 'Senha fraca. $passwordRulesText';
     case 'user-not-found':
     case 'wrong-password':
     case 'invalid-credential':
@@ -21,6 +21,37 @@ String authErrorMessage(String code) {
   }
 }
 
+class PasswordRule {
+  const PasswordRule(this.label, this.test);
+
+  final String label;
+  final bool Function(String password) test;
+}
+
+/// Exigências da senha ao criar a conta, mostradas como lista no cadastro.
+final passwordRules = <PasswordRule>[
+  PasswordRule('8 caracteres ou mais', (p) => p.length >= 8),
+  PasswordRule(
+    'Uma letra maiúscula',
+    (p) => RegExp(r'\p{Lu}', unicode: true).hasMatch(p),
+  ),
+  PasswordRule(
+    'Uma letra minúscula',
+    (p) => RegExp(r'\p{Ll}', unicode: true).hasMatch(p),
+  ),
+  PasswordRule('Um número', (p) => RegExp(r'\d').hasMatch(p)),
+  PasswordRule(
+    'Um caractere especial, como ! @ # \$ %',
+    (p) => RegExp(r'[^\p{L}\p{N}\s]', unicode: true).hasMatch(p),
+  ),
+];
+
+const passwordRulesText =
+    'Use 8 caracteres ou mais, com letra maiúscula, letra minúscula, número e caractere especial.';
+
+bool isStrongPassword(String password) =>
+    passwordRules.every((rule) => rule.test(password));
+
 String? validateAccount({
   required String nome,
   required String email,
@@ -33,12 +64,18 @@ String? validateAccount({
   if (creating && nome.trim().length < 2) return 'Informe seu nome.';
   if (!isValidEmail(email)) return 'E-mail inválido.';
   if (password.contains(RegExp(r'\s'))) return 'A senha não pode ter espaços.';
-  if (password.length < 6) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (password.isEmpty) return 'Informe a senha.';
+  // Contas antigas podem ter senha de 6 caracteres: a regra forte vale só no cadastro.
+  if (creating && !isStrongPassword(password)) {
+    return 'A senha ainda não atende a todos os itens. $passwordRulesText';
+  }
   if (creating && passwordConfirm != null && passwordConfirm != password) {
     return 'As senhas não coincidem.';
   }
   if (creating) {
-    final phone = telefone == null ? '' : telefone.replaceAll(RegExp(r'\D'), '');
+    final phone = telefone == null
+        ? ''
+        : telefone.replaceAll(RegExp(r'\D'), '');
     if (phone.isNotEmpty && !isValidPhoneBr(phone)) {
       return 'Informe um WhatsApp válido.';
     }

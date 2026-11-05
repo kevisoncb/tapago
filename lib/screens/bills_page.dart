@@ -386,6 +386,7 @@ class BillTile extends StatelessWidget {
           controller: controller,
           keyboardType: TextInputType.number,
           maxLength: 60,
+          onSubmitted: (_) => Navigator.pop(dialog, controller.text),
         ),
         actions: [
           TextButton(

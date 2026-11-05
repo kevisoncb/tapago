@@ -175,7 +175,10 @@ Troco: R\$ 0,00
       expect(due('Maria 200 reais vence dia 20', now), DateTime(2026, 11, 20));
       expect(due('Maria 200 reais vence dia 2', now), DateTime(2026, 12, 2));
       expect(due('Maria 200 reais vence dia 5', now), DateTime(2026, 11, 5));
-      expect(due('Maria 200 reais vence dia primeiro', now), DateTime(2026, 12, 1));
+      expect(
+        due('Maria 200 reais vence dia primeiro', now),
+        DateTime(2026, 12, 1),
+      );
       expect(
         due('Maria 200 reais vence dia 31', DateTime(2026, 11, 5)),
         DateTime(2026, 11, 30),
@@ -196,11 +199,17 @@ Troco: R\$ 0,00
         DateTime(2027, 1, 2),
       );
       expect(
-        parseVoiceDebt('Ana 50 reais vence 20 de dezembro', now: now).vencimento,
+        parseVoiceDebt(
+          'Ana 50 reais vence 20 de dezembro',
+          now: now,
+        ).vencimento,
         DateTime(2026, 12, 20),
       );
       expect(
-        parseVoiceDebt('Ana 50 reais vence 31 de fevereiro', now: now).vencimento,
+        parseVoiceDebt(
+          'Ana 50 reais vence 31 de fevereiro',
+          now: now,
+        ).vencimento,
         isNull,
       );
     });
@@ -373,7 +382,10 @@ Troco: R\$ 0,00
     );
     expect(custom, contains('Parcela 1 de 3'));
     // débito comum não grava campos de parcela no Firestore
-    expect(debt.copyWith(valorPrincipal: 1).toFirestore().containsKey('grupo_id'), isTrue);
+    expect(
+      debt.copyWith(valorPrincipal: 1).toFirestore().containsKey('grupo_id'),
+      isTrue,
+    );
     final single = Debt.fromMap({'nome': 'A', 'valor_principal': 10});
     expect(single.toFirestore().containsKey('grupo_id'), isFalse);
   });
@@ -393,13 +405,13 @@ Troco: R\$ 0,00
           clientScore: 80,
         );
     Bill bill(double valor, DateTime due, {bool pago = false}) => Bill(
-          id: '$valor$due',
-          userId: 'u',
-          fornecedor: 'F',
-          valor: valor,
-          dataVencimento: due,
-          pago: pago,
-        );
+      id: '$valor$due',
+      userId: 'u',
+      fornecedor: 'F',
+      valor: valor,
+      dataVencimento: due,
+      pago: pago,
+    );
     final summary = buildCashSummary(
       debts: [
         debt('Ana', 100, DateTime(2026, 10, 5)),
@@ -468,7 +480,7 @@ Troco: R\$ 0,00
       validateAccount(
         nome: 'Ana',
         email: 'ana@email.com',
-        password: '123456',
+        password: 'Senha@123',
         creating: true,
         acceptedTerms: false,
       ),
@@ -478,9 +490,9 @@ Troco: R\$ 0,00
       validateAccount(
         nome: 'Ana',
         email: 'ana@email.com',
-        password: '123456',
+        password: 'Senha@123',
         creating: true,
-        passwordConfirm: '123457',
+        passwordConfirm: 'Senha@124',
         acceptedTerms: true,
       ),
       'As senhas não coincidem.',
@@ -489,10 +501,41 @@ Troco: R\$ 0,00
       validateAccount(
         nome: 'Ana',
         email: 'ana@email.com',
-        password: '123456',
+        password: 'Senha@123',
         creating: true,
-        passwordConfirm: '123456',
+        passwordConfirm: 'Senha@123',
         acceptedTerms: true,
+      ),
+      isNull,
+    );
+  });
+
+  test('senha do cadastro exige cada item, e o login aceita senha antiga', () {
+    String? create(String password) => validateAccount(
+      nome: 'Ana',
+      email: 'ana@email.com',
+      password: password,
+      creating: true,
+      passwordConfirm: password,
+      acceptedTerms: true,
+    );
+    for (final weak in [
+      'Se@1',
+      'senha@123',
+      'SENHA@123',
+      'Senha@abc',
+      'Senha1234',
+    ]) {
+      expect(create(weak), contains('não atende'), reason: weak);
+    }
+    expect(create('Ação#2026'), isNull);
+    expect(isStrongPassword('Senha@123'), isTrue);
+    expect(
+      validateAccount(
+        nome: '',
+        email: 'ana@email.com',
+        password: '123456',
+        creating: false,
       ),
       isNull,
     );

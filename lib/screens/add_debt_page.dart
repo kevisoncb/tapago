@@ -579,6 +579,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                           inputFormatters: [PercentMaskFormatter()],
                           textInputAction: TextInputAction.done,
                           onChanged: (_) => setState(() {}),
+                          onSubmitted: _saving ? null : (_) => _save(),
                         ),
                       ),
                     ],

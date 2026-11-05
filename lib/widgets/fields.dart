@@ -13,6 +13,7 @@ class AppTextField extends StatelessWidget {
     this.controller,
     this.keyboardType,
     this.onChanged,
+    this.onSubmitted,
     this.readOnly = false,
     this.onTap,
     this.suffix,
@@ -33,6 +34,7 @@ class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? suffix;
@@ -69,6 +71,7 @@ class AppTextField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             onChanged: onChanged,
+            onSubmitted: onSubmitted,
             readOnly: readOnly,
             onTap: onTap,
             obscureText: obscureText,

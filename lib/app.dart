@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -204,7 +205,9 @@ Widget _materialApp({
     builder: (context, child) {
       final page = child ?? const SizedBox.shrink();
       final inner = lock ? BiometricLock(child: page) : page;
-      return framed ? PhoneShell(child: inner) : inner;
+      final shell = framed ? PhoneShell(child: inner) : inner;
+      // Esc volta uma tela (ou fecha o painel), como o botão voltar.
+      return EscapeBack(child: shell);
     },
     home: home,
   );
@@ -232,5 +235,44 @@ class _BootScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Center(child: CircularProgressIndicator()),
     );
+  }
+}
+
+/// Esc fecha o diálogo, menu ou painel aberto, ou volta uma tela, como o
+/// botão voltar. Vale também com o cursor num campo de texto, que sozinho
+/// guardaria a tecla para si.
+class EscapeBack extends StatelessWidget {
+  const EscapeBack({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.escape): EscapeBackIntent(),
+      },
+      child: Actions(
+        actions: {EscapeBackIntent: _EscapeBackAction()},
+        child: child,
+      ),
+    );
+  }
+}
+
+class EscapeBackIntent extends Intent {
+  const EscapeBackIntent();
+}
+
+class _EscapeBackAction extends ContextAction<EscapeBackIntent> {
+  @override
+  Object? invoke(EscapeBackIntent intent, [BuildContext? context]) {
+    final from = context ?? primaryFocus?.context;
+    if (from == null) return null;
+    final route = ModalRoute.of(from);
+    // Diálogo que exige uma resposta continua aberto.
+    if (route is PopupRoute && !route.barrierDismissible) return null;
+    Navigator.maybeOf(from)?.maybePop();
+    return null;
   }
 }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../legal/legal_docs.dart';
 import '../screens/legal_page.dart';
+import '../services/auth_messages.dart';
 import '../services/session_gate.dart';
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
@@ -204,9 +205,11 @@ class _AuthPageState extends State<AuthPage> {
                 const SizedBox(height: 14),
                 AppTextField(
                   label: 'Senha',
-                  hint: 'Mínimo de 6 caracteres',
+                  hint: _creating ? 'Crie uma senha forte' : 'Sua senha',
                   icon: Icons.lock_outline_rounded,
                   controller: _senha,
+                  onChanged: _creating ? (_) => setState(() {}) : null,
+                  onSubmitted: _creating ? null : (_) => _submit(),
                   obscureText: _obscure,
                   autocorrect: false,
                   enableSuggestions: false,
@@ -240,12 +243,15 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                 if (_creating) ...[
+                  const SizedBox(height: 10),
+                  PasswordChecklist(password: _senha.text),
                   const SizedBox(height: 14),
                   AppTextField(
                     label: 'Confirmar senha',
                     hint: 'Repita a senha',
                     icon: Icons.lock_outline_rounded,
                     controller: _confirma,
+                    onSubmitted: (_) => _submit(),
                     obscureText: _obscure,
                     autocorrect: false,
                     enableSuggestions: false,
@@ -394,6 +400,72 @@ class _TermsAccept extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Lista do que a senha precisa ter, marcando cada item conforme a pessoa digita.
+class PasswordChecklist extends StatelessWidget {
+  const PasswordChecklist({super.key, required this.password});
+
+  final String password;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'A senha precisa ter:',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.mutedDark,
+          ),
+        ),
+        const SizedBox(height: 4),
+        for (final rule in passwordRules)
+          _RuleLine(label: rule.label, ok: rule.test(password)),
+      ],
+    );
+  }
+}
+
+class _RuleLine extends StatelessWidget {
+  const _RuleLine({required this.label, required this.ok});
+
+  final String label;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ok ? AppColors.success : AppColors.muted;
+    return Semantics(
+      label: '$label: ${ok ? 'feito' : 'falta'}',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            Icon(
+              ok ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: ok ? FontWeight.w700 : FontWeight.w500,
+                  color: ok ? AppColors.success : AppColors.mutedDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

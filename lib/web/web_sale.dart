@@ -15,7 +15,7 @@ import '../widgets/fields.dart';
 import '../widgets/product_items_editor.dart';
 import 'web_widgets.dart';
 
-/// Lançamento de venda a prazo pelo computador: cliente, valor (ou produtos),
+/// Lançamento de valor a receber pelo computador: cliente, valor (ou produtos),
 /// vencimento e parcelas. Grava pelo mesmo caminho do aplicativo.
 class WebSale extends StatefulWidget {
   const WebSale({super.key, required this.onDone});
@@ -175,7 +175,7 @@ class _WebSaleState extends State<WebSale> {
     try {
       await state.createDebts(next);
       if (!mounted) return;
-      showPagoSnack(context, 'Venda lançada para ${_nome.text.trim()}.');
+      showPagoSnack(context, 'Lançamento salvo para ${_nome.text.trim()}.');
       widget.onDone();
     } catch (_) {
       if (!mounted) return;
@@ -194,8 +194,8 @@ class _WebSaleState extends State<WebSale> {
     final contacts = groupContacts(state.debts);
     final preview = _preview;
     return WebPage(
-      title: 'Venda',
-      subtitle: 'Lance uma venda a prazo para um cliente.',
+      title: 'Novo lançamento',
+      subtitle: 'Registre um valor a receber de um cliente.',
       maxWidth: 720,
       child: WebCard(
         padding: const EdgeInsets.all(24),
@@ -389,7 +389,7 @@ class _WebSaleState extends State<WebSale> {
                 backgroundColor: AppColors.primary,
                 minimumSize: const Size(double.infinity, 52),
               ),
-              child: Text(_saving ? 'Salvando…' : 'Lançar venda'),
+              child: Text(_saving ? 'Salvando…' : 'Salvar lançamento'),
             ),
           ],
         ),

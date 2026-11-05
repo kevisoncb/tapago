@@ -72,7 +72,7 @@ class _WebClientsState extends State<WebClients> {
       title: 'Clientes',
       subtitle: '${all.length} ${all.length == 1 ? 'cliente' : 'clientes'} na caderneta.',
       action: WebPrimaryButton(
-        label: 'Nova venda',
+        label: 'Novo lançamento',
         icon: Icons.add_rounded,
         onPressed: widget.onNewSale,
       ),
@@ -112,7 +112,7 @@ class _WebClientsState extends State<WebClients> {
                     padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Text(
                       state.debts.isEmpty
-                          ? 'A caderneta ainda está vazia. Comece por uma nova venda.'
+                          ? 'A caderneta ainda está vazia. Comece por um novo lançamento.'
                           : 'Nenhum cliente encontrado.',
                       style: webText(14.5, color: AppColors.mutedDark),
                     ),

@@ -16,7 +16,7 @@ import 'web_sale.dart';
 
 enum WebSection {
   inicio('Início', Icons.space_dashboard_outlined, Icons.space_dashboard_rounded),
-  venda('Venda', Icons.add_shopping_cart_outlined, Icons.add_shopping_cart_rounded),
+  venda('Lançamento', Icons.post_add_outlined, Icons.post_add_rounded),
   clientes('Clientes', Icons.people_outline_rounded, Icons.people_rounded),
   boletos('Boletos', Icons.receipt_long_outlined, Icons.receipt_long_rounded),
   relatorios('Relatórios', Icons.bar_chart_outlined, Icons.bar_chart_rounded),

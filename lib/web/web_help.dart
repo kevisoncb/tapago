@@ -31,10 +31,10 @@ const webHelpStart = <WebHelpStep>[
     'Abrir Minha conta',
   ),
   WebHelpStep(
-    'Lance a primeira venda',
+    'Faça o primeiro lançamento',
     'Informe o cliente, o valor e o vencimento. O WhatsApp é opcional, mas é ele que permite cobrar.',
     WebSection.venda,
-    'Abrir Venda',
+    'Abrir Lançamento',
   ),
   WebHelpStep(
     'Acompanhe o que vence',
@@ -51,11 +51,11 @@ const webHelpStart = <WebHelpStep>[
 ];
 
 const webHelpTopics = <WebHelpTopic>[
-  WebHelpTopic('Lançar uma venda', Icons.add_shopping_cart_outlined, [
-    'No menu, clique em Venda.',
+  WebHelpTopic('Fazer um lançamento', Icons.post_add_outlined, [
+    'No menu, clique em Lançamento.',
     'Digite o nome do cliente. Se ele já existir, escolha na lista para aproveitar o WhatsApp.',
     'Informe o valor e o vencimento. Os juros são opcionais.',
-    'Clique em "Lançar venda".',
+    'Clique em "Salvar lançamento".',
     'No Premium, dá para dividir em parcelas e anotar o que o cliente levou em "Foi produto?".',
   ]),
   WebHelpTopic('Registrar um pagamento', Icons.payments_outlined, [
@@ -98,7 +98,7 @@ const webHelpTopics = <WebHelpTopic>[
   ]),
   WebHelpTopic('Usar no celular e no computador', Icons.devices_outlined, [
     'Entre com o mesmo e-mail e a mesma senha nos dois.',
-    'Clientes, vendas e boletos são os mesmos.',
+    'Clientes, lançamentos e boletos são os mesmos.',
     'Em computador de outra pessoa, clique em "Sair da conta" ao terminar.',
   ]),
   WebHelpTopic('Excluir a conta', Icons.person_off_outlined, [

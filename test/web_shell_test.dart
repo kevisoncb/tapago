@@ -123,12 +123,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(topic.steps.first), findsOneWidget);
 
-    final shortcut = find.text('Abrir Venda');
+    final shortcut = find.text('Abrir Lançamento');
     await tester.ensureVisible(shortcut);
     await tester.pumpAndSettle();
     await tester.tap(shortcut);
     await tester.pumpAndSettle();
-    expect(find.text('Lançar venda'), findsOneWidget);
+    expect(find.text('Salvar lançamento'), findsOneWidget);
   });
 
   testWidgets('sem Premium, boleto não pode ser criado nem alterado, como no app', (tester) async {

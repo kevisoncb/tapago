@@ -28,7 +28,7 @@ class WebHome extends StatelessWidget {
       title: first.isEmpty ? 'Início' : 'Olá, $first',
       subtitle: 'Resumo da sua caderneta hoje.',
       action: WebPrimaryButton(
-        label: 'Nova venda',
+        label: 'Novo lançamento',
         icon: Icons.add_rounded,
         onPressed: () => onGo(WebSection.venda),
       ),

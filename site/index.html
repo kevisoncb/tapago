@@ -51,7 +51,7 @@ p { margin: 0; }
 .nav nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 600; color: var(--muted); }
 .nav nav a { text-decoration: none; }
 .nav nav a:hover { color: var(--fg); }
-@media (max-width: 720px) { .nav nav { display: none; } .nav .btn { margin-left: auto; } }
+@media (max-width: 720px) { .nav { gap: 10px; } .nav nav { display: none; } .nav .btn.ghost { margin-left: auto; } }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: var(--on-blue); font: inherit; font-weight: 800; font-size: 16px; padding: 14px 24px; border-radius: 14px; text-decoration: none; border: 0; }
 .btn.small { padding: 10px 18px; font-size: 14.5px; }
@@ -168,6 +168,7 @@ footer .legal { flex-basis: 100%; font-size: 13px; }
     <a href="#dados">Seus dados</a>
     <a href="#perguntas">Perguntas</a>
   </nav>
+  <a class="btn small ghost" href="https://sistema-pago.web.app/">Entrar</a>
   <a class="btn small" href="https://play.google.com/store/apps/details?id=app.usepago&amp;referrer=utm_source%3Dsite%26utm_medium%3Dwebsite%26utm_campaign%3Dnav">Baixar</a>
 </header>
 

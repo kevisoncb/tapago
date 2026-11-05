@@ -18,9 +18,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const ONLINE_MS = 5 * 60 * 1000;
 const AUTO_REFRESH_MS = 60 * 1000;
 const SIGNATURE = "Kevison";
-const CONTACT_COOLDOWN = 7 * DAY;
 const SESSION_KEY = "pago_admin_2fa";
-const FOCUS_LIMIT = 8;
 
 const EVENT_LABELS = {
   COMPRA: "assinou o Premium",
@@ -48,34 +46,6 @@ const ACTION_LABELS = {
   "2fa_desligado": "desligou o segundo fator",
 };
 
-const SEGMENTS = {
-  risco: {
-    label: "Premium sem abrir",
-    why: "Têm Premium ativo e não abrem o app há 7 dias ou mais. Vale um oi, sem cobrança.",
-    test: (user, now) => user.premiumAtivo && idleFor(user, now) >= 7 * DAY,
-    reason: (user, now) =>
-      `Premium${originLabel(user) ? ` ${originLabel(user)}` : ""} até ${dateFmt.format(user.premiumAte)} · sem abrir há ${daysText(idleFor(user, now))}`,
-    message: (name) =>
-      `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Passando só para saber se está tudo certo com o app. Se precisar de alguma coisa, é só me chamar por aqui.`,
-    sort: (a, b, now) => idleFor(b, now) - idleFor(a, now),
-  },
-  prontos: {
-    label: "Prontos para Premium",
-    why: "Grátis e usando: abriram o app nos últimos 7 dias com 10 ou mais lançamentos, ou o Premium venceu há menos de 30 dias.",
-    test: (user, now) => !user.premiumAtivo && (heavyFree(user, now) || recentlyExpired(user, now)),
-    reason: (user, now) =>
-      recentlyExpired(user, now)
-        ? `Premium venceu ${dateFmt.format(user.premiumAte)} e não renovou`
-        : `${user.uso.lancamentos} lançamentos · último acesso ${relative(user.ultimoAcesso)}`,
-    message: (name, user, now) =>
-      recentlyExpired(user, now)
-        ? `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Seu Premium venceu. Sentiu falta de lançar por voz, ler recibo pela câmera ou dos boletos a pagar? Se quiser voltar, é só tocar em Premium no menu do app. Qualquer dúvida, me chama.`
-        : `Oi ${name}, aqui é o ${SIGNATURE}, do Pagô! Vi que você já tem ${user.uso.lancamentos} lançamentos na caderneta, muito bom! No Premium dá para lançar falando, ler recibo pela câmera e controlar seus boletos a pagar. Quer testar 7 dias de graça? É só me responder.`,
-    sort: (a, b) => (b.uso?.lancamentos || 0) - (a.uso?.lancamentos || 0),
-    trial: true,
-  },
-};
-
 const auth = DEMO ? { currentUser: { email: "demo@pago.app" } } : fbAuth.getAuth(fbApp.initializeApp(firebaseConfig));
 const onAuthStateChanged = (instance, callback) => (DEMO ? callback(instance.currentUser) : fbAuth.onAuthStateChanged(instance, callback));
 const signInWithEmailAndPassword = (...args) => fbAuth.signInWithEmailAndPassword(...args);
@@ -96,7 +66,6 @@ const state = {
   query: "",
   loading: false,
   timer: null,
-  focus: null,
   range: "all",
   tab: "geral",
   file: null,
@@ -303,7 +272,6 @@ async function load({ quiet = false } = {}) {
 function renderAll() {
   const data = state.data;
   renderStats(data.stats, data.receita);
-  renderFocus();
   renderRevenue(data.receita);
   renderRevenuePage(data.receita);
   renderAnalysis();
@@ -1014,113 +982,11 @@ $("feed").addEventListener("click", (event) => {
   if (link?.dataset.file) openFile(link.dataset.file);
 });
 
-function idleFor(user, now) {
-  return now - (user.ultimoAcesso || user.criadoEm || 0);
-}
-
-function heavyFree(user, now) {
-  return (user.uso?.lancamentos || 0) >= 10 && idleFor(user, now) <= 7 * DAY;
-}
-
-function recentlyExpired(user, now) {
-  return !!user.premiumAte && user.premiumAte <= now && now - user.premiumAte <= 30 * DAY;
-}
-
 function originLabel(user) {
   return { admin: "cortesia", pix: "PIX", play: "Play", apple: "App Store" }[user.premiumOrigem] || "";
 }
 
-function daysText(ms) {
-  const days = Math.max(1, Math.floor(ms / DAY));
-  return `${days} ${days === 1 ? "dia" : "dias"}`;
-}
 
-function segmentList(key, now) {
-  const segment = SEGMENTS[key];
-  const people = state.users.filter((user) => !user.admin && !user.desativado && segment.test(user, now));
-  const recent = (user) => user.chamadoEm && now - user.chamadoEm <= CONTACT_COOLDOWN;
-  const pending = people.filter((user) => !recent(user)).sort((a, b) => segment.sort(a, b, now));
-  const done = people.filter(recent).sort((a, b) => b.chamadoEm - a.chamadoEm);
-  return { pending, done };
-}
-
-function renderFocus() {
-  const now = Date.now();
-  const lists = Object.fromEntries(Object.keys(SEGMENTS).map((key) => [key, segmentList(key, now)]));
-  if (!state.focus) {
-    state.focus = Object.keys(SEGMENTS).find((key) => lists[key].pending.length) || "risco";
-  }
-
-  $("focus-tabs").innerHTML = Object.entries(SEGMENTS)
-    .map(
-      ([key, segment]) =>
-        `<button data-focus="${key}" class="chip${key === state.focus ? " active" : ""}">${segment.label} · ${lists[key].pending.length}</button>`,
-    )
-    .join("");
-  $("focus-why").textContent = SEGMENTS[state.focus].why;
-  const strip = $("attn-strip");
-  const total = Object.values(lists).reduce((sum, item) => sum + item.pending.length, 0);
-  strip.hidden = total === 0;
-  strip.innerHTML = total
-    ? `<strong>${total} ${total === 1 ? "pessoa precisa" : "pessoas precisam"} de atenção</strong>` +
-      Object.entries(SEGMENTS)
-        .filter(([key]) => lists[key].pending.length)
-        .map(([key, segment]) => `<button class="chip" data-attn="${key}">${segment.label} · ${lists[key].pending.length}</button>`)
-        .join("") +
-      `<button class="btn ghost" data-attn="">Ver a fila</button>`
-    : "";
-
-  const { pending, done } = lists[state.focus];
-  if (!pending.length && !done.length) {
-    $("focus").innerHTML = `<div class="empty">Ninguém nesta lista agora.</div>`;
-    return;
-  }
-  $("focus").innerHTML =
-    (pending.length
-      ? pending
-          .slice(0, state.focusAll === state.focus ? pending.length : FOCUS_LIMIT)
-          .map((user) => focusCard(user, now, null))
-          .join("") +
-        (pending.length > FOCUS_LIMIT && state.focusAll !== state.focus
-          ? `<div class="more"><button class="btn ghost" data-focus-more>Mostrar mais ${pending.length - FOCUS_LIMIT}</button></div>`
-          : "")
-      : `<div class="empty">Todo mundo desta lista já foi chamado.</div>`) +
-    done.map((user) => focusCard(user, now, user.chamadoEm)).join("");
-}
-
-document.addEventListener("click", (event) => {
-  if (event.target.closest("[data-focus-more]")) {
-    state.focusAll = state.focus;
-    renderFocus();
-    return;
-  }
-  const chip = event.target.closest("[data-attn]");
-  if (!chip) return;
-  if (chip.dataset.attn) state.focus = chip.dataset.attn;
-  renderFocus();
-  $("attention").scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-function focusCard(user, now, calledAt) {
-  const segment = SEGMENTS[state.focus];
-  const text = segment.message(firstName(user.nome) || "tudo bem", user, now);
-  const contact = contactLink(user, text);
-  const status = calledAt
-    ? `<button class="btn soft" data-focus-action="undo">Chamado ${relative(calledAt)} · desfazer</button>`
-    : `<button class="btn soft" data-focus-action="done">Já chamei</button>`;
-  const trial = segment.trial && !calledAt ? '<button class="btn green" data-focus-action="trial">Dar 7 dias</button>' : "";
-
-  return `
-    <article class="user${calledAt ? " called" : ""}" data-uid="${escapeHtml(user.uid)}">
-      <div class="avatar">${escapeHtml(initials(user.nome || user.email))}</div>
-      <div class="user-main">
-        <div class="user-name"><button class="link strong" data-file="${escapeHtml(user.uid)}">${escapeHtml(user.nome || "Sem nome")}</button></div>
-        <div class="user-mail">${escapeHtml(user.email)}${user.telefone ? ` · ${escapeHtml(phone(user.telefone))}` : " · sem telefone"}</div>
-        <div class="user-meta"><span>${escapeHtml(segment.reason(user, now))}</span></div>
-      </div>
-      <div class="user-actions">${calledAt ? "" : contact}${trial}${status}</div>
-    </article>`;
-}
 
 function contactLink(user, text) {
   const whats = whatsappNumber(user.telefone);
@@ -1144,57 +1010,6 @@ function whatsappNumber(raw) {
   if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) return digits;
   return null;
 }
-
-async function setContacted(user, value) {
-  const previous = user.chamadoEm;
-  user.chamadoEm = value ? Date.now() : null;
-  renderFocus();
-  try {
-    await api("/contacted", { uid: user.uid, value, motivo: SEGMENTS[state.focus]?.label || "" });
-  } catch (error) {
-    user.chamadoEm = previous;
-    renderFocus();
-    toast(error.message);
-  }
-}
-
-$("focus-tabs").addEventListener("click", (event) => {
-  const chip = event.target.closest("[data-focus]");
-  if (!chip) return;
-  state.focus = chip.dataset.focus;
-  renderFocus();
-});
-
-$("focus").addEventListener("click", async (event) => {
-  const fileLink = event.target.closest("[data-file]");
-  if (fileLink) {
-    openFile(fileLink.dataset.file);
-    return;
-  }
-  const card = event.target.closest(".user");
-  if (!card) return;
-  const user = state.users.find((item) => item.uid === card.dataset.uid);
-  if (!user) return;
-  const label = user.nome || user.email;
-
-  if (event.target.closest("[data-contact]")) {
-    setTimeout(() => {
-      if (confirm(`Marcar ${label} como chamado?`)) setContacted(user, true);
-    }, 600);
-    return;
-  }
-  const button = event.target.closest("[data-focus-action]");
-  if (!button) return;
-  const action = button.dataset.focusAction;
-  if (action === "done" || action === "undo") {
-    setContacted(user, action === "done");
-  } else if (action === "trial") {
-    if (!confirm(`Dar 7 dias de Premium para ${label}?`)) return;
-    await run(button, () => api("/premium", { uid: user.uid, days: 7 }), (data) =>
-      `Premium até ${dateFmt.format(data.premiumAte)} para ${label}. Avise no WhatsApp.`,
-    );
-  }
-});
 
 function matches(user) {
   const now = Date.now();

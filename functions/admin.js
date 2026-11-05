@@ -209,7 +209,6 @@ exports.adminDailyDigest = onSchedule(
     const events = data.receita.eventos.filter((item) => item.em >= yesterday && item.em < today && !item.teste);
     const charges = events.filter((item) => item.cobranca);
     const lost = events.filter((item) => ["CANCELADA", "SUSPENSA", "EXPIRADA", "ESTORNADA"].includes(item.tipo));
-    const segments = attentionCounts(people, now());
     const s = data.stats;
 
     const lines = [
@@ -220,8 +219,6 @@ exports.adminDailyDigest = onSchedule(
       `<b>Hoje</b>`,
       `Usuários: ${s.total} · ativos em 7 dias: ${s.ativos7d} · Premium: ${s.premium} (${s.premiumPagantes} pagantes)`,
       `Receita do mês até agora: <b>${money(data.receita.mesAtual.bruto)}</b> bruto · ${money(data.receita.mesAtual.liquido)} líquido`,
-      `<b>Precisa de atenção</b>`,
-      `Premium sem abrir: ${segments.risco} · Prontos para Premium: ${segments.prontos}`,
     ];
     await sendEmail(`Pagô: resumo de ${formatDate(yesterday)}`, lines);
   },
@@ -618,21 +615,6 @@ async function targetOf(uid) {
   return { uid, label: [name, email].filter(Boolean).join(" · ") || uid };
 }
 
-function attentionCounts(people, at) {
-  const idle = (user) => at - (user.ultimoAcesso || user.criadoEm || 0);
-  const pending = (user) => !user.chamadoEm || at - user.chamadoEm > 7 * DAY_MS;
-  const list = people.filter((user) => !user.desativado && pending(user));
-  return {
-    risco: list.filter((user) => user.premiumAtivo && idle(user) >= 7 * DAY_MS).length,
-    prontos: list.filter(
-      (user) =>
-        !user.premiumAtivo &&
-        (((user.uso?.lancamentos || 0) >= 10 && idle(user) <= 7 * DAY_MS) ||
-          (user.premiumAte && user.premiumAte <= at && at - user.premiumAte <= 30 * DAY_MS)),
-    ).length,
-  };
-}
-
 async function listAuthUsers() {
   const all = [];
   let pageToken;
@@ -915,4 +897,4 @@ function httpError(status, message) {
   return error;
 }
 
-module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { attentionCounts, startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts, parseSpend } };
+module.exports = { adminApi: exports.adminApi, adminDailyDigest: exports.adminDailyDigest, deleteOwnAccount, _test: { startOfMonth, dayId, summarizeRevenue, platformCounts, originCounts, parseSpend } };

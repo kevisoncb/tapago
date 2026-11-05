@@ -21,6 +21,7 @@ const STORES = ["play", "app_store"];
 const ONLINE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PREMIUM_DAYS = 366;
+const ADMIN_PREMIUM_RENEW_MS = 30 * DAY_MS;
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const MAX_2FA_FAILURES = 5;
 const LOCK_MS = 15 * 60 * 1000;
@@ -84,6 +85,7 @@ exports.adminApi = onRequest(
           return;
         }
       }
+      await keepAdminPremium(caller.uid);
 
       if (req.method === "GET") {
         const handler = {
@@ -196,6 +198,9 @@ exports.adminDailyDigest = onSchedule(
   { schedule: "0 8 * * *", timeZone: TIME_ZONE, region: REGION, timeoutSeconds: 300, memory: "512MiB" },
   async () => {
     const data = await overview();
+    for (const user of data.users.filter((item) => item.admin)) {
+      await keepAdminPremium(user.uid);
+    }
     if (!emailEnabled()) return;
     const today = startOfDay(now());
     const yesterday = today - DAY_MS;
@@ -681,6 +686,25 @@ async function givePremium(uid, days) {
     { merge: true },
   );
   return { ok: true, premiumAte: until.getTime() };
+}
+
+/**
+ * Conta administradora tem todas as vantagens sem assinar: renova a cortesia
+ * quando faltam menos de 30 dias. Quem ainda não abriu o app não tem perfil, e
+ * o perfil precisa nascer pelo app; nesse caso fica para a próxima passagem.
+ * Falha aqui não pode travar o painel nem o resumo diário.
+ */
+async function keepAdminPremium(uid) {
+  try {
+    const snap = await db().collection("Users").doc(uid).get();
+    if (!snap.exists) return;
+    const profile = snap.data() || {};
+    const until = toMillis(profile.premium_vence_em);
+    if (profile.is_premium === true && until - now() > ADMIN_PREMIUM_RENEW_MS) return;
+    await givePremium(uid, MAX_PREMIUM_DAYS);
+  } catch (error) {
+    console.error("Premium do administrador não renovado.", error.message);
+  }
 }
 
 async function revokePremium(uid) {

@@ -434,6 +434,37 @@ test("painel admin exige o segundo fator quando ADMIN_REQUIRE_2FA está ligado",
   assert.ok(setup.body.secret);
 });
 
+test("conta admin ganha Premium ao usar o painel e renova só perto de vencer", async () => {
+  const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
+  const api = h.load("admin").adminApi;
+
+  await api(adminReq("GET", "/2fa/status"), res());
+  const first = h.db.docs.get("Users/alice");
+  assert.equal(first.is_premium, true);
+  assert.ok(first.premium_transaction_id.startsWith("admin_"));
+  assert.ok(first.premium_vence_em.toMillis() > Date.now() + 300 * 24 * 60 * 60 * 1000);
+
+  await api(adminReq("GET", "/2fa/status"), res());
+  assert.equal(h.db.docs.get("Users/alice").premium_vence_em.toMillis(), first.premium_vence_em.toMillis());
+
+  const soon = Date.now() + 5 * 24 * 60 * 60 * 1000;
+  h.db.docs.set("Users/alice", { ...first, premium_vence_em: stamp(soon) });
+  await api(adminReq("GET", "/2fa/status"), res());
+  assert.ok(h.db.docs.get("Users/alice").premium_vence_em.toMillis() > soon + 300 * 24 * 60 * 60 * 1000);
+});
+
+test("Premium de admin não cria perfil e não vale para quem não é admin", async () => {
+  const noProfile = harness({}, { env: { ADMIN_EMAILS: "alice@example.test" } });
+  await noProfile.load("admin").adminApi(adminReq("GET", "/2fa/status"), res());
+  assert.equal(noProfile.db.docs.has("Users/alice"), false);
+
+  const other = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "bob@example.test" } });
+  const out = res();
+  await other.load("admin").adminApi(adminReq("GET", "/2fa/status"), out);
+  assert.equal(out.code, 403);
+  assert.notEqual(other.db.docs.get("Users/alice").is_premium, true);
+});
+
 test("por padrão o painel admin não exige o segundo fator", async () => {
   const h = harness({ "Users/alice": user() }, { env: { ADMIN_EMAILS: "alice@example.test" } });
   const api = h.load("admin").adminApi;

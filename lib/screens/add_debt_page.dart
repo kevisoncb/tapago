@@ -19,6 +19,7 @@ import '../widgets/product_items_editor.dart';
 import '../widgets/common.dart';
 import '../widgets/fields.dart';
 import 'contact_history_page.dart';
+import 'help_page.dart';
 import 'premium_page.dart';
 
 class AddDebtPage extends StatefulWidget {
@@ -273,7 +274,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     final filled = <String>[
       if (draft.nome != null) 'nome',
       if (draft.telefone != null) 'WhatsApp',
-      if (draft.valor != null) 'valor',
+      if (draft.valor != null && draft.valor! > 0) 'valor',
       if (draft.juros != null) 'juros',
       if (draft.vencimento != null) 'vencimento',
     ];
@@ -941,6 +942,13 @@ class _VoiceBanner extends StatelessWidget {
                   ],
                 ),
               ),
+              if (!listening)
+                IconButton(
+                  tooltip: 'Como cadastrar por voz',
+                  onPressed: () => showVoiceHelp(context),
+                  icon: const Icon(Icons.help_outline_rounded),
+                  color: AppColors.primary,
+                ),
             ],
           ),
         ),

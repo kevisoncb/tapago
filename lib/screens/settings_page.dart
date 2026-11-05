@@ -20,6 +20,7 @@ import '../widgets/pago_logo.dart';
 import 'legal_page.dart';
 import 'account_export_page.dart';
 import 'follow_ups_page.dart';
+import 'help_page.dart';
 import 'premium_page.dart';
 import 'reports_page.dart';
 
@@ -464,6 +465,15 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 10),
           GroupCard(
             children: [
+              SettingsRow(
+                icon: Icons.help_outline_rounded,
+                title: 'Como usar o Pagô',
+                subtitle: 'Passo a passo de cada função',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const HelpPage()),
+                ),
+              ),
+              const Divider(height: 1, indent: 68),
               SettingsRow(
                 icon: Icons.chat_rounded,
                 iconBackground: AppColors.whatsappSoft,

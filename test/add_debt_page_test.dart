@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pago_app/screens/help_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pago_app/models/models.dart';
@@ -111,6 +112,23 @@ void main() {
     expect(fields[0].decoration?.hintText, isNotEmpty);
     semantics.dispose();
     expect(find.byTooltip('Selecionar data de vencimento'), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('o "?" do cadastro por voz abre o passo a passo', (tester) async {
+    final controller = await _open(tester, _SaveRepository());
+    final help = find.byTooltip('Como cadastrar por voz');
+    await tester.ensureVisible(help);
+    await tester.pumpAndSettle();
+    await tester.tap(help);
+    await tester.pumpAndSettle();
+    expect(find.text('Como cadastrar por voz'), findsOneWidget);
+    expect(find.text('“${voiceHelpExamples.first}”'), findsOneWidget);
+    await tester.ensureVisible(find.text('Entendi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Entendi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Como cadastrar por voz'), findsNothing);
     controller.dispose();
   });
 

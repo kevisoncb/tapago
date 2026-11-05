@@ -58,6 +58,11 @@ const webHelpTopics = <WebHelpTopic>[
     'Clique em "Salvar lançamento".',
     'No Premium, dá para dividir em parcelas e anotar o que o cliente levou em "Foi produto?".',
   ]),
+  WebHelpTopic('Cadastrar por voz (Premium)', Icons.mic_none_rounded, [
+    'No app do celular, toque em "Novo lançamento" e em "Cadastro por voz".',
+    'Fale de uma vez o nome, o valor em reais e o vencimento. Exemplo: "Maria, 200 reais, vence dia 20".',
+    'Confira os campos e salve. O passo a passo completo está no "?" dessa mesma tela.',
+  ]),
   WebHelpTopic('Registrar um pagamento', Icons.payments_outlined, [
     'Em Clientes, clique no cliente.',
     'Abra o lançamento e clique em "Registrar pagamento".',

@@ -15,6 +15,7 @@ import 'package:pago_app/services/reminder_service.dart';
 import 'package:pago_app/services/store_ids.dart';
 import 'package:pago_app/services/tracking_service.dart';
 import 'package:pago_app/services/trust_score.dart';
+import 'package:pago_app/screens/help_page.dart';
 import 'package:pago_app/services/voice_debt_parser.dart';
 import 'package:pago_app/services/whatsapp_service.dart';
 import 'package:pago_app/utils/constants.dart';
@@ -145,6 +146,90 @@ Troco: R\$ 0,00
     expect(solto.nome, 'Carlos');
     expect(solto.valor, 450);
     expect(solto.vencimento, DateTime(2026, 10, 6));
+  });
+
+  group('voz entende o jeito de falar', () {
+    final now = DateTime(2026, 11, 5);
+
+    test('milhar com ponto nunca vira centavos', () {
+      expect(parseVoiceDebt('João 1.500 reais', now: now).valor, 1500);
+      expect(parseVoiceDebt('João R\$ 1.500', now: now).valor, 1500);
+      expect(parseVoiceDebt('João R\$ 1.500,50', now: now).valor, 1500.5);
+      expect(parseVoiceDebt('João valor 12.000 reais', now: now).valor, 12000);
+      expect(parseVoiceDebt('João R\$ 19,90', now: now).valor, 19.9);
+      expect(parseVoiceDebt('João 1500 reais', now: now).valor, 1500);
+    });
+
+    test('valor em milhares por extenso', () {
+      final mil = parseVoiceDebt('Pedro mil reais', now: now);
+      expect(mil.nome, 'Pedro');
+      expect(mil.valor, 1000);
+      expect(parseVoiceDebt('Pedro 2 mil reais', now: now).valor, 2000);
+      expect(parseVoiceDebt('Pedro dois mil reais', now: now).valor, 2000);
+      expect(parseVoiceDebt('Pedro mil e 500 reais', now: now).valor, 1500);
+    });
+
+    test('vence dia N é o próximo dia N', () {
+      DateTime? due(String text, DateTime clock) =>
+          parseVoiceDebt(text, now: clock).vencimento;
+      expect(due('Maria 200 reais vence dia 20', now), DateTime(2026, 11, 20));
+      expect(due('Maria 200 reais vence dia 2', now), DateTime(2026, 12, 2));
+      expect(due('Maria 200 reais vence dia 5', now), DateTime(2026, 11, 5));
+      expect(due('Maria 200 reais vence dia primeiro', now), DateTime(2026, 12, 1));
+      expect(
+        due('Maria 200 reais vence dia 31', DateTime(2026, 11, 5)),
+        DateTime(2026, 11, 30),
+      );
+      expect(
+        due('Maria 200 reais vence dia 3', DateTime(2026, 12, 20)),
+        DateTime(2027, 1, 3),
+      );
+    });
+
+    test('data sem ano que já passou vai para o ano seguinte', () {
+      expect(
+        parseVoiceDebt('Ana 50 reais vence 2 de janeiro', now: now).vencimento,
+        DateTime(2027, 1, 2),
+      );
+      expect(
+        parseVoiceDebt('Ana 50 reais vence 2/1', now: now).vencimento,
+        DateTime(2027, 1, 2),
+      );
+      expect(
+        parseVoiceDebt('Ana 50 reais vence 20 de dezembro', now: now).vencimento,
+        DateTime(2026, 12, 20),
+      );
+      expect(
+        parseVoiceDebt('Ana 50 reais vence 31 de fevereiro', now: now).vencimento,
+        isNull,
+      );
+    });
+
+    test('nome sem as palavras em volta', () {
+      expect(parseVoiceDebt('Maria deve 150 reais', now: now).nome, 'Maria');
+      expect(parseVoiceDebt('200 reais para Maria', now: now).nome, 'Maria');
+      expect(
+        parseVoiceDebt('200 reais para o João vence amanhã', now: now).nome,
+        'João',
+      );
+      expect(parseVoiceDebt('Para Maria 200 reais', now: now).nome, 'Maria');
+    });
+
+    test('todo exemplo da ajuda preenche nome, valor e vencimento', () {
+      for (final example in voiceHelpExamples) {
+        final draft = parseVoiceDebt(example, now: now);
+        expect(draft.nome, isNotNull, reason: example);
+        expect(draft.valor, greaterThan(0), reason: example);
+        expect(draft.vencimento, isNotNull, reason: example);
+      }
+      final thousand = parseVoiceDebt(voiceHelpExamples[1], now: now);
+      expect(thousand.valor, 1500);
+      final interest = parseVoiceDebt(voiceHelpExamples[3], now: now);
+      expect(interest.juros, 5);
+      final phone = parseVoiceDebt(voiceHelpExamples[4], now: now);
+      expect(phone.telefone, '11987654321');
+      expect(phone.valor, 50);
+    });
   });
 
   test('senha errada não gera o mesmo hash', () {

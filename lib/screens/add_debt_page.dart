@@ -155,7 +155,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Valor total da venda'),
+          title: const Text('Valor total combinado'),
           content: const Text(
             'No parcelamento, informe o valor total já combinado com o cliente. '
             'Quer zerar o campo de juros para dividir esse total em parcelas?',
@@ -494,7 +494,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   if (_pendingSave != null) ...[
                     const SizedBox(height: 12),
                     const _FormNotice(
-                      text: 'Há um salvamento sem confirmação. Tente novamente para reenviar os mesmos dados, sem criar outra venda.',
+                      text: 'Há um salvamento sem confirmação. Tente novamente para reenviar os mesmos dados, sem criar outro lançamento.',
                       icon: Icons.sync_problem_rounded,
                     ),
                   ],
@@ -541,7 +541,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                           label: _produto
                               ? 'Total dos itens'
                               : _parcelado
-                              ? 'Total da venda'
+                              ? 'Total combinado'
                               : 'Valor',
                           hint: r'R$ 0,00',
                           icon: Icons.attach_money_rounded,
@@ -552,7 +552,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                             final value = await showAmountKeypad(
                               context: context,
                               title: _parcelado
-                                  ? 'Valor total da venda'
+                                  ? 'Valor total combinado'
                                   : 'Valor do lançamento',
                               confirmLabel: 'Usar valor',
                             );

@@ -78,7 +78,7 @@ class CustomerStatement {
           date: debt.createdAt ?? debt.dataVencimento,
           description: debt.createdAt == null
               ? 'Lançamento antigo (data de vencimento)'
-              : 'Venda registrada',
+              : 'Lançamento registrado',
           cents: amount,
           due: debt.dataVencimento,
           installment: debt.totalParcelas > 1
@@ -146,7 +146,7 @@ enum StatementEntryKind { sale, payment, reversal }
 
 extension StatementEntryKindLabel on StatementEntryKind {
   String get label => switch (this) {
-    StatementEntryKind.sale => 'Venda',
+    StatementEntryKind.sale => 'Lançamento',
     StatementEntryKind.payment => 'Pagamento',
     StatementEntryKind.reversal => 'Estorno',
   };
@@ -193,7 +193,7 @@ String statementCsv(CustomerStatement statement) => csvDocument([
   ['Cliente', statement.name],
   ['Telefone', statement.phone],
   ['Gerado em', statement.generatedAt.toIso8601String()],
-  ['Vendas (R\$)', decimalCents(statement.contractedCents)],
+  ['Lançamentos (R\$)', decimalCents(statement.contractedCents)],
   ['Recebimentos não estornados (R\$)', decimalCents(statement.receivedCents)],
   ['Saldo atual (R\$)', decimalCents(statement.balanceCents)],
   if (statement.legacyAdjustmentCents != 0)
@@ -248,7 +248,7 @@ String accountCsv({
   ],
   for (final debt in debts)
     [
-      'Venda',
+      'Lançamento',
       debt.id,
       debt.grupoId,
       debt.nome,

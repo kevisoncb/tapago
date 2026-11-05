@@ -84,7 +84,7 @@ class _DashboardPageState extends State<DashboardPage> {
         onPressed: () => _open(context, const AddDebtPage()),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Novo lançamento'),
-        tooltip: 'Cadastrar uma venda, fiado ou empréstimo',
+        tooltip: 'Novo lançamento: fiado ou empréstimo',
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -916,7 +916,7 @@ class _EmptyFocus extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            hasPending ? focus.emptyLabel : 'Sua próxima venda começa aqui',
+            hasPending ? focus.emptyLabel : 'Seu próximo lançamento começa aqui',
             style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
@@ -938,7 +938,7 @@ class _EmptyFocus extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => _open(context, const AddDebtPage()),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Cadastrar primeira venda'),
+              label: const Text('Cadastrar primeiro lançamento'),
             ),
         ],
       ),

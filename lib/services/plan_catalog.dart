@@ -42,7 +42,7 @@ class PlanCatalog {
     ),
     PlanBenefit(
       'Parcelamento a receber',
-      'Divida a venda em parcelas, cada uma com o seu vencimento.',
+      'Divida o valor em parcelas, cada uma com o seu vencimento.',
       group: groupCaixa,
     ),
     PlanBenefit(

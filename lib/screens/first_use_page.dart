@@ -22,7 +22,7 @@ class _FirstUsePageState extends State<FirstUsePage> {
     _GuideStep(
       icon: Icons.receipt_long_rounded,
       title: 'Uma caderneta que mostra o histórico',
-      body: 'Registre vendas e pagamentos. Se algo estiver errado, faça um estorno sem apagar o que aconteceu.',
+      body: 'Registre lançamentos e pagamentos. Se algo estiver errado, faça um estorno sem apagar o que aconteceu.',
     ),
     _GuideStep(
       icon: Icons.touch_app_rounded,

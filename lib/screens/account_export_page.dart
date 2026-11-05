@@ -139,7 +139,7 @@ class _AccountExportPageState extends State<AccountExportPage> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'CSV é uma planilha de vendas, pagamentos e boletos. JSON guarda os campos dos registros e do perfil. A exportação não verifica movimentações bancárias nem substitui o backup do serviço. A importação automática desses arquivos ainda não faz parte deste fluxo.',
+            'CSV é uma planilha de lançamentos, pagamentos e boletos. JSON guarda os campos dos registros e do perfil. A exportação não verifica movimentações bancárias nem substitui o backup do serviço. A importação automática desses arquivos ainda não faz parte deste fluxo.',
             style: TextStyle(fontSize: 12, color: AppColors.mutedDark),
           ),
         ],

@@ -122,7 +122,7 @@ class _CustomerStatementPageState extends State<CustomerStatementPage> {
                 ),
                 const SizedBox(height: 14),
                 _TotalLine(
-                  label: 'Vendas registradas',
+                  label: 'Lançamentos registrados',
                   cents: statement.contractedCents,
                 ),
                 const SizedBox(height: 6),

@@ -81,7 +81,7 @@ Future<Uint8List> statementPdf(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                'Vendas registradas: R\$ ${decimalCents(statement.contractedCents)}',
+                'Lançamentos registrados: R\$ ${decimalCents(statement.contractedCents)}',
               ),
               pw.SizedBox(height: 5),
               pw.Text(

@@ -83,20 +83,24 @@ class CollectionFollowUpStore {
   String get _key => 'pago_${userId}_follow_ups';
 
   Future<CollectionFollowUp?> get(String contactKey) async {
+    if (usesFirestore) {
+      // Consulta, não leitura direta: as regras recusam ler um documento que
+      // ainda não existe, e o normal é o cliente não ter acompanhamento.
+      final snapshot = await FirebaseFirestore.instance
+          .collection('CollectionFollowUps')
+          .where('user_id', isEqualTo: userId)
+          .where('contact_key', isEqualTo: contactKey)
+          .limit(1)
+          .get(const GetOptions(source: Source.server));
+      return snapshot.docs.isEmpty
+          ? null
+          : CollectionFollowUp.fromMap(snapshot.docs.first.data());
+    }
     final id = CollectionFollowUp(
       userId: userId,
       contactKey: contactKey,
       clientName: '',
     ).id;
-    if (usesFirestore) {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('CollectionFollowUps')
-          .doc(id)
-          .get(const GetOptions(source: Source.server));
-      return snapshot.exists
-          ? CollectionFollowUp.fromMap(snapshot.data()!)
-          : null;
-    }
     final preferences = await SharedPreferences.getInstance();
     final raw = preferences.getString(_key);
     if (raw == null) return null;

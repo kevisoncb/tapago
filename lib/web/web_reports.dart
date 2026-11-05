@@ -194,39 +194,34 @@ class _WebReportsState extends State<WebReports> {
   }
 
   Widget _grid(BuildContext context, List<_Metric> items) {
-    return LayoutBuilder(
-      builder: (context, box) {
-        final cols = box.maxWidth >= 760 ? 3 : 1;
-        final width = (box.maxWidth - 16 * (cols - 1)) / cols;
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            for (final item in items)
-              SizedBox(
-                width: width,
-                child: WebCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.title, style: webText(13.5, color: AppColors.mutedDark)),
-                      const SizedBox(height: 6),
-                      Text(
-                        Money.full(item.cents / 100),
-                        style: webText(24, weight: FontWeight.w800, color: item.color),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.detail,
-                        style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
-                      ),
-                    ],
+    return WebGrid(
+      minItemWidth: 170,
+      maxColumns: 3,
+      children: [
+        for (final item in items)
+          WebCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.title, style: webText(13.5, color: AppColors.mutedDark)),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Money.full(item.cents / 100),
+                    style: webText(24, weight: FontWeight.w800, color: item.color),
                   ),
                 ),
-              ),
-          ],
-        );
-      },
+                const SizedBox(height: 2),
+                Text(
+                  item.detail,
+                  style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -6,6 +6,7 @@ import '../services/daily_overview.dart';
 import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
+import '../widgets/whatsapp_charge.dart';
 import 'web_clients.dart';
 import 'web_shell.dart';
 import 'web_widgets.dart';
@@ -26,66 +27,75 @@ class WebHome extends StatelessWidget {
     return WebPage(
       title: first.isEmpty ? 'Início' : 'Olá, $first',
       subtitle: 'Resumo da sua caderneta hoje.',
-      action: FilledButton.icon(
+      action: WebPrimaryButton(
+        label: 'Nova venda',
+        icon: Icons.add_rounded,
         onPressed: () => onGo(WebSection.venda),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Nova venda'),
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          minimumSize: const Size(0, 48),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LayoutBuilder(
-            builder: (context, box) {
-              final cards = [
-                WebStat(
-                  label: 'Total a receber',
-                  value: Money.full(state.saldoAberto),
-                ),
-                WebStat(
-                  label: 'Em atraso',
-                  value: Money.full(state.aReceberVencido),
-                  color: state.aReceberVencido > 0
-                      ? AppColors.danger
-                      : AppColors.text,
-                ),
-                WebStat(
-                  label: 'Vence em 7 dias',
-                  value: Money.full(state.aReceberNaSemana),
-                ),
-                WebStat(
-                  label: 'Boletos a pagar',
-                  value: Money.full(state.aPagarAberto),
-                ),
-              ];
-              final cols = box.maxWidth >= 900 ? 4 : 2;
-              return Wrap(
+          if (state.debts.isEmpty) ...[
+            WebCard(
+              child: Wrap(
                 spacing: 16,
-                runSpacing: 16,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  for (final card in cards)
-                    SizedBox(
-                      width: (box.maxWidth - 16 * (cols - 1)) / cols,
-                      child: card,
-                    ),
+                  Text(
+                    'Primeira vez por aqui? Veja como começar.',
+                    style: webText(15.5, weight: FontWeight.w800),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => onGo(WebSection.ajuda),
+                    icon: const Icon(Icons.help_outline_rounded, size: 18),
+                    label: const Text('Ver o passo a passo'),
+                  ),
                 ],
-              );
-            },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          WebGrid(
+            children: [
+              WebStat(
+                label: 'Total a receber',
+                value: Money.full(state.saldoAberto),
+                onTap: () => onGo(WebSection.clientes),
+              ),
+              WebStat(
+                label: 'Em atraso',
+                value: Money.full(state.aReceberVencido),
+                color: state.aReceberVencido > 0
+                    ? AppColors.danger
+                    : AppColors.text,
+                onTap: () => onGo(WebSection.clientes),
+              ),
+              WebStat(
+                label: 'Vence em 7 dias',
+                value: Money.full(state.aReceberNaSemana),
+                onTap: () => onGo(WebSection.clientes),
+              ),
+              WebStat(
+                label: 'Boletos a pagar',
+                value: Money.full(state.aPagarAberto),
+                onTap: () => onGo(WebSection.boletos),
+              ),
+            ],
           ),
           const SizedBox(height: 28),
           _DebtTable(
             title: 'Em atraso',
             empty: 'Nenhum recebimento em atraso.',
             debts: overdue,
+            onSeeAll: () => onGo(WebSection.clientes),
           ),
           const SizedBox(height: 20),
           _DebtTable(
             title: 'Vencem nos próximos 7 dias',
             empty: 'Nenhum vencimento nos próximos 7 dias.',
             debts: soon,
+            onSeeAll: () => onGo(WebSection.clientes),
           ),
         ],
       ),
@@ -98,16 +108,20 @@ class _DebtTable extends StatelessWidget {
     required this.title,
     required this.empty,
     required this.debts,
+    required this.onSeeAll,
   });
+
+  static const _limit = 10;
 
   final String title;
   final String empty;
   final List<Debt> debts;
+  final VoidCallback onSeeAll;
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppController>();
-    final shown = debts.take(10).toList();
+    final shown = debts.take(_limit).toList();
     return WebCard(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
       child: Column(
@@ -131,7 +145,7 @@ class _DebtTable extends StatelessWidget {
               InkWell(
                 onTap: () => openWebClient(context, debt),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
                       Expanded(
@@ -164,10 +178,29 @@ class _DebtTable extends StatelessWidget {
                           style: webText(15, weight: FontWeight.w800),
                         ),
                       ),
+                      SizedBox(
+                        width: 48,
+                        child: debt.telefone.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Cobrar no WhatsApp',
+                                onPressed: () => chargeOnWhatsApp(
+                                  context: context,
+                                  debt: debt,
+                                ),
+                                icon: const Icon(Icons.chat_outlined, size: 20),
+                                color: AppColors.primary,
+                              ),
+                      ),
                     ],
                   ),
                 ),
               ),
+          if (debts.length > _limit)
+            TextButton(
+              onPressed: onSeeAll,
+              child: Text('Ver todos os ${debts.length} em Clientes'),
+            ),
         ],
       ),
     );

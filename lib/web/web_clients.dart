@@ -13,18 +13,7 @@ import 'web_widgets.dart';
 /// Abre o histórico do cliente (lançamentos, parcelas e pagamentos) num painel
 /// por cima da lista, para não perder o lugar na tela.
 Future<void> openWebClient(BuildContext context, Debt debt) {
-  return showDialog<void>(
-    context: context,
-    builder: (_) => Dialog(
-      clipBehavior: Clip.antiAlias,
-      insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
-        child: ContactHistoryPage(contactKey: contactKeyOf(debt)),
-      ),
-    ),
-  );
+  return openWebPanel(context, ContactHistoryPage(contactKey: contactKeyOf(debt)));
 }
 
 enum _Filter {
@@ -82,14 +71,10 @@ class _WebClientsState extends State<WebClients> {
     return WebPage(
       title: 'Clientes',
       subtitle: '${all.length} ${all.length == 1 ? 'cliente' : 'clientes'} na caderneta.',
-      action: FilledButton.icon(
+      action: WebPrimaryButton(
+        label: 'Nova venda',
+        icon: Icons.add_rounded,
         onPressed: widget.onNewSale,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Nova venda'),
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          minimumSize: const Size(0, 48),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,25 +84,14 @@ class _WebClientsState extends State<WebClients> {
             runSpacing: 12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              SizedBox(
-                width: 320,
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por nome ou telefone',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.primaryMuted),
-                    ),
-                  ),
-                ),
+              WebSearchField(
+                controller: _search,
+                hint: 'Buscar por nome ou telefone',
+                onChanged: (_) => setState(() {}),
               ),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
                   for (final filter in _Filter.values)
                     ChoiceChip(

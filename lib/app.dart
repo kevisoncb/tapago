@@ -210,14 +210,14 @@ Widget _materialApp({
   );
 }
 
-/// Na web, telas largas abrem o painel com menu lateral; telas estreitas
-/// (celular no navegador) continuam com a navegação do aplicativo.
+/// Na web, telas a partir de tablet abrem o painel com menu lateral; telas
+/// estreitas (celular no navegador) continuam com a navegação do aplicativo.
 class _WebHome extends StatelessWidget {
   const _WebHome();
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery.sizeOf(context).width >= 900
+    return MediaQuery.sizeOf(context).width >= 720
         ? const WebShell()
         : const MainNavigationPage();
   }

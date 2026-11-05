@@ -78,6 +78,118 @@ class WebPage extends StatelessWidget {
   }
 }
 
+/// Painel por cima da tela, com o mesmo tamanho para cadastros e detalhes.
+Future<void> openWebPanel(BuildContext context, Widget child) {
+  return showDialog<void>(
+    context: context,
+    builder: (_) => Dialog(
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
+        child: child,
+      ),
+    ),
+  );
+}
+
+class WebPrimaryButton extends StatelessWidget {
+  const WebPrimaryButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        minimumSize: const Size(0, 48),
+      ),
+    );
+  }
+}
+
+class WebSearchField extends StatelessWidget {
+  const WebSearchField({
+    super.key,
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.search_rounded),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppColors.primaryMuted),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Grade que escolhe o número de colunas pela largura disponível.
+class WebGrid extends StatelessWidget {
+  const WebGrid({
+    super.key,
+    required this.children,
+    this.minItemWidth = 200,
+    this.maxColumns = 4,
+  });
+
+  final List<Widget> children;
+  final double minItemWidth;
+  final int maxColumns;
+
+  static const _gap = 16.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final fit = ((box.maxWidth + _gap) / (minItemWidth + _gap)).floor();
+        var cols = fit.clamp(1, maxColumns);
+        // Evita um cartão sozinho na última linha (3 + 1 vira 2 + 2).
+        if (cols > 2 && children.length % cols == 1) cols--;
+        final width = (box.maxWidth - _gap * (cols - 1)) / cols;
+        return Wrap(
+          spacing: _gap,
+          runSpacing: _gap,
+          children: [
+            for (final child in children) SizedBox(width: width, child: child),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class WebCard extends StatelessWidget {
   const WebCard({super.key, required this.child, this.padding});
 
@@ -94,7 +206,8 @@ class WebCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.primaryMuted),
       ),
-      child: child,
+      // Linhas clicáveis e listas dentro do cartão precisam de um Material.
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }
@@ -105,26 +218,53 @@ class WebStat extends StatelessWidget {
     required this.label,
     required this.value,
     this.color = AppColors.text,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return WebCard(
+    final card = WebCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: webText(13, color: AppColors.mutedDark),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: webText(13, color: AppColors.mutedDark),
+                ),
+              ),
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppColors.mutedDark,
+                ),
+            ],
           ),
           const SizedBox(height: 6),
-          Text(value, style: webText(24, weight: FontWeight.w800, color: color)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: webText(24, weight: FontWeight.w800, color: color),
+            ),
+          ),
         ],
       ),
+    );
+    if (onTap == null) return card;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: card,
     );
   }
 }

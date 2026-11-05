@@ -340,15 +340,18 @@ class _WebSaleState extends State<WebSale> {
                       for (var i = 1; i <= 12; i++)
                         DropdownMenuItem(
                           value: i,
-                          child: Text(i == 1 ? 'À vista (1x)' : '${i}x'),
+                          enabled: i == 1 || premium,
+                          child: Text(
+                            i == 1
+                                ? 'À vista (1x)'
+                                : premium
+                                    ? '${i}x'
+                                    : '${i}x (Premium)',
+                          ),
                         ),
                     ],
                     onChanged: (value) {
                       if (value == null) return;
-                      if (value > 1 && !premium) {
-                        showPagoSnack(context, 'Parcelamento é do Premium.');
-                        return;
-                      }
                       setState(() => _parcelas = value);
                     },
                   ),

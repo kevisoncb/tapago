@@ -27,3 +27,26 @@ Mais informações: https://usepago.app
 📒 *Pagô: caderneta digital para o seu fiado.* Saiba quem te deve, quanto e quando cobrar, e cobre pelo seu WhatsApp. Grátis para começar.
 📱 Por enquanto só para Android:
 https://play.google.com/store/apps/details?id=app.usepago
+
+## Versão pessoal (eu anunciando para a galera)
+
+Imagem: `pago-whatsapp-pessoal.png`
+
+Galera, queria compartilhar uma coisa com vocês 👇
+
+Eu criei um app! Chama *Pagô* e é uma caderneta digital para quem vende fiado, a prazo ou empresta dinheiro (mercadinho, loja, prestador de serviço, autônomo...).
+
+Em vez de caderno e memória, você anota tudo no celular:
+✅ quem te deve e quanto
+✅ o que vence esta semana e o que já venceu
+✅ pagamento parcial, sem perder a conta
+✅ cobra pelo seu WhatsApp, com a mensagem já pronta (você escolhe quando enviar)
+
+Dá para começar de graça, sem limite de clientes. Tem também um plano Premium opcional, com recursos extras.
+
+Importante: o Pagô é só uma caderneta para você se organizar. Não é banco e não mexe no seu dinheiro.
+
+📱 Por enquanto só tem para *Android*:
+https://play.google.com/store/apps/details?id=app.usepago
+
+Se baixarem, me contem o que acharam. Toda sugestão ajuda a melhorar! 🙏 E se conhecerem alguém que vive de fiado, manda para essa pessoa.

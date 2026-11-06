@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
+import '../widgets/help_card.dart';
 import 'web_shell.dart';
 import 'web_widgets.dart';
 
@@ -80,11 +81,15 @@ const webHelpTopics = <WebHelpTopic>[
     'O seu WhatsApp abre com o texto pronto. A mensagem só sai quando você enviar.',
     'No Premium, você escreve os seus textos em Minha conta.',
   ]),
-  WebHelpTopic('Ver o extrato e combinar um acordo', Icons.receipt_long_outlined, [
-    'Em Clientes, clique no cliente.',
-    '"Extrato do cliente" mostra tudo o que foi lançado e pago.',
-    '"Acompanhar acordo" guarda o que foi combinado e quando retomar o contato.',
-  ]),
+  WebHelpTopic(
+    'Ver o extrato e combinar um acordo',
+    Icons.receipt_long_outlined,
+    [
+      'Em Clientes, clique no cliente.',
+      '"Extrato do cliente" mostra tudo o que foi lançado e pago.',
+      '"Acompanhar acordo" guarda o que foi combinado e quando retomar o contato.',
+    ],
+  ),
   WebHelpTopic('Controlar boletos (Premium)', Icons.receipt_outlined, [
     'Em Boletos, clique em "Novo boleto" e informe o fornecedor, o valor e o vencimento.',
     'Quando pagar, clique em "Marcar pago". Se errar, use "Desfazer".',
@@ -128,7 +133,10 @@ class WebHelp extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Primeiros passos', style: webText(15.5, weight: FontWeight.w800)),
+          Text(
+            'Primeiros passos',
+            style: webText(15.5, weight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           WebCard(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -147,15 +155,13 @@ class WebHelp extends StatelessWidget {
           const SizedBox(height: 28),
           Text('Como fazer', style: webText(15.5, weight: FontWeight.w800)),
           const SizedBox(height: 12),
-          WebCard(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              children: [
-                for (final topic in webHelpTopics) _TopicTile(topic: topic),
-              ],
+          for (final topic in webHelpTopics)
+            HelpCard(
+              title: topic.title,
+              icon: topic.icon,
+              child: HelpSteps(steps: topic.steps),
             ),
-          ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           WebCard(
             child: Wrap(
               spacing: 16,
@@ -210,7 +216,11 @@ class _StartRow extends StatelessWidget {
             backgroundColor: AppColors.primarySoft,
             child: Text(
               '$number',
-              style: webText(14, weight: FontWeight.w800, color: AppColors.primaryDark),
+              style: webText(
+                14,
+                weight: FontWeight.w800,
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -222,7 +232,11 @@ class _StartRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   step.text,
-                  style: webText(14, weight: FontWeight.w500, color: AppColors.mutedDark),
+                  style: webText(
+                    14,
+                    weight: FontWeight.w500,
+                    color: AppColors.mutedDark,
+                  ),
                 ),
               ],
             ),
@@ -234,48 +248,6 @@ class _StartRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TopicTile extends StatelessWidget {
-  const _TopicTile({required this.topic});
-
-  final WebHelpTopic topic;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      shape: const Border(),
-      collapsedShape: const Border(),
-      leading: Icon(topic.icon, color: AppColors.primary),
-      title: Text(topic.title, style: webText(15, weight: FontWeight.w700)),
-      childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < topic.steps.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    '${i + 1}.',
-                    style: webText(14, weight: FontWeight.w800, color: AppColors.primaryDark),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    topic.steps[i],
-                    style: webText(14, weight: FontWeight.w500, color: AppColors.mutedDark),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

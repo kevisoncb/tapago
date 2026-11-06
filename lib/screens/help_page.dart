@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
+import '../widgets/help_card.dart';
 
 class HelpTopic {
   const HelpTopic(this.title, this.icon, this.steps);
@@ -134,8 +135,7 @@ class VoiceHelpContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Steps(steps: voiceHelpSteps),
-        const SizedBox(height: 6),
+        const HelpSteps(steps: voiceHelpSteps),
         Text(
           'Exemplos do que falar',
           style: GoogleFonts.plusJakartaSans(
@@ -172,79 +172,46 @@ class VoiceHelpContent extends StatelessWidget {
   }
 }
 
-class _Steps extends StatelessWidget {
-  const _Steps({required this.steps});
-
-  final List<String> steps;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < steps.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    '${i + 1}.',
-                    style: _body.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                ),
-                Expanded(child: Text(steps[i], style: _body)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 /// Como usar cada função do app, por assunto.
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final style = GoogleFonts.plusJakartaSans(
-      fontSize: 14.5,
-      fontWeight: FontWeight.w700,
-      color: AppColors.text,
-    );
-    Widget tile(String title, IconData icon, Widget content) => ExpansionTile(
-      shape: const Border(),
-      collapsedShape: const Border(),
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(title, style: style),
-      childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [content],
-    );
+    final first = helpTopics.first;
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Como usar o Pagô')),
+      backgroundColor: const Color(0xFFF4F7FF),
+      appBar: AppBar(
+        title: const Text('Como usar o Pagô'),
+        backgroundColor: const Color(0xFFF4F7FF),
+        surfaceTintColor: Colors.transparent,
+      ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          tile(
-            helpTopics.first.title,
-            helpTopics.first.icon,
-            _Steps(steps: helpTopics.first.steps),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Text(
+              'Toque num assunto para ver o passo a passo.',
+              style: _body,
+            ),
           ),
-          tile(
-            'Cadastrar por voz (Premium)',
-            Icons.mic_none_rounded,
-            const VoiceHelpContent(),
+          HelpCard(
+            title: first.title,
+            icon: first.icon,
+            child: HelpSteps(steps: first.steps),
+          ),
+          const HelpCard(
+            title: 'Cadastrar por voz (Premium)',
+            icon: Icons.mic_none_rounded,
+            child: VoiceHelpContent(),
           ),
           for (final topic in helpTopics.skip(1))
-            tile(topic.title, topic.icon, _Steps(steps: topic.steps)),
+            HelpCard(
+              title: topic.title,
+              icon: topic.icon,
+              child: HelpSteps(steps: topic.steps),
+            ),
         ],
       ),
     );

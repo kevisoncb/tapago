@@ -34,9 +34,9 @@ Imagem: `pago-whatsapp-pessoal.png`
 
 Galera, queria compartilhar uma coisa com vocês 👇
 
-Eu criei um app! Chama *Pagô* e é uma caderneta digital para quem vende fiado, a prazo ou empresta dinheiro (mercadinho, loja, prestador de serviço, autônomo...).
+Desenvolvi o *Pagô*, um app para quem precisa de um assistente para organizar o fiado, as vendas a prazo e as cobranças (mercadinho, loja, prestador de serviço, autônomo...).
 
-Em vez de caderno e memória, você anota tudo no celular:
+Em vez de caderno e memória, você controla tudo no celular:
 ✅ quem te deve e quanto
 ✅ o que vence esta semana e o que já venceu
 ✅ pagamento parcial, sem perder a conta
@@ -49,4 +49,4 @@ Importante: o Pagô é só uma caderneta para você se organizar. Não é banco 
 📱 Por enquanto só tem para *Android*:
 https://play.google.com/store/apps/details?id=app.usepago
 
-Se baixarem, me contem o que acharam. Toda sugestão ajuda a melhorar! 🙏 E se conhecerem alguém que vive de fiado, manda para essa pessoa.
+Se baixarem, me contem o que acharam: toda sugestão ajuda a melhorar. 🙏 E se conhecerem alguém que vende a prazo, é só encaminhar.

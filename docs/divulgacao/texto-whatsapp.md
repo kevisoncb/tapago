@@ -34,7 +34,7 @@ Imagem: `pago-whatsapp-pessoal.png`
 
 Galera, queria compartilhar uma coisa com vocês 👇
 
-Desenvolvi o *Pagô*, um app para quem precisa de um assistente para organizar o fiado, as vendas a prazo e as cobranças (mercadinho, loja, prestador de serviço, autônomo...).
+Desenvolvi o *Pagô*, um app para quem precisa de um assistente para organizar as suas vendas a prazo e as cobranças dos clientes (comércio, loja, prestador de serviço, autônomo...).
 
 Em vez de caderno e memória, você controla tudo no celular:
 ✅ quem te deve e quanto

@@ -87,6 +87,7 @@ class WebHome extends StatelessWidget {
             title: 'Em atraso',
             empty: 'Nenhum recebimento em atraso.',
             debts: overdue,
+            late: true,
             onSeeAll: () => onGo(WebSection.clientes),
           ),
           const SizedBox(height: 14),
@@ -108,9 +109,13 @@ class _DebtTable extends StatelessWidget {
     required this.empty,
     required this.debts,
     required this.onSeeAll,
+    this.late = false,
   });
 
   static const _limit = 10;
+
+  /// Tabela de atrasados: título, vencimento e saldo em vermelho, como no app.
+  final bool late;
 
   final String title;
   final String empty;
@@ -122,7 +127,11 @@ class _DebtTable extends StatelessWidget {
     final state = context.watch<AppController>();
     final shown = debts.take(_limit).toList();
     final head = WebTableHeader.style;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final alert = late && debts.isNotEmpty;
     return WebTablePanel(
+      titleColor: alert ? AppColors.danger : AppColors.text,
+      titleIcon: alert ? Icons.error_outline_rounded : null,
       title: '$title${debts.isEmpty ? '' : ' (${debts.length})'}',
       trailing: debts.length > _limit
           ? TextButton(
@@ -141,7 +150,11 @@ class _DebtTable extends StatelessWidget {
                     Expanded(flex: 2, child: Text('VENCIMENTO', style: head)),
                     SizedBox(
                       width: 120,
-                      child: Text('SALDO', textAlign: TextAlign.right, style: head),
+                      child: Text(
+                        'SALDO',
+                        textAlign: TextAlign.right,
+                        style: head,
+                      ),
                     ),
                     const SizedBox(width: 48),
                   ],
@@ -149,6 +162,7 @@ class _DebtTable extends StatelessWidget {
                 for (final debt in shown)
                   WebTableRow(
                     onTap: () => openWebClient(context, debt),
+                    accent: late ? AppColors.danger : null,
                     children: [
                       Expanded(
                         flex: 3,
@@ -162,22 +176,57 @@ class _DebtTable extends StatelessWidget {
                         flex: 2,
                         child: Text(
                           debt.parcelado ? debt.parcelaLabel : 'À vista',
-                          style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
+                          style: webText(
+                            13,
+                            weight: FontWeight.w500,
+                            color: AppColors.mutedDark,
+                          ),
                         ),
                       ),
                       Expanded(
                         flex: 2,
-                        child: Text(
-                          Dates.full(debt.dataVencimento),
-                          style: webText(13, weight: FontWeight.w500, color: AppColors.mutedDark),
-                        ),
+                        child: late
+                            ? Text.rich(
+                                TextSpan(
+                                  text: Dates.full(debt.dataVencimento),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '  ·  ${_lateLabel(today, debt.dataVencimento)}',
+                                      style: webText(
+                                        12,
+                                        weight: FontWeight.w700,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                style: webText(
+                                  13,
+                                  weight: FontWeight.w600,
+                                  color: AppColors.danger,
+                                ),
+                              )
+                            : Text(
+                                Dates.full(debt.dataVencimento),
+                                style: webText(
+                                  13,
+                                  weight: FontWeight.w500,
+                                  color: AppColors.mutedDark,
+                                ),
+                              ),
                       ),
                       SizedBox(
                         width: 120,
                         child: Text(
                           Money.full(state.saldoOf(debt)),
                           textAlign: TextAlign.right,
-                          style: webText(13.5, weight: FontWeight.w800),
+                          style: webText(
+                            13.5,
+                            weight: FontWeight.w800,
+                            color: late ? AppColors.danger : AppColors.text,
+                          ),
                         ),
                       ),
                       SizedBox(
@@ -200,4 +249,10 @@ class _DebtTable extends StatelessWidget {
             ),
     );
   }
+}
+
+String _lateLabel(DateTime today, DateTime due) {
+  final days = today.difference(DateUtils.dateOnly(due)).inDays;
+  if (days <= 0) return 'vence hoje';
+  return days == 1 ? '1 dia de atraso' : '$days dias de atraso';
 }

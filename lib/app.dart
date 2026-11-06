@@ -47,7 +47,7 @@ class _PagoAppState extends State<PagoApp> {
         listenable: gate,
         builder: (context, _) {
           if (gate.booting) {
-            return _materialApp(home: const _BootScreen());
+            return _materialApp(home: const _BootScreen(), framed: !kIsWeb);
           }
           final repository = gate.repository;
           final userId = gate.userId;

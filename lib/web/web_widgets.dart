@@ -60,7 +60,10 @@ class WebPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: webText(21, weight: FontWeight.w800)),
+                        Text(
+                          title,
+                          style: webText(21, weight: FontWeight.w800),
+                        ),
                         if (subtitle case final text?)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
@@ -193,7 +196,11 @@ class WebSearchField extends StatelessWidget {
         style: webText(13.5, weight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: webText(13.5, weight: FontWeight.w500, color: AppColors.muted),
+          hintStyle: webText(
+            13.5,
+            weight: FontWeight.w500,
+            color: AppColors.muted,
+          ),
           prefixIcon: const Icon(Icons.search_rounded, size: 20),
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 11),
@@ -273,9 +280,13 @@ class WebTablePanel extends StatelessWidget {
     required this.title,
     this.trailing,
     required this.child,
+    this.titleColor = AppColors.text,
+    this.titleIcon,
   });
 
   final String title;
+  final Color titleColor;
+  final IconData? titleIcon;
   final Widget? trailing;
   final Widget child;
 
@@ -290,8 +301,19 @@ class WebTablePanel extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
             child: Row(
               children: [
+                if (titleIcon != null) ...[
+                  Icon(titleIcon, size: 18, color: titleColor),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
-                  child: Text(title, style: webText(14.5, weight: FontWeight.w800)),
+                  child: Text(
+                    title,
+                    style: webText(
+                      14.5,
+                      weight: FontWeight.w800,
+                      color: titleColor,
+                    ),
+                  ),
                 ),
                 ?trailing,
               ],
@@ -331,18 +353,32 @@ class WebTableHeader extends StatelessWidget {
 
 /// Linha de tabela com altura uniforme e destaque ao passar o mouse.
 class WebTableRow extends StatelessWidget {
-  const WebTableRow({super.key, required this.children, this.onTap});
+  const WebTableRow({
+    super.key,
+    required this.children,
+    this.onTap,
+    this.accent,
+  });
 
   final List<Widget> children;
   final VoidCallback? onTap;
+
+  /// Faixa colorida à esquerda, para destacar a linha (ex.: em atraso).
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
     final row = Container(
       constraints: const BoxConstraints(minHeight: 46),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: WebColors.canvas)),
+      padding: EdgeInsets.fromLTRB(accent == null ? 16 : 13, 4, 16, 4),
+      decoration: BoxDecoration(
+        color: accent?.withValues(alpha: 0.04),
+        border: Border(
+          bottom: const BorderSide(color: WebColors.canvas),
+          left: accent == null
+              ? BorderSide.none
+              : BorderSide(color: accent!, width: 3),
+        ),
       ),
       child: Row(children: children),
     );
@@ -363,7 +399,11 @@ class WebEmpty extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       child: Text(
         text,
-        style: webText(13.5, weight: FontWeight.w500, color: AppColors.mutedDark),
+        style: webText(
+          13.5,
+          weight: FontWeight.w500,
+          color: AppColors.mutedDark,
+        ),
       ),
     );
   }
@@ -386,7 +426,10 @@ class WebBadge extends StatelessWidget {
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(label, style: webText(12, weight: FontWeight.w700, color: color)),
+        child: Text(
+          label,
+          style: webText(12, weight: FontWeight.w700, color: color),
+        ),
       ),
     );
   }
@@ -443,7 +486,11 @@ class WebStat extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Text(
                 text,
-                style: webText(12.5, weight: FontWeight.w500, color: AppColors.mutedDark),
+                style: webText(
+                  12.5,
+                  weight: FontWeight.w500,
+                  color: AppColors.mutedDark,
+                ),
               ),
             ),
         ],

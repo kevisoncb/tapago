@@ -129,7 +129,11 @@ class _SignedInAppState extends State<SignedInApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _loaded) _load();
+    if (state == AppLifecycleState.resumed &&
+        _loaded &&
+        _controller.needsRefresh) {
+      _load();
+    }
   }
 
   Future<void> _onReminder(ReminderTarget target) async {

@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import '../models/models.dart';
 import 'app_repository.dart';
 import 'cached_repository.dart';
@@ -21,7 +25,21 @@ class RepositoryFactory {
     }
 
     final remote = FirestoreRepository(userId: userId);
-    await remote.ensureProfile(profile);
+    final saved = await cache.getCurrentUser();
+    if (saved.email.isEmpty && saved.nome.isEmpty) {
+      // Primeira vez neste aparelho: o perfil precisa existir antes de abrir.
+      await remote.ensureProfile(profile);
+    } else {
+      // Já entrou aqui antes: abre na hora, mesmo sem internet, e confere o
+      // perfil em segundo plano.
+      unawaited(
+        remote
+            .ensureProfile(profile)
+            .catchError(
+              (Object error) => debugPrint('Perfil: ${error.runtimeType}'),
+            ),
+      );
+    }
     return CachedRepository(remote: remote, cache: cache);
   }
 }

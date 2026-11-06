@@ -186,35 +186,75 @@ class AppController extends ChangeNotifier {
     return _loading ??= _load().whenComplete(() => _loading = null);
   }
 
+  DateTime? _lastLoadAt;
+  bool _triedCache = false;
+
+  /// Volta ao app: só busca de novo se a última atualização tiver mais de
+  /// um minuto. Puxar a tela para baixo continua atualizando na hora.
+  bool get needsRefresh =>
+      _lastLoadAt == null ||
+      DateTime.now().difference(_lastLoadAt!) > const Duration(minutes: 1);
+
   Future<void> _load() async {
     loading = true;
     errorMessage = null;
-    notifyListeners();
     final revision = _dataRevision;
+    // Na primeira abertura, mostra na hora o que está salvo no aparelho
+    // enquanto a internet responde.
+    if (!_triedCache) {
+      _triedCache = true;
+      await _showSavedData(revision);
+    }
+    notifyListeners();
+    var fresh = false;
     try {
-      final nextUser = await _repository.getCurrentUser();
-      final nextDebts = await _repository.getDebts();
-      final nextPayments = await _repository.getPayments();
-      final nextBills = await _repository.getBills();
+      // As quatro buscas vão juntas: a espera é a da mais lenta, não a soma.
+      final (nextUser, nextDebts, nextPayments, nextBills) = await (
+        _repository.getCurrentUser(),
+        _repository.getDebts(),
+        _repository.getPayments(),
+        _repository.getBills(),
+      ).wait;
       if (_disposed || revision != _dataRevision) return;
       user = nextUser;
       debts = nextDebts;
       payments = nextPayments;
       bills = nextBills;
       _updateSyncStatus();
-      _billing?.onUpdate = _onPurchase;
-      await _billing?.start();
-      await _syncReminders();
-      _watchUser();
+      _lastLoadAt = DateTime.now();
+      fresh = true;
     } catch (error) {
       if (_disposed) return;
       errorMessage = 'Não foi possível atualizar seus dados. Confira a conexão e tente novamente.';
-      debugPrint('Carregamento: $error');
+      debugPrint(
+        'Carregamento: ${error is ParallelWaitError ? error.errors : error}',
+      );
     } finally {
       if (!_disposed) {
+        // A tela atualiza já; loja e lembretes seguem depois, sem segurar.
         loading = false;
         notifyListeners();
       }
+    }
+    if (!fresh || _disposed) return;
+    _billing?.onUpdate = _onPurchase;
+    await _billing?.start();
+    _watchUser();
+    await _syncReminders();
+  }
+
+  Future<void> _showSavedData(int revision) async {
+    final repository = _repository;
+    if (repository is! SavedDataSource) return;
+    try {
+      final saved = await (repository as SavedDataSource).readSaved();
+      if (saved == null || _disposed || revision != _dataRevision) return;
+      user = saved.user;
+      debts = saved.debts;
+      payments = saved.payments;
+      bills = saved.bills;
+    } catch (error) {
+      debugPrint('Dados salvos: $error');
     }
   }
 
@@ -615,8 +655,8 @@ class AppController extends ChangeNotifier {
   /// Liga os lembretes diários: pede a permissão do sistema e registra o
   /// aparelho para o aviso das 9h. Retorna `false` se a permissão for negada.
   Future<bool> enableDailyReminders() async {
-    final allowed = await (_reminders?.requestPermission() ??
-        Future.value(true));
+    final allowed =
+        await (_reminders?.requestPermission() ?? Future.value(true));
     if (!allowed) return false;
     await saveUser(user.copyWith(notificacoesDiarias: true));
     await _syncPush(askPermission: true);

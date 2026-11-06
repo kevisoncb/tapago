@@ -7,8 +7,16 @@ import '../models/models.dart';
 import 'app_repository.dart';
 import 'local_repository.dart';
 
-class CachedRepository implements AppRepository, RepositorySyncStatus {
-  CachedRepository({required this.remote, required this.cache});
+class CachedRepository
+    implements AppRepository, RepositorySyncStatus, SavedDataSource {
+  CachedRepository({
+    required this.remote,
+    required this.cache,
+    this.readTimeout = const Duration(seconds: 15),
+  });
+
+  /// Sinal fraco não deixa a leitura presa: depois disso, vale o salvo.
+  final Duration readTimeout;
 
   final AppRepository remote;
   final AppRepository cache;
@@ -46,6 +54,20 @@ class CachedRepository implements AppRepository, RepositorySyncStatus {
   }
 
   @override
+  Future<SavedData?> readSaved() async {
+    final user = await cache.getCurrentUser();
+    if (user.email.isEmpty && user.nome.isEmpty) return null;
+    return SavedData(
+      user: user,
+      debts: await cache.getDebts(),
+      payments: await cache.getPayments(),
+      bills: await cache.getBills(),
+    );
+  }
+
+  Future<T> _read<T>(Future<T> read) => read.timeout(readTimeout);
+
+  @override
   bool get usesFirestore => true;
 
   @override
@@ -54,7 +76,7 @@ class CachedRepository implements AppRepository, RepositorySyncStatus {
   @override
   Future<AppUser> getCurrentUser() async {
     try {
-      final user = await remote.getCurrentUser();
+      final user = await _read(remote.getCurrentUser());
       _fresh('user');
       await _cacheWrite(() => cache.saveUser(user));
       return user;
@@ -82,7 +104,7 @@ class CachedRepository implements AppRepository, RepositorySyncStatus {
   @override
   Future<List<Debt>> getDebts() async {
     try {
-      final debts = await remote.getDebts();
+      final debts = await _read(remote.getDebts());
       _fresh('debts');
       final local = cache;
       if (local is LocalRepository) {
@@ -117,7 +139,7 @@ class CachedRepository implements AppRepository, RepositorySyncStatus {
   @override
   Future<List<Payment>> getPayments({String? debtId}) async {
     try {
-      final payments = await remote.getPayments(debtId: debtId);
+      final payments = await _read(remote.getPayments(debtId: debtId));
       _fresh('payments');
       final local = cache;
       if (debtId == null && local is LocalRepository) {
@@ -173,7 +195,7 @@ class CachedRepository implements AppRepository, RepositorySyncStatus {
   @override
   Future<List<Bill>> getBills() async {
     try {
-      final bills = await remote.getBills();
+      final bills = await _read(remote.getBills());
       _fresh('bills');
       final local = cache;
       if (local is LocalRepository) {

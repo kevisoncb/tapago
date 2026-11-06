@@ -44,3 +44,24 @@ abstract interface class RepositorySyncStatus {
   bool get usingCachedData;
   DateTime? get lastSyncedAt;
 }
+
+/// O que ficou salvo no aparelho na última atualização, para abrir a tela
+/// na hora enquanto a internet responde.
+class SavedData {
+  const SavedData({
+    required this.user,
+    required this.debts,
+    required this.payments,
+    required this.bills,
+  });
+
+  final AppUser user;
+  final List<Debt> debts;
+  final List<Payment> payments;
+  final List<Bill> bills;
+}
+
+abstract interface class SavedDataSource {
+  /// Null quando este aparelho ainda não tem dados desta conta.
+  Future<SavedData?> readSaved();
+}
